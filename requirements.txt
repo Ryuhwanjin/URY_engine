@@ -1,0 +1,5 @@
+# 🎓 URY Engine 필수 패키지 목록
+pymupdf>=1.25.0
+markdown>=3.5.0
+requests>=2.31.0
+pypdf>=3.0.0
