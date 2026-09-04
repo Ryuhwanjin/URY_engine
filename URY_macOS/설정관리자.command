@@ -40,12 +40,16 @@ echo "🎓 URY Engine 대시보드 구동 중..."
 echo "📍 실행 Python: $PY"
 echo "======================================================"
 
-export PYTHONPATH="$DIR/system/code:$DIR/system:$DIR/code:$DIR:$PYTHONPATH"
+export PYTHONPATH="$DIR/URY_macOS/system/code:$DIR/system/code:$DIR/system:$DIR/code:$DIR:$PYTHONPATH"
 
-if [ -f "$DIR/system/설정관리자.py" ]; then
-    "$PY" "$DIR/system/설정관리자.py"
-elif [ -f "$DIR/설정관리자.py" ]; then
+if [ -f "$DIR/설정관리자.py" ]; then
     "$PY" "$DIR/설정관리자.py"
+elif [ -f "$DIR/URY_macOS/설정관리자.py" ]; then
+    "$PY" "$DIR/URY_macOS/설정관리자.py"
+elif [ -f "$DIR/system/설정관리자.py" ]; then
+    "$PY" "$DIR/system/설정관리자.py"
+elif [ -f "$DIR/URY_macOS/system/code/settings_gui.py" ]; then
+    "$PY" "$DIR/URY_macOS/system/code/settings_gui.py"
 elif [ -f "$DIR/system/code/settings_gui.py" ]; then
     "$PY" "$DIR/system/code/settings_gui.py"
 fi

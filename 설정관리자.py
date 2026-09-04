@@ -32,16 +32,30 @@ if getattr(sys, "frozen", False):
 else:
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
     possible_code_dirs = [
+        os.path.join(SCRIPT_DIR, "URY_macOS", "system", "code"),
+        os.path.join(SCRIPT_DIR, "URY_macOS", "code"),
         os.path.join(SCRIPT_DIR, "code"),
         os.path.join(SCRIPT_DIR, "system", "code"),
         SCRIPT_DIR
     ]
 
-    CODE_DIR = SCRIPT_DIR
+    CODE_DIR = None
     for cd in possible_code_dirs:
         if os.path.isdir(cd) and os.path.exists(os.path.join(cd, "settings_gui.py")):
             CODE_DIR = cd
             break
+
+    if not CODE_DIR:
+        for root, dirs, files in os.walk(SCRIPT_DIR):
+            if "settings_gui.py" in files and ".app" not in root and "백업" not in root:
+                CODE_DIR = root
+                break
+
+    if not CODE_DIR:
+        CODE_DIR = SCRIPT_DIR
+
+    if "URY_macOS" in os.listdir(SCRIPT_DIR) and os.path.isdir(os.path.join(SCRIPT_DIR, "URY_macOS")):
+        os.environ.setdefault("WORKSPACE_DIR", os.path.join(SCRIPT_DIR, "URY_macOS"))
 
     if CODE_DIR not in sys.path:
         sys.path.insert(0, CODE_DIR)

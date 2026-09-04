@@ -11,6 +11,8 @@ import importlib.util
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 possible_code_dirs = [
+    os.path.join(SCRIPT_DIR, "URY_macOS", "system", "code"),
+    os.path.join(SCRIPT_DIR, "URY_macOS", "code"),
     os.path.join(SCRIPT_DIR, "code"),
     os.path.join(SCRIPT_DIR, "system", "code"),
     SCRIPT_DIR
