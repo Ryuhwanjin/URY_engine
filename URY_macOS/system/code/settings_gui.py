@@ -546,27 +546,51 @@ class UnifiedDashboardApp:
         if not force and self.settings.get("compliance_agreed", False):
             return
 
+        if getattr(self, "_compliance_dialog", None) and self._compliance_dialog.winfo_exists():
+            try:
+                self._compliance_dialog.deiconify()
+                self._compliance_dialog.lift()
+                self._compliance_dialog.attributes("-topmost", True)
+                self._compliance_dialog.focus_force()
+                return
+            except Exception:
+                pass
+
         dialog = tk.Toplevel(self.root)
+        self._compliance_dialog = dialog
         dialog.title("URY Engine — 저작권법 준수 및 학업 윤리 서약")
-        dialog.geometry("640x580")
-        dialog.resizable(False, False)
         dialog.transient(self.root)
         dialog.configure(bg="#f8fafc")
 
         sw = self.root.winfo_screenwidth()
         sh = self.root.winfo_screenheight()
-        x = max(0, (sw - 640) // 2)
-        y = max(30, (sh - 580) // 2 - 20)
-        dialog.geometry(f"640x580+{x}+{y}")
+        win_w = min(640, max(480, sw - 80))
+        win_h = min(540, max(360, sh - 140))
+        x = max(0, (sw - win_w) // 2)
+        y = max(30, (sh - win_h) // 2 - 20)
+        dialog.geometry(f"{win_w}x{win_h}+{x}+{y}")
+        dialog.minsize(460, 320)
+        dialog.resizable(True, True)
 
-        hdr_frame = tk.Frame(dialog, bg="#ffffff", padx=24, pady=18, highlightthickness=1, highlightbackground="#e2e8f0")
-        hdr_frame.pack(fill=tk.X)
+        try:
+            dialog.attributes("-topmost", True)
+        except Exception:
+            pass
 
-        tk.Label(hdr_frame, text="🎓 URY Engine 저작권 준수 및 학업 윤리 서약서", font=("Pretendard", 13, "bold"), bg="#ffffff", fg="#1c4732").pack(anchor=tk.W)
-        tk.Label(hdr_frame, text="대한민국 저작권법 제30조(사적이용을 위한 복제) 및 대학 학업 윤리 가이드라인", font=("Pretendard", 9), bg="#ffffff", fg="#64748b").pack(anchor=tk.W, pady=(4, 0))
+        # 1. 상단 헤더 프레임 (상단 고정)
+        hdr_frame = tk.Frame(dialog, bg="#ffffff", padx=20, pady=14, highlightthickness=1, highlightbackground="#e2e8f0")
+        hdr_frame.pack(side=tk.TOP, fill=tk.X)
 
-        body_frame = tk.Frame(dialog, bg="#f8fafc", padx=20, pady=14)
-        body_frame.pack(fill=tk.BOTH, expand=True)
+        tk.Label(hdr_frame, text="🎓 URY Engine 저작권 준수 및 학업 윤리 서약서", font=("Pretendard", 12, "bold"), bg="#ffffff", fg="#1c4732").pack(anchor=tk.W)
+        tk.Label(hdr_frame, text="대한민국 저작권법 제30조(사적이용을 위한 복제) 및 대학 학업 윤리 가이드라인", font=("Pretendard", 9), bg="#ffffff", fg="#64748b").pack(anchor=tk.W, pady=(3, 0))
+
+        # 2. 하단 서약 확인 및 버튼 프레임 (하단 최우선 고정 -> 창 크기에 상관없이 항상 100% 노출!)
+        btm_frame = tk.Frame(dialog, bg="#ffffff", padx=16, pady=12, highlightthickness=1, highlightbackground="#e2e8f0")
+        btm_frame.pack(side=tk.BOTTOM, fill=tk.X)
+
+        # 3. 중앙 본문 스크롤 프레임 (남는 중간 영역 채움)
+        body_frame = tk.Frame(dialog, bg="#f8fafc", padx=16, pady=10)
+        body_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
         txt = tk.Text(
             body_frame,
@@ -577,8 +601,8 @@ class UnifiedDashboardApp:
             relief=tk.FLAT,
             highlightthickness=1,
             highlightbackground="#cbd5e1",
-            padx=16,
-            pady=14,
+            padx=14,
+            pady=12,
             spacing1=3,
             spacing2=4,
             spacing3=3
@@ -603,9 +627,6 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         txt.insert(tk.END, terms_text)
         txt.config(state=tk.DISABLED)
 
-        btm_frame = tk.Frame(dialog, bg="#ffffff", padx=20, pady=14, highlightthickness=1, highlightbackground="#e2e8f0")
-        btm_frame.pack(fill=tk.X)
-
         is_already_agreed = self.settings.get("compliance_agreed", False)
         agree_var = tk.BooleanVar(value=True)
 
@@ -615,11 +636,11 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
             bg="#f0fdf4",
             highlightthickness=1,
             highlightbackground="#86efac",
-            padx=14,
-            pady=10,
+            padx=12,
+            pady=8,
             cursor="hand2"
         )
-        card_agree.pack(fill=tk.X, pady=(0, 12))
+        card_agree.pack(fill=tk.X, pady=(0, 10))
 
         chk_icon = tk.Label(
             card_agree,
@@ -659,6 +680,21 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         chk_icon.bind("<Button-1>", toggle_agree)
         chk_text.bind("<Button-1>", toggle_agree)
 
+        def cleanup_bindings():
+            try:
+                self.root.unbind("<FocusIn>", root_focus_id)
+            except Exception:
+                pass
+            try:
+                self.root.unbind("<Unmap>", root_unmap_id)
+            except Exception:
+                pass
+            try:
+                self.root.unbind("<Map>", root_map_id)
+            except Exception:
+                pass
+            self._compliance_dialog = None
+
         def on_confirm(event=None):
             self.settings["compliance_agreed"] = True
             self.settings["compliance_agreed_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -666,24 +702,28 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
                 config_manager.save_settings(self.settings)
             except Exception as ex:
                 print(f"[Warning] Failed to save compliance settings: {ex}")
+            cleanup_bindings()
             try:
-                dialog.grab_release()
+                dialog.attributes("-topmost", False)
             except Exception:
                 pass
             dialog.destroy()
+            try:
+                self.root.lift()
+                self.root.focus_force()
+            except Exception:
+                pass
 
         def on_close(event=None):
             if not self.settings.get("compliance_agreed", False):
                 if messagebox.askyesno("서약 종료", "저작권 준수 서약을 완료하지 않으면 프로그램을 이용할 수 없습니다.\n\n프로그램을 종료하시겠습니까?", parent=dialog):
-                    try:
-                        dialog.grab_release()
-                    except Exception:
-                        pass
+                    cleanup_bindings()
                     dialog.destroy()
                     self.root.destroy()
             else:
+                cleanup_bindings()
                 try:
-                    dialog.grab_release()
+                    dialog.attributes("-topmost", False)
                 except Exception:
                     pass
                 dialog.destroy()
@@ -699,7 +739,7 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
             hover_bg="#e2e8f0",
             fg="#475569",
             radius=8,
-            height=36,
+            height=34,
             font=("Pretendard", 9, "bold"),
             command=on_close,
             parent_bg="#ffffff"
@@ -711,7 +751,7 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
             bg="#1c4732",
             hover_bg="#265e43",
             radius=8,
-            height=36,
+            height=34,
             font=("Pretendard", 10, "bold"),
             command=on_confirm,
             parent_bg="#ffffff"
@@ -721,7 +761,37 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         dialog.bind("<KP_Enter>", on_confirm)
         dialog.bind("<Escape>", on_close)
         dialog.protocol("WM_DELETE_WINDOW", on_close)
-        dialog.grab_set()
+
+        # 🌟 최소화 및 포커스 동기화 (grab_set을 배제하여 맥OS 최소화 프리징 원천 차단!)
+        def refocus_dialog(event=None):
+            if dialog.winfo_exists():
+                try:
+                    dialog.lift()
+                    dialog.attributes("-topmost", True)
+                except Exception:
+                    pass
+
+        def on_root_unmap(e):
+            if e.widget == self.root and dialog.winfo_exists():
+                try:
+                    dialog.withdraw()
+                except Exception:
+                    pass
+
+        def on_root_map(e):
+            if e.widget == self.root and dialog.winfo_exists():
+                try:
+                    dialog.deiconify()
+                    dialog.lift()
+                    dialog.attributes("-topmost", True)
+                    dialog.focus_force()
+                except Exception:
+                    pass
+
+        root_focus_id = self.root.bind("<FocusIn>", refocus_dialog, add="+")
+        root_unmap_id = self.root.bind("<Unmap>", on_root_unmap, add="+")
+        root_map_id = self.root.bind("<Map>", on_root_map, add="+")
+
         dialog.focus_force()
 
     def set_theme_accent(self, color_hex):
