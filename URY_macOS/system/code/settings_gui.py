@@ -293,6 +293,12 @@ class SquareRoundButton(tk.Canvas):
         b_color = "#e2e8f0" if is_dis else fill_color
         self.rect_id = self.create_polygon(points, fill=b_color, outline="", smooth=True)
         self.text_id = self.create_text(self.w // 2, self.h // 2, text=self.btn_text, fill=t_color, font=self.font)
+        if not is_dis:
+            for item in (self.rect_id, self.text_id):
+                self.tag_bind(item, "<Enter>", self.on_enter)
+                self.tag_bind(item, "<Leave>", self.on_leave)
+                self.tag_bind(item, "<Button-1>", self.on_press)
+                self.tag_bind(item, "<ButtonRelease-1>", self.on_release)
 
     def on_enter(self, e):
         if self.btn_state != "disabled":
@@ -600,30 +606,108 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         btm_frame = tk.Frame(dialog, bg="#ffffff", padx=20, pady=14, highlightthickness=1, highlightbackground="#e2e8f0")
         btm_frame.pack(fill=tk.X)
 
-        agree_var = tk.BooleanVar(value=False)
+        is_already_agreed = self.settings.get("compliance_agreed", False)
+        agree_var = tk.BooleanVar(value=True)
 
-        def on_confirm():
-            if not agree_var.get():
-                messagebox.showwarning("서약 확인 필요", "저작권법 준수 및 학업 윤리 서약 확인 체크박스를 선택해 주세요.", parent=dialog)
-                return
+        # 클릭 가능한 인터랙티브 서약 동의 카드 (전체 영역 반응형)
+        card_agree = tk.Frame(
+            btm_frame,
+            bg="#f0fdf4",
+            highlightthickness=1,
+            highlightbackground="#86efac",
+            padx=14,
+            pady=10,
+            cursor="hand2"
+        )
+        card_agree.pack(fill=tk.X, pady=(0, 12))
+
+        chk_icon = tk.Label(
+            card_agree,
+            text="☑",
+            font=("Pretendard", 12, "bold"),
+            bg="#f0fdf4",
+            fg="#166534",
+            cursor="hand2"
+        )
+        chk_icon.pack(side=tk.LEFT, padx=(0, 8))
+
+        chk_text = tk.Label(
+            card_agree,
+            text="[필수] 상기 저작권법 제30조 준수 및 외부 배포 금지 서약 내용을 확인하였으며, 전적으로 동의합니다.",
+            font=("Pretendard", 9, "bold"),
+            bg="#f0fdf4",
+            fg="#166534",
+            cursor="hand2"
+        )
+        chk_text.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        def update_toggle_ui():
+            if agree_var.get():
+                card_agree.config(bg="#f0fdf4", highlightbackground="#86efac")
+                chk_icon.config(text="☑", bg="#f0fdf4", fg="#166534")
+                chk_text.config(bg="#f0fdf4", fg="#166534")
+            else:
+                card_agree.config(bg="#f8fafc", highlightbackground="#cbd5e1")
+                chk_icon.config(text="☐", bg="#f8fafc", fg="#64748b")
+                chk_text.config(bg="#f8fafc", fg="#475569")
+
+        def toggle_agree(event=None):
+            agree_var.set(not agree_var.get())
+            update_toggle_ui()
+
+        card_agree.bind("<Button-1>", toggle_agree)
+        chk_icon.bind("<Button-1>", toggle_agree)
+        chk_text.bind("<Button-1>", toggle_agree)
+
+        def on_confirm(event=None):
             self.settings["compliance_agreed"] = True
             self.settings["compliance_agreed_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            config_manager.save_settings(self.settings)
+            try:
+                config_manager.save_settings(self.settings)
+            except Exception as ex:
+                print(f"[Warning] Failed to save compliance settings: {ex}")
+            try:
+                dialog.grab_release()
+            except Exception:
+                pass
             dialog.destroy()
 
-        chk = ttk.Checkbutton(
-            btm_frame,
-            text="[필수] 상기 저작권법 제30조 준수 및 외부 배포 금지 서약에 전적으로 동의합니다.",
-            variable=agree_var
-        )
-        chk.pack(anchor=tk.W, pady=(0, 10))
+        def on_close(event=None):
+            if not self.settings.get("compliance_agreed", False):
+                if messagebox.askyesno("서약 종료", "저작권 준수 서약을 완료하지 않으면 프로그램을 이용할 수 없습니다.\n\n프로그램을 종료하시겠습니까?", parent=dialog):
+                    try:
+                        dialog.grab_release()
+                    except Exception:
+                        pass
+                    dialog.destroy()
+                    self.root.destroy()
+            else:
+                try:
+                    dialog.grab_release()
+                except Exception:
+                    pass
+                dialog.destroy()
 
         btn_row = tk.Frame(btm_frame, bg="#ffffff")
         btn_row.pack(fill=tk.X)
 
+        cancel_text = "✕  닫기" if is_already_agreed else "✕  동의하지 않고 종료"
         SquareRoundButton(
             btn_row,
-            text="✍️  서약 완료 및 URY Engine 시작",
+            text=cancel_text,
+            bg="#f1f5f9",
+            hover_bg="#e2e8f0",
+            fg="#475569",
+            radius=8,
+            height=36,
+            font=("Pretendard", 9, "bold"),
+            command=on_close,
+            parent_bg="#ffffff"
+        ).pack(side=tk.LEFT)
+
+        SquareRoundButton(
+            btn_row,
+            text="✍️  서약 및 전체 동의하고 URY Engine 시작",
             bg="#1c4732",
             hover_bg="#265e43",
             radius=8,
@@ -633,16 +717,12 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
             parent_bg="#ffffff"
         ).pack(side=tk.RIGHT)
 
-        def on_close():
-            if not self.settings.get("compliance_agreed", False):
-                if messagebox.askyesno("서약 종료", "저작권 준수 서약을 완료하지 않으면 프로그램을 이용할 수 없습니다.\n\n프로그램을 종료하시겠습니까?", parent=dialog):
-                    dialog.destroy()
-                    self.root.destroy()
-            else:
-                dialog.destroy()
-
+        dialog.bind("<Return>", on_confirm)
+        dialog.bind("<KP_Enter>", on_confirm)
+        dialog.bind("<Escape>", on_close)
         dialog.protocol("WM_DELETE_WINDOW", on_close)
         dialog.grab_set()
+        dialog.focus_force()
 
     def set_theme_accent(self, color_hex):
         if not color_hex or not color_hex.startswith("#"):
