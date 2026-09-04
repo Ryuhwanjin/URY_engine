@@ -532,8 +532,117 @@ class UnifiedDashboardApp:
             self.root.deiconify()
             self.root.lift()
             self.root.focus_force()
+            self.check_compliance_agreement()
         except Exception:
             pass
+
+    def check_compliance_agreement(self, force=False):
+        if not force and self.settings.get("compliance_agreed", False):
+            return
+
+        dialog = tk.Toplevel(self.root)
+        dialog.title("URY Engine — 저작권법 준수 및 학업 윤리 서약")
+        dialog.geometry("640x580")
+        dialog.resizable(False, False)
+        dialog.transient(self.root)
+        dialog.configure(bg="#f8fafc")
+
+        sw = self.root.winfo_screenwidth()
+        sh = self.root.winfo_screenheight()
+        x = max(0, (sw - 640) // 2)
+        y = max(30, (sh - 580) // 2 - 20)
+        dialog.geometry(f"640x580+{x}+{y}")
+
+        hdr_frame = tk.Frame(dialog, bg="#ffffff", padx=24, pady=18, highlightthickness=1, highlightbackground="#e2e8f0")
+        hdr_frame.pack(fill=tk.X)
+
+        tk.Label(hdr_frame, text="🎓 URY Engine 저작권 준수 및 학업 윤리 서약서", font=("Pretendard", 13, "bold"), bg="#ffffff", fg="#1c4732").pack(anchor=tk.W)
+        tk.Label(hdr_frame, text="대한민국 저작권법 제30조(사적이용을 위한 복제) 및 대학 학업 윤리 가이드라인", font=("Pretendard", 9), bg="#ffffff", fg="#64748b").pack(anchor=tk.W, pady=(4, 0))
+
+        body_frame = tk.Frame(dialog, bg="#f8fafc", padx=20, pady=14)
+        body_frame.pack(fill=tk.BOTH, expand=True)
+
+        txt = tk.Text(
+            body_frame,
+            wrap=tk.WORD,
+            font=("Pretendard", 10),
+            bg="#ffffff",
+            fg="#1e293b",
+            relief=tk.FLAT,
+            highlightthickness=1,
+            highlightbackground="#cbd5e1",
+            padx=16,
+            pady=14,
+            spacing1=3,
+            spacing2=4,
+            spacing3=3
+        )
+        sb = ttk.Scrollbar(body_frame, orient=tk.VERTICAL, command=txt.yview)
+        txt.config(yscrollcommand=sb.set)
+        txt.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        sb.pack(side=tk.RIGHT, fill=tk.Y)
+
+        terms_text = """[제1조: 사적 이용을 위한 복제 목적 한정 (저작권법 제30조)]
+본 소프트웨어(URY Engine)로 처리되는 강의 음성 녹음, 강의 슬라이드, 필기 사진 및 AI가 생성한 모든 산출물(학습노트, 모의고사, 치트시트)은 수강생 본인의 '개인 학업 복습 및 시험 대비'를 위한 사적 이용 목적으로만 사용되어야 합니다.
+
+[제2조: 무단 배포, 공유 및 상업적 판매 엄금 (저작권법 제136조)]
+교수자의 강의 및 강의자료는 저작권법의 보호를 받는 지적재산입니다. 수강생은 생성된 강의노트나 모의고사, 원본 자료를 에브리타임, 카카오톡 단톡방, 인터넷 카페, SNS, 해피캠퍼스 등에 배포·공유·전재·판매할 수 없으며, 이를 위반하여 발생하는 모든 민·형사상 법적 책임은 이용자 본인에게 귀속됩니다.
+
+[제3조: 강의 음성 녹음 윤리 준수 (통신비밀보호법 및 학칙)]
+강의 음성 녹음은 교수자의 사전 수업 안내 및 동의 범위 내에서 본인의 복습을 위해 진행해야 하며, 교수자 및 동료 수강생의 인격권(음성권·초상권)을 침해하지 않도록 각별히 유의해야 합니다.
+
+[제4조: 로컬 독립 실행 및 개발자 면책 (Legal Disclaimer)]
+URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작하며, 어떠한 강의 음성이나 자료도 중앙 서버에 수집·보관하지 않습니다. AI 결과물은 학업 보조용 조교일 뿐 최종 시험 평가 기준을 대체하지 않습니다."""
+
+        txt.insert(tk.END, terms_text)
+        txt.config(state=tk.DISABLED)
+
+        btm_frame = tk.Frame(dialog, bg="#ffffff", padx=20, pady=14, highlightthickness=1, highlightbackground="#e2e8f0")
+        btm_frame.pack(fill=tk.X)
+
+        agree_var = tk.BooleanVar(value=False)
+
+        def on_confirm():
+            if not agree_var.get():
+                messagebox.showwarning("서약 확인 필요", "저작권법 준수 및 학업 윤리 서약 확인 체크박스를 선택해 주세요.", parent=dialog)
+                return
+            self.settings["compliance_agreed"] = True
+            self.settings["compliance_agreed_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            config_manager.save_settings(self.settings)
+            dialog.destroy()
+
+        chk = ttk.Checkbutton(
+            btm_frame,
+            text="[필수] 상기 저작권법 제30조 준수 및 외부 배포 금지 서약에 전적으로 동의합니다.",
+            variable=agree_var
+        )
+        chk.pack(anchor=tk.W, pady=(0, 10))
+
+        btn_row = tk.Frame(btm_frame, bg="#ffffff")
+        btn_row.pack(fill=tk.X)
+
+        SquareRoundButton(
+            btn_row,
+            text="✍️  서약 완료 및 URY Engine 시작",
+            bg="#1c4732",
+            hover_bg="#265e43",
+            radius=8,
+            height=36,
+            font=("Pretendard", 10, "bold"),
+            command=on_confirm,
+            parent_bg="#ffffff"
+        ).pack(side=tk.RIGHT)
+
+        def on_close():
+            if not self.settings.get("compliance_agreed", False):
+                if messagebox.askyesno("서약 종료", "저작권 준수 서약을 완료하지 않으면 프로그램을 이용할 수 없습니다.\n\n프로그램을 종료하시겠습니까?", parent=dialog):
+                    dialog.destroy()
+                    self.root.destroy()
+            else:
+                dialog.destroy()
+
+        dialog.protocol("WM_DELETE_WINDOW", on_close)
+        dialog.grab_set()
 
     def set_theme_accent(self, color_hex):
         if not color_hex or not color_hex.startswith("#"):
@@ -1213,112 +1322,11 @@ class UnifiedDashboardApp:
         right_card = tk.Frame(studio_container, bg="#ffffff", bd=0, highlightthickness=1, highlightbackground="#edf2f7")
         right_card.grid(row=0, column=1, sticky="nsew", padx=(6, 10), pady=8)
 
-        right_scroll_canvas = tk.Canvas(right_card, bg="#ffffff", highlightthickness=0)
-        right_sb = ttk.Scrollbar(right_card, orient=tk.VERTICAL, command=right_scroll_canvas.yview)
-        paper_container = tk.Frame(right_scroll_canvas, bg="#ffffff", padx=18, pady=16)
+        # 1. 하단 액션 바: 최우선으로 하단(side=tk.BOTTOM)에 완벽 고정
+        action_bar = tk.Frame(right_card, bg="#ffffff", padx=16, pady=10)
+        action_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
-        paper_container.bind("<Configure>", lambda e: right_scroll_canvas.configure(scrollregion=right_scroll_canvas.bbox("all")))
-        r_canvas_win = right_scroll_canvas.create_window((0, 0), window=paper_container, anchor="nw")
-        right_scroll_canvas.configure(yscrollcommand=right_sb.set)
-
-        def on_r_canvas_configure(e):
-            right_scroll_canvas.itemconfig(r_canvas_win, width=e.width)
-        right_scroll_canvas.bind("<Configure>", on_r_canvas_configure)
-        bind_wheel(right_scroll_canvas)
-
-        right_scroll_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        right_sb.pack(side=tk.RIGHT, fill=tk.Y)
-
-        # 상단 리포트 헤더 배너
-        paper_banner = tk.Frame(paper_container, bg="#ffffff")
-        paper_banner.pack(fill=tk.X, pady=(0, 12))
-
-        b_left = tk.Frame(paper_banner, bg="#ffffff")
-        b_left.pack(side=tk.LEFT, fill=tk.X, expand=True)
-
-        tk.Label(b_left, text="📖  LIVE STUDY NOTE PREVIEW", font=("Pretendard", 8, "bold"), bg="#dcfce7", fg="#166534", padx=6, pady=2).pack(anchor=tk.W)
-        self.preview_title_label = tk.Label(b_left, text="제 1강: 핵심 강의노트 및 시험 족보 프리뷰", font=("Pretendard", 12, "bold"), bg="#ffffff", fg="#0f172a")
-        self.preview_title_label.pack(anchor=tk.W, pady=(4, 0))
-        tk.Label(b_left, text="교수님 육성 강조 포인트 & 실전 모의시험 10문항 자동 색인", font=("Pretendard", 8), bg="#ffffff", fg="#64748b").pack(anchor=tk.W)
-
-        tk.Label(paper_banner, text="A4 출판 규격", font=("Pretendard", 8, "bold"), bg="#f1f5f9", fg="#475569", padx=8, pady=3).pack(side=tk.RIGHT)
-
-        # 3대 핵심 구조화 프리뷰 카드 스택
-        p_stack = tk.Frame(paper_container, bg="#ffffff")
-        p_stack.pack(fill=tk.X, pady=(0, 10))
-
-        # 1. Key Concepts 카드
-        card_kc = tk.Frame(p_stack, bg="#f8fafc", highlightthickness=1, highlightbackground="#edf2f7", padx=12, pady=8)
-        card_kc.pack(fill=tk.X, pady=(0, 6))
-        tk.Label(card_kc, text="📌  핵심 개념 요약 (Key Concepts)", font=("Pretendard", 9, "bold"), bg="#f8fafc", fg="#1c4732").pack(anchor=tk.W)
-        tk.Label(card_kc, text="• 데이터 독립성(Data Independence): 논리적 구조 변경 시 응용 프로그램 영향 차단\n• 3단계 스키마 구조: 외부(개별 뷰) ➔ 개념(전체 논리) ➔ 내부(물리 저장)\n• DBMS 필수 특징: 자기 기술성, 동시성 제어(ACID), 무결성 제약 조건 보장", font=("Pretendard", 8), bg="#f8fafc", fg="#334155", justify=tk.LEFT).pack(anchor=tk.W, padx=(10, 0), pady=(2, 0))
-
-        # 2. Exam Tips 카드 (따뜻한 앰버 톤)
-        card_tip = tk.Frame(p_stack, bg="#fffbeb", highlightthickness=1, highlightbackground="#fef3c7", padx=12, pady=8)
-        card_tip.pack(fill=tk.X, pady=(0, 6))
-        tk.Label(card_tip, text="🎯  교수님 육성 시험 팁 (Exam Predictions)", font=("Pretendard", 9, "bold"), bg="#fffbeb", fg="#92400e").pack(anchor=tk.W)
-        tk.Label(card_tip, text='• "중간고사 1번 서술형으로 외부 스키마와 개념 스키마의 차이점 출제 예정"\n• "슬라이드 8페이지의 스키마 사상(Mapping) 다이어그램 반드시 암기할 것"', font=("Pretendard", 8, "bold"), bg="#fffbeb", fg="#78350f", justify=tk.LEFT).pack(anchor=tk.W, padx=(10, 0), pady=(2, 0))
-
-        # 3. Practice Questions 카드 (차분한 인디고 톤)
-        card_q = tk.Frame(p_stack, bg="#f0f4ff", highlightthickness=1, highlightbackground="#e0e7ff", padx=12, pady=8)
-        card_q.pack(fill=tk.X, pady=(0, 6))
-        tk.Label(card_q, text="✍️  실전 모의 문제 (Practice Questions)", font=("Pretendard", 9, "bold"), bg="#f0f4ff", fg="#3730a3").pack(anchor=tk.W)
-        tk.Label(card_q, text="• Q1. 파일 시스템과 데이터베이스 시스템의 무결성 유지 방식 차이를 서술하시오.\n• Q2. 물리적 데이터 독립성이란 내부 스키마 변경이 (        )에 영향을 미치지 않는 특성이다.", font=("Pretendard", 8), bg="#f0f4ff", fg="#312e81", justify=tk.LEFT).pack(anchor=tk.W, padx=(10, 0), pady=(2, 0))
-
-        # 실시간 진행 상황 및 미니 콘솔 영역
-        console_box = tk.Frame(paper_container, bg="#ffffff")
-        console_box.pack(fill=tk.BOTH, expand=True, pady=(2, 6))
-
-        c_status_row = tk.Frame(console_box, bg="#ffffff")
-        c_status_row.pack(fill=tk.X, pady=(0, 4))
-
-        self.studio_progress = ttk.Progressbar(c_status_row, mode="determinate", length=160)
-        self.studio_progress.pack(side=tk.LEFT, padx=(0, 8))
-
-        self.studio_status_var = tk.StringVar(value="자료 준비 완료: [학습노트 및 출판용 PDF 생성]을 클릭하세요.")
-        tk.Label(c_status_row, textvariable=self.studio_status_var, font=("Pretendard", 8, "bold"), bg="#ffffff", fg="#475569").pack(side=tk.LEFT)
-
-        self.studio_eta_var = tk.StringVar(value="")
-        tk.Label(c_status_row, textvariable=self.studio_eta_var, font=("Pretendard", 8, "bold"), bg="#ffffff", fg="#1c4732").pack(side=tk.RIGHT)
-
-        # 터미널 콘솔 로그 창
-        txt_wrap = tk.Frame(console_box, bg="#ffffff")
-        txt_wrap.pack(fill=tk.BOTH, expand=True)
-
-        term_font = ("Menlo", 9) if sys.platform == "darwin" else ("Consolas", 9)
-        self.studio_log_text = tk.Text(
-            txt_wrap,
-            wrap=tk.WORD,
-            font=term_font,
-            bg="#0f172a",
-            fg="#f8fafc",
-            insertbackground="#ffffff",
-            relief=tk.FLAT,
-            padx=10,
-            pady=6,
-            height=5
-        )
-        sb = ttk.Scrollbar(txt_wrap, orient=tk.VERTICAL, command=self.studio_log_text.yview)
-        self.studio_log_text.config(yscrollcommand=sb.set)
-
-        self.studio_log_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        sb.pack(side=tk.RIGHT, fill=tk.Y)
-        self.add_context_menu(self.studio_log_text)
-
-        # 로그 컬러 태그
-        self.studio_log_text.tag_config("time", foreground="#94a3b8")
-        self.studio_log_text.tag_config("step", foreground="#38bdf8", font=(term_font[0], term_font[1], "bold"))
-        self.studio_log_text.tag_config("success", foreground="#4ade80", font=(term_font[0], term_font[1], "bold"))
-        self.studio_log_text.tag_config("warning", foreground="#facc15")
-        self.studio_log_text.tag_config("error", foreground="#f87171", font=(term_font[0], term_font[1], "bold"))
-        self.studio_log_text.tag_config("highlight", foreground="#c084fc")
-        self.studio_log_text.tag_config("normal", foreground="#e2e8f0")
-
-        self.append_studio_log("준비 완료: 음성/슬라이드를 선택한 뒤 [학습노트 및 출판용 PDF 생성]을 클릭하세요.", "normal")
-
-        # 하단 액션 바: 우측 돌출형 초록색 생성 버튼
-        action_bar = tk.Frame(right_card, bg="#ffffff", padx=18, pady=12)
-        action_bar.pack(fill=tk.X)
+        tk.Frame(right_card, bg="#f1f5f9", height=1).pack(side=tk.BOTTOM, fill=tk.X)
 
         self.studio_open_folder_btn = SquareRoundButton(
             action_bar,
@@ -1392,6 +1400,110 @@ class UnifiedDashboardApp:
             parent_bg="#ffffff"
         )
         self.generate_studio_btn.pack(side=tk.RIGHT)
+
+        # 2. 상단 및 중앙: 실물 규격 A4 감성 라이브 학습노트 페이퍼 스크롤 뷰포트
+        paper_scroll_canvas = tk.Canvas(right_card, bg="#ffffff", highlightthickness=0)
+        paper_sb = ttk.Scrollbar(right_card, orient=tk.VERTICAL, command=paper_scroll_canvas.yview)
+        paper_container = tk.Frame(paper_scroll_canvas, bg="#ffffff", padx=18, pady=16)
+
+        paper_container.bind("<Configure>", lambda e: paper_scroll_canvas.configure(scrollregion=paper_scroll_canvas.bbox("all")))
+        r_canvas_win = paper_scroll_canvas.create_window((0, 0), window=paper_container, anchor="nw")
+        paper_scroll_canvas.configure(yscrollcommand=paper_sb.set)
+
+        def on_paper_canvas_configure(e):
+            paper_scroll_canvas.itemconfig(r_canvas_win, width=e.width)
+        paper_scroll_canvas.bind("<Configure>", on_paper_canvas_configure)
+        bind_wheel(paper_scroll_canvas)
+
+        paper_sb.pack(side=tk.RIGHT, fill=tk.Y)
+        paper_scroll_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # 상단 리포트 헤더 배너
+        paper_banner = tk.Frame(paper_container, bg="#ffffff")
+        paper_banner.pack(fill=tk.X, pady=(0, 12))
+
+        b_left = tk.Frame(paper_banner, bg="#ffffff")
+        b_left.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        tk.Label(b_left, text="📖  LIVE STUDY NOTE PREVIEW", font=("Pretendard", 8, "bold"), bg="#dcfce7", fg="#166534", padx=6, pady=2).pack(anchor=tk.W)
+        self.preview_title_label = tk.Label(b_left, text="제 1강: 핵심 강의노트 및 시험 족보 프리뷰", font=("Pretendard", 12, "bold"), bg="#ffffff", fg="#0f172a")
+        self.preview_title_label.pack(anchor=tk.W, pady=(4, 0))
+        tk.Label(b_left, text="교수님 육성 강조 포인트 & 실전 모의시험 10문항 자동 색인", font=("Pretendard", 8), bg="#ffffff", fg="#64748b").pack(anchor=tk.W)
+
+        tk.Label(paper_banner, text="A4 출판 규격", font=("Pretendard", 8, "bold"), bg="#f1f5f9", fg="#475569", padx=8, pady=3).pack(side=tk.RIGHT)
+
+        # 3대 핵심 구조화 프리뷰 카드 스택
+        p_stack = tk.Frame(paper_container, bg="#ffffff")
+        p_stack.pack(fill=tk.X, pady=(0, 10))
+
+        # 1. Key Concepts 카드
+        card_kc = tk.Frame(p_stack, bg="#f8fafc", highlightthickness=1, highlightbackground="#edf2f7", padx=12, pady=8)
+        card_kc.pack(fill=tk.X, pady=(0, 6))
+        tk.Label(card_kc, text="📌  핵심 개념 요약 (Key Concepts)", font=("Pretendard", 9, "bold"), bg="#f8fafc", fg="#1c4732").pack(anchor=tk.W)
+        tk.Label(card_kc, text="• 데이터 독립성(Data Independence): 논리적 구조 변경 시 응용 프로그램 영향 차단\n• 3단계 스키마 구조: 외부(개별 뷰) ➔ 개념(전체 논리) ➔ 내부(물리 저장)\n• DBMS 필수 특징: 자기 기술성, 동시성 제어(ACID), 무결성 제약 조건 보장", font=("Pretendard", 8), bg="#f8fafc", fg="#334155", justify=tk.LEFT).pack(anchor=tk.W, padx=(10, 0), pady=(2, 0))
+
+        # 2. Exam Tips 카드 (따뜻한 앰버 톤)
+        card_tip = tk.Frame(p_stack, bg="#fffbeb", highlightthickness=1, highlightbackground="#fef3c7", padx=12, pady=8)
+        card_tip.pack(fill=tk.X, pady=(0, 6))
+        tk.Label(card_tip, text="🎯  교수님 육성 시험 팁 (Exam Predictions)", font=("Pretendard", 9, "bold"), bg="#fffbeb", fg="#92400e").pack(anchor=tk.W)
+        tk.Label(card_tip, text='• "중간고사 1번 서술형으로 외부 스키마와 개념 스키마의 차이점 출제 예정"\n• "슬라이드 8페이지의 스키마 사상(Mapping) 다이어그램 반드시 암기할 것"', font=("Pretendard", 8, "bold"), bg="#fffbeb", fg="#78350f", justify=tk.LEFT).pack(anchor=tk.W, padx=(10, 0), pady=(2, 0))
+
+        # 3. Practice Questions 카드 (차분한 인디고 톤)
+        card_q = tk.Frame(p_stack, bg="#f0f4ff", highlightthickness=1, highlightbackground="#e0e7ff", padx=12, pady=8)
+        card_q.pack(fill=tk.X, pady=(0, 6))
+        tk.Label(card_q, text="✍️  실전 모의 문제 (Practice Questions)", font=("Pretendard", 9, "bold"), bg="#f0f4ff", fg="#3730a3").pack(anchor=tk.W)
+        tk.Label(card_q, text="• Q1. 파일 시스템과 데이터베이스 시스템의 무결성 유지 방식 차이를 서술하시오.\n• Q2. 물리적 데이터 독립성이란 내부 스키마 변경이 (        )에 영향을 미치지 않는 특성이다.", font=("Pretendard", 8), bg="#f0f4ff", fg="#312e81", justify=tk.LEFT).pack(anchor=tk.W, padx=(10, 0), pady=(2, 0))
+
+        # 실시간 진행 상황 및 미니 콘솔 영역
+        console_box = tk.Frame(paper_container, bg="#ffffff")
+        console_box.pack(fill=tk.X, pady=(2, 6))
+
+        c_status_row = tk.Frame(console_box, bg="#ffffff")
+        c_status_row.pack(fill=tk.X, pady=(0, 4))
+
+        self.studio_progress = ttk.Progressbar(c_status_row, mode="determinate", length=160)
+        self.studio_progress.pack(side=tk.LEFT, padx=(0, 8))
+
+        self.studio_status_var = tk.StringVar(value="자료 준비 완료: [학습노트 및 출판용 PDF 생성]을 클릭하세요.")
+        tk.Label(c_status_row, textvariable=self.studio_status_var, font=("Pretendard", 8, "bold"), bg="#ffffff", fg="#475569").pack(side=tk.LEFT)
+
+        self.studio_eta_var = tk.StringVar(value="")
+        tk.Label(c_status_row, textvariable=self.studio_eta_var, font=("Pretendard", 8, "bold"), bg="#ffffff", fg="#1c4732").pack(side=tk.RIGHT)
+
+        # 터미널 콘솔 로그 창
+        txt_wrap = tk.Frame(console_box, bg="#ffffff")
+        txt_wrap.pack(fill=tk.X)
+
+        term_font = ("Menlo", 9) if sys.platform == "darwin" else ("Consolas", 9)
+        self.studio_log_text = tk.Text(
+            txt_wrap,
+            wrap=tk.WORD,
+            font=term_font,
+            bg="#0f172a",
+            fg="#f8fafc",
+            insertbackground="#ffffff",
+            relief=tk.FLAT,
+            padx=10,
+            pady=6,
+            height=6
+        )
+        sb = ttk.Scrollbar(txt_wrap, orient=tk.VERTICAL, command=self.studio_log_text.yview)
+        self.studio_log_text.config(yscrollcommand=sb.set)
+
+        self.studio_log_text.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        sb.pack(side=tk.RIGHT, fill=tk.Y)
+        self.add_context_menu(self.studio_log_text)
+
+        # 로그 컬러 태그
+        self.studio_log_text.tag_config("time", foreground="#94a3b8")
+        self.studio_log_text.tag_config("step", foreground="#38bdf8", font=(term_font[0], term_font[1], "bold"))
+        self.studio_log_text.tag_config("success", foreground="#4ade80", font=(term_font[0], term_font[1], "bold"))
+        self.studio_log_text.tag_config("warning", foreground="#facc15")
+        self.studio_log_text.tag_config("error", foreground="#f87171", font=(term_font[0], term_font[1], "bold"))
+        self.studio_log_text.tag_config("highlight", foreground="#c084fc")
+        self.studio_log_text.tag_config("normal", foreground="#e2e8f0")
+
+        self.append_studio_log("준비 완료: 음성/슬라이드를 선택한 뒤 [학습노트 및 출판용 PDF 생성]을 클릭하세요.", "normal")
 
     def update_preview_paper_header(self):
         """과목 및 주차 변경 시 우측 페이퍼 제목 실시간 갱신"""
@@ -3988,13 +4100,14 @@ class UnifiedDashboardApp:
         btn_box = ttk.Frame(legal_top_bar)
         btn_box.pack(side=tk.RIGHT)
 
+        ttk.Button(btn_box, text="📜 서약서 다시 확인", style="Secondary.TButton", command=lambda: self.check_compliance_agreement(force=True)).pack(side=tk.LEFT, padx=(0, 6))
         ttk.Button(btn_box, text="📋 전문 복사", style="Secondary.TButton", command=self.copy_legal_notice).pack(side=tk.LEFT, padx=(0, 6))
         ttk.Button(btn_box, text="📂 파일 열기", style="Secondary.TButton", command=self.open_legal_notice_file).pack(side=tk.LEFT)
 
         legal_txt_wrap = ttk.Frame(frame_legal)
         legal_txt_wrap.pack(fill=tk.BOTH, expand=True, pady=(4, 0))
 
-        self.legal_text = tk.Text(legal_txt_wrap, wrap=tk.WORD, font=("Pretendard", 9), bg="#f8fafc", fg="#0f172a", relief=tk.SOLID, bd=1, padx=10, pady=10)
+        self.legal_text = tk.Text(legal_txt_wrap, wrap=tk.WORD, font=("Pretendard", 9), bg="#f8fafc", fg="#0f172a", relief=tk.FLAT, highlightthickness=1, highlightbackground="#cbd5e1", padx=12, pady=12)
         legal_sb = ttk.Scrollbar(legal_txt_wrap, orient=tk.VERTICAL, command=self.legal_text.yview)
         self.legal_text.config(yscrollcommand=legal_sb.set)
         self.legal_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)

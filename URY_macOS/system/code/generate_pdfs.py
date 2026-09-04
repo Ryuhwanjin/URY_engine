@@ -79,6 +79,12 @@ CSS_STYLE = """
         font-family: 'Noto Sans KR', 'Pretendard', sans-serif;
         color: #64748b;
     }
+    @bottom-left {
+        content: "개인 복습 전용 (저작권법 제30조 준수 · 무단 전재 및 외부 배포 엄금)";
+        font-size: 7.5pt;
+        font-family: 'Noto Sans KR', 'Pretendard', sans-serif;
+        color: #94a3b8;
+    }
 }
 
 body {
