@@ -358,15 +358,11 @@ _LAST_MODEL_QUERY_TIME = 0
 
 DEFAULT_LATEST_MODELS = [
     "gemini-flash-latest",
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-1.5-flash",
+    "gemini-flash-lite-latest",
+    "gemini-3.8-flash",
+    "gemini-3.7-flash",
     "gemini-3.6-flash",
-    "gemini-3.5-flash",
-    "gemini-pro-latest",
-    "gemini-2.5-pro",
-    "gemini-2.0-pro",
-    "gemini-1.5-pro"
+    "gemini-pro-latest"
 ]
 
 def parse_model_version_score(name):

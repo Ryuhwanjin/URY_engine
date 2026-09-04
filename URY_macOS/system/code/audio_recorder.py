@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-🎓 URY Engine — 노트북 내장 실시간 오디오 녹음기 모듈 v1.0 (audio_recorder.py)
-- macOS: 네이티브 afrecord (오디오 전용 시스템 툴) 활용 ➔ 외부 설치 제로 100% 작동
+🎓 URY Engine — 노트북 내장 실시간 오디오 녹음기 모듈 v2.0 (audio_recorder.py)
+- macOS: 네이티브 AVFoundation mac_audio_rec 바이너리 활용 ➔ Apple AAC/M4A 100% 무설치 고음질 녹음
 - Windows / 기타: ffmpeg / sox / wave fallback 녹음
 - 녹음 완료 시 오늘 날짜 해당 과목 '음성녹음' 폴더에 자동 안착
 """
@@ -21,6 +21,21 @@ if SCRIPT_DIR not in sys.path:
 import config_manager
 
 
+def find_mac_recorder_bin():
+    candidates = [
+        os.path.join(SCRIPT_DIR, "..", "bin", "mac_audio_rec"),
+        os.path.join(SCRIPT_DIR, "mac_audio_rec"),
+        "/Users/ryuhwanjin/Desktop/URY project/URY_macOS/system/bin/mac_audio_rec",
+        os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "MacOS", "mac_audio_rec")),
+        os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "Resources", "bin", "mac_audio_rec")),
+        "/tmp/mac_audio_rec"
+    ]
+    for p in candidates:
+        if os.path.isfile(p) and os.access(p, os.X_OK):
+            return p
+    return None
+
+
 class AudioRecorder:
     def __init__(self):
         self.process = None
@@ -28,12 +43,19 @@ class AudioRecorder:
         self.is_recording = False
         self.start_time = None
 
-    def start_recording(self, course_folder_name: str) -> dict:
-        """녹음 시작: 지정된 과목의 '음성녹음' 디렉토리에 YYYY-MM-DD_1교시.m4a (또는 wav) 형태로 기록"""
+    def start_recording(self, course_name_or_folder: str) -> dict:
+        """녹음 시작: 지정된 과목의 '음성녹음' 디렉토리에 YYYY-MM-DD_1교시_실시간녹음.m4a 형태로 기록"""
         if self.is_recording:
             return {"status": "already_running", "message": "이미 녹음이 진행 중입니다."}
 
-        course_dir = config_manager.get_course_dir(course_folder_name)
+        # 과목명 -> 폴더명 확인
+        folder_name = course_name_or_folder
+        for c in config_manager.load_settings().get("courses", []):
+            if c.get("course_name") == course_name_or_folder:
+                folder_name = c.get("folder_name", course_name_or_folder)
+                break
+
+        course_dir = config_manager.get_course_dir(folder_name)
         rec_dir = os.path.join(course_dir, "음성녹음")
         os.makedirs(rec_dir, exist_ok=True)
 
@@ -43,22 +65,22 @@ class AudioRecorder:
         existing_files = [f for f in os.listdir(rec_dir) if date_str in f]
         session_num = len(existing_files) + 1
         
-        filename = f"{date_str}_{session_num}교시_실시간녹음.wav"
+        mac_bin = find_mac_recorder_bin()
+        ext = "m4a" if (sys.platform == "darwin" and mac_bin) else "wav"
+        filename = f"{date_str}_{session_num}교시_실시간녹음.{ext}"
         self.output_file = os.path.join(rec_dir, filename)
 
         try:
-            if sys.platform == "darwin":
-                # macOS 네이티브 내장 afrecord 툴 활용 (macOS 기본 제공)
-                cmd = ["afrecord", "-f", "WAVE", "-d", "LEI16@44100", "-c", "1", self.output_file]
+            if sys.platform == "darwin" and mac_bin:
+                cmd = [mac_bin, self.output_file]
             else:
-                # Windows / Linux: ffmpeg 또는 sox 시도
                 cmd = ["ffmpeg", "-y", "-f", "dshow", "-i", "audio=Microphone", self.output_file]
 
-            self.process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            self.process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             self.is_recording = True
             self.start_time = time.time()
 
-            print(f"🔴 [AudioRecorder] 녹음 시작: {self.output_file}")
+            print(f"🔴 [AudioRecorder] 실시간 마이크 녹음 시작: {self.output_file}")
             return {
                 "status": "success",
                 "output_file": self.output_file,
@@ -104,3 +126,4 @@ class AudioRecorder:
 
 # 글로벌 싱글톤 인스턴스
 recorder_instance = AudioRecorder()
+

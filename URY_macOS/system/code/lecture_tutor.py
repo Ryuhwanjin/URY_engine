@@ -57,7 +57,7 @@ TUTOR_SYSTEM_PROMPT = """당신의 이름은 '{tutor_name}'이며, [{cname}] 과
    - 제공된 수업 자료에 전혀 언급되지 않은 교수님의 개인 공지나 시험 일정은 자의적으로 꾸며내지 말고, "현재 강의노트에는 언급되어 있지 않습니다. e-캠퍼스 공식 공지사항을 확인하세요"라고 솔직하게 안내하십시오.
 
 7. 📐 [수식 및 기호 표기 가이드]:
-   - 데스크톱 대화창 가독성을 위해 웹 브라우저용 복잡한 LaTeX 문법(`$...$`, `$$...$$`, `\\mathbb{R}`, `\\mathbf{u}`) 대신, 직관적인 유니코드 수식 기호(예: ℝ, ℝ², ℝ³, u, c, ≠, ∈, ≤, ≥, ±, ∞, → 등)와 읽기 쉬운 텍스트 수식(예: { c·u | c ∈ ℝ })을 우선 사용하십시오.
+   - 데스크톱 대화창 가독성을 위해 웹 브라우저용 복잡한 LaTeX 원시 문법 대신, 직관적인 유니코드 수식 기호(예: ℝ, ℝ², ℝ³, u, c, ≠, ∈, ≤, ≥, ±, ∞, → 등)와 읽기 쉬운 텍스트 수식(예: [ c·u | c ∈ ℝ ])을 우선 사용하십시오.
 """
 
 def extract_text_from_file(file_path):
@@ -222,10 +222,10 @@ def ask_lecture_tutor(cname, user_query, conversation_history=None, tutor_name=N
 
     # 초고속 실시간 대화형 공식 정식 모델 우선순위 (1~2초 이내 안정적 응답)
     fast_priority_models = [
-        "gemini-2.0-flash",
-        "gemini-1.5-flash",
-        "gemini-2.5-flash",
-        "gemini-1.5-pro",
+        "gemini-flash-latest",
+        "gemini-flash-lite-latest",
+        "gemini-3.8-flash",
+        "gemini-3.6-flash",
     ]
     supported = config_manager.get_supported_gemini_models(api_key)
     ordered_models = []

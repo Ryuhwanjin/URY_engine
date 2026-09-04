@@ -606,34 +606,14 @@ class UnifiedDashboardApp:
         style = ttk.Style()
         style.theme_use("clam")
 
-        # 🌿 2번 앱 아이콘과 100% 통일된 포레스트 그린 테마 시스템
-        is_dark = (getattr(self, "theme_mode", "light") == "dark")
-        accent = getattr(self, "theme_accent", "#1c4732")
-
-        if is_dark:
-            bg_main = "#0e1f16"        # 다크 포레스트 배경
-            bg_card = "#163024"        # 카드 배경
-            bg_header = "#11261d"      # 헤더 배경
-            border_c = "#26543e"       # 카드 보더
-            fg_main = "#fbf9f4"        # 웜 아이보리 텍스트
-            fg_muted = "#8fa896"       # 세이지 그레이
-            tab_inactive = "#1a382b"   # 비활성 탭
-            tab_active = accent        # 활성 탭 (사용자 지정 포인트)
-            tab_active_fg = "#ffffff"
-            btn_primary = accent
-            btn_primary_act = "#235c41"
-        else:
-            bg_main = "#f4f7f5"        # 산뜻한 라이트 세이지 틴트
-            bg_card = "#ffffff"        # 퓨어 화이트 카드
-            bg_header = "#1c4732"      # 아이콘 원색 매칭 딥 포레스트 헤더
-            border_c = "#d4e0d8"       # 부드러운 보더
-            fg_main = "#14281e"        # 포레스트 차콜 텍스트
-            fg_muted = "#566b5e"       # 차분한 세이지 그레이
-            tab_inactive = "#e2e8f0"   # 비활성 탭
-            tab_active = accent        # 활성 탭 (포레스트 그린)
-            tab_active_fg = "#ffffff"
-            btn_primary = accent
-            btn_primary_act = "#143324"
+        # 🌟 시안 2 (Apple Clean Light) + 포레스트 그린 팔레트
+        bg_main = "#f6f8fa"        # 은은하고 편안한 Apple 라이트 그레이
+        bg_card = "#ffffff"        # 퓨어 화이트 카드
+        bg_header = "#ffffff"      # 퓨어 화이트 상단 바
+        border_c = "#e2e8f0"       # 정갈한 1px 슬레이트 보더
+        fg_main = "#0f172a"        # 또렷한 슬레이트 차콜 텍스트
+        fg_muted = "#64748b"       # 소프트 슬레이트 그레이
+        accent = "#1c4732"         # 앱 아이콘 원색 딥 포레스트 그린
 
         self.root.configure(bg=bg_main)
 
@@ -644,73 +624,130 @@ class UnifiedDashboardApp:
 
         style.configure(".", background=bg_main, foreground=fg_main, font=f_body)
         style.configure("TFrame", background=bg_main)
-        style.configure("Card.TFrame", background=bg_card, relief=tk.SOLID, borderwidth=1)
+        style.configure("Card.TFrame", background=bg_card, relief=tk.FLAT, borderwidth=0)
         style.configure("TLabel", background=bg_main, foreground=fg_main, font=f_body)
         style.configure("Card.TLabel", background=bg_card, foreground=fg_main, font=f_body)
         style.configure("Muted.TLabel", background=bg_main, foreground=fg_muted, font=f_small)
         style.configure("CardMuted.TLabel", background=bg_card, foreground=fg_muted, font=f_small)
 
-        # 헤더
-        style.configure("Header.TFrame", background=bg_header)
-        style.configure("HeaderTitle.TLabel", background=bg_header, foreground="#fbf9f4", font=("Pretendard", 14, "bold"))
-        style.configure("HeaderSub.TLabel", background=bg_header, foreground="#d8f3dc", font=f_small)
+        # 숨겨진 노트북 탭 (상단 플로팅 알약 세그먼트 바로 직접 제어)
+        style.layout("Hidden.TNotebook.Tab", [])
+        style.configure("Hidden.TNotebook", background=bg_main, borderwidth=0, tabmargins=0)
 
-        # 모던 알약형 플로팅 세그먼트 탭
+        # 기본 ttk.Notebook 스타일 유지보수
         style.configure("TNotebook", background=bg_main, borderwidth=0)
-        style.configure("TNotebook.Tab", font=f_title, padding=[18, 9], background=tab_inactive, foreground=fg_muted)
-        style.map("TNotebook.Tab",
-                  background=[("selected", tab_active), ("active", "#cbd5e1" if not is_dark else "#224737")],
-                  foreground=[("selected", tab_active_fg), ("active", fg_main)])
+        style.configure("TNotebook.Tab", font=f_title, padding=[16, 8], background="#e2e8f0", foreground=fg_muted)
+        style.map("TNotebook.Tab", background=[("selected", accent)], foreground=[("selected", "#ffffff")])
 
         # 버튼들
-        style.configure("Primary.TButton", font=f_title, background=btn_primary, foreground="#ffffff", borderwidth=0)
-        style.map("Primary.TButton", background=[("active", btn_primary_act), ("disabled", "#94a3b8")])
+        style.configure("Primary.TButton", font=f_title, background=accent, foreground="#ffffff", borderwidth=0)
+        style.map("Primary.TButton", background=[("active", "#265e43"), ("disabled", "#94a3b8")])
 
-        style.configure("Action.TButton", font=("Pretendard", 11, "bold"), background="#10b981", foreground="#ffffff", borderwidth=0)
-        style.map("Action.TButton", background=[("active", "#059669"), ("disabled", "#94a3b8")])
+        style.configure("Action.TButton", font=("Pretendard", 10, "bold"), background=accent, foreground="#ffffff", borderwidth=0)
+        style.map("Action.TButton", background=[("active", "#265e43"), ("disabled", "#94a3b8")])
 
-        style.configure("Secondary.TButton", font=f_body, background="#e2e8f0" if not is_dark else "#224737", foreground=fg_main, borderwidth=0)
-        style.map("Secondary.TButton", background=[("active", "#cbd5e1" if not is_dark else "#2a5743")])
+        style.configure("Secondary.TButton", font=f_body, background="#e2e8f0", foreground=fg_main, borderwidth=0)
+        style.map("Secondary.TButton", background=[("active", "#cbd5e1")])
 
-        style.configure("Danger.TButton", font=f_body, background="#ef4444", foreground="#ffffff", borderwidth=0)
-        style.map("Danger.TButton", background=[("active", "#dc2626"), ("disabled", "#94a3b8")])
+        style.configure("Danger.TButton", font=f_body, background="#dc2626", foreground="#ffffff", borderwidth=0)
+        style.map("Danger.TButton", background=[("active", "#b91c1c"), ("disabled", "#94a3b8")])
 
         # 트리뷰 (과목 테이블)
-        style.configure("Treeview.Heading", font=("Pretendard", 10, "bold"), background="#f1f5f9" if not is_dark else "#1a382b", foreground=fg_main)
+        style.configure("Treeview.Heading", font=("Pretendard", 10, "bold"), background="#f1f5f9", foreground=fg_main)
         style.configure("Treeview", font=f_body, rowheight=28, background=bg_card, fieldbackground=bg_card, foreground=fg_main)
-        style.map("Treeview", background=[("selected", "#d8f3dc" if not is_dark else "#235c41")], foreground=[("selected", "#14281e" if not is_dark else "#ffffff")])
+        style.map("Treeview", background=[("selected", "#e8f5ed")], foreground=[("selected", "#1c4732")])
 
         # 라벨프레임
         style.configure("TLabelframe", background=bg_card, bordercolor=border_c, borderwidth=1)
         style.configure("TLabelframe.Label", background=bg_card, foreground=fg_main, font=f_title)
 
     def create_header_card(self):
-        self.header_frame = ttk.Frame(self.root, style="Header.TFrame", padding="16 12 16 12")
+        # 🌟 시안 2 상단 헤더: 화이트 클린 탑바 + 중앙 플로팅 알약 탭 세그먼트
+        self.header_frame = tk.Frame(self.root, bg="#ffffff", height=62, bd=0, highlightthickness=1, highlightbackground="#e2e8f0")
         self.header_frame.pack(fill=tk.X)
+        self.header_frame.pack_propagate(False)
 
-        left = ttk.Frame(self.header_frame, style="Header.TFrame")
-        left.pack(side=tk.LEFT, fill=tk.Y)
+        # 좌측: 모노그램 로고 & 앱 타이틀
+        left = tk.Frame(self.header_frame, bg="#ffffff")
+        left.pack(side=tk.LEFT, padx=(18, 10), fill=tk.Y)
 
-        ttk.Label(left, text="🌿 URY Engine v0.2", style="HeaderTitle.TLabel").pack(anchor=tk.W)
-        ttk.Label(left, text="Academic Studio · Ultimate Result for You", style="HeaderSub.TLabel").pack(anchor=tk.W)
+        title_row = tk.Frame(left, bg="#ffffff")
+        title_row.pack(anchor=tk.W, pady=(8, 0))
+        if hasattr(self, "icon_img"):
+            try:
+                tk.Label(title_row, image=self.icon_img, bg="#ffffff").pack(side=tk.LEFT, padx=(0, 6))
+            except Exception:
+                pass
+        tk.Label(title_row, text="URY Engine", font=("Pretendard", 13, "bold"), bg="#ffffff", fg="#1c4732").pack(side=tk.LEFT)
+        tk.Label(title_row, text=" v0.2", font=("Pretendard", 10), bg="#ffffff", fg="#64748b").pack(side=tk.LEFT)
 
-        right = ttk.Frame(self.header_frame, style="Header.TFrame")
-        right.pack(side=tk.RIGHT, fill=tk.Y)
+        tk.Label(left, text="Academic Studio · Ultimate Result for You", font=("Pretendard", 8), bg="#ffffff", fg="#94a3b8").pack(anchor=tk.W)
+
+        # 중앙: 시안 2 플로팅 알약형 세그먼트 탭바
+        center = tk.Frame(self.header_frame, bg="#ffffff")
+        center.pack(side=tk.LEFT, expand=True)
+
+        pill_wrap = tk.Frame(center, bg="#f1f5f9", padx=3, pady=3)
+        pill_wrap.pack()
+
+        self.tab_pills = []
+        self.tab_defs = [
+            ("🎙️ Studio", 0),
+            ("📝 Exam Prep", 1),
+            ("💬 AI Tutor", 2),
+            ("📊 Dashboard", 3),
+            ("⚙️ Settings", 4),
+            ("🛠️ Advanced", 5),
+        ]
+
+        for text, idx in self.tab_defs:
+            is_active = (idx == 0)
+            btn = SquareRoundButton(
+                pill_wrap,
+                text=text,
+                command=lambda i=idx: self.switch_to_tab(i),
+                bg="#1c4732" if is_active else "#f1f5f9",
+                fg="#ffffff" if is_active else "#475569",
+                hover_bg="#265e43" if is_active else "#e2e8f0",
+                radius=10,
+                height=32,
+                font=("Pretendard", 9, "bold"),
+                parent_bg="#f1f5f9"
+            )
+            btn.pack(side=tk.LEFT, padx=1)
+            self.tab_pills.append(btn)
+
+        # 우측: 학기 및 API 연결 상태 배지
+        right = tk.Frame(self.header_frame, bg="#ffffff")
+        right.pack(side=tk.RIGHT, padx=(10, 18), fill=tk.Y)
 
         sem_text = self.settings.get("semester", "2026년 2학기")
-        self.sem_badge_label = tk.Label(right, text=f" 📅 {sem_text} ", font=("Pretendard", 9, "bold"), bg="#143324", fg="#d8f3dc", relief=tk.FLAT, padx=10, pady=5)
-        self.sem_badge_label.pack(side=tk.LEFT, padx=(0, 8))
+        self.sem_badge_label = tk.Label(right, text=f" 📅 {sem_text} ", font=("Pretendard", 9, "bold"), bg="#f1f5f9", fg="#1e293b", relief=tk.FLAT, padx=10, pady=5)
+        self.sem_badge_label.pack(side=tk.LEFT, pady=13, padx=(0, 8))
 
         api_key = self.settings.get("gemini_api_key", "").strip()
         has_key = len(api_key) >= 10
         api_text = " 🟢 API 연결됨 " if has_key else " 🔴 API 등록 필요 "
-        api_fg = "#4ade80" if has_key else "#f87171"
-        self.api_badge_label = tk.Label(right, text=api_text, font=("Pretendard", 9, "bold"), bg="#143324", fg=api_fg, relief=tk.FLAT, padx=10, pady=5)
-        self.api_badge_label.pack(side=tk.LEFT)
+        api_fg = "#15803d" if has_key else "#b91c1c"
+        api_bg = "#f0fdf4" if has_key else "#fef2f2"
+        self.api_badge_label = tk.Label(right, text=api_text, font=("Pretendard", 9, "bold"), bg=api_bg, fg=api_fg, relief=tk.FLAT, padx=10, pady=5)
+        self.api_badge_label.pack(side=tk.LEFT, pady=13)
+
+    def switch_to_tab(self, idx):
+        try:
+            self.notebook.select(idx)
+            for i, pill in enumerate(self.tab_pills):
+                if i == idx:
+                    pill.config(bg="#1c4732", fg="#ffffff", hover_bg="#265e43")
+                else:
+                    pill.config(bg="#f1f5f9", fg="#475569", hover_bg="#e2e8f0")
+            self.on_tab_changed()
+        except Exception:
+            pass
 
     def create_tabs(self):
-        self.notebook = ttk.Notebook(self.root)
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=12, pady=(8, 12))
+        self.notebook = ttk.Notebook(self.root, style="Hidden.TNotebook")
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=16, pady=(12, 16))
 
         # 탭 1: 🎙️ 학습노트 생성 스튜디오
         self.tab_studio = ttk.Frame(self.notebook, padding="10")
@@ -747,6 +784,13 @@ class UnifiedDashboardApp:
     def on_tab_changed(self, event=None):
         self.refresh_course_combos()
         try:
+            cur_idx = self.notebook.index(self.notebook.select())
+            if hasattr(self, "tab_pills"):
+                for i, pill in enumerate(self.tab_pills):
+                    if i == cur_idx:
+                        pill.config(bg="#1c4732", fg="#ffffff", hover_bg="#265e43")
+                    else:
+                        pill.config(bg="#f1f5f9", fg="#475569", hover_bg="#e2e8f0")
             current_tab = self.notebook.tab(self.notebook.select(), "text").strip()
             if any(k in current_tab for k in ("진도", "대시보드")) and hasattr(self, "refresh_dashboard"):
                 self.refresh_dashboard()
@@ -774,49 +818,63 @@ class UnifiedDashboardApp:
     # 탭 1: 🎙️ 학습노트 생성 스튜디오 (사용자 주도형 3단계 워크플로우)
     # =========================================================================
     def build_studio_tab(self):
-        # 상단 안내 바
-        banner = ttk.Frame(self.tab_studio)
-        banner.pack(fill=tk.X, pady=(0, 8))
-        ttk.Label(banner, text="학습노트 스튜디오", font=("Pretendard", 11, "bold"), foreground=getattr(self, "theme_accent", "#1c4732")).pack(side=tk.LEFT)
-        ttk.Label(banner, text="— 과목 지정 · 강의 음성 기록 · 슬라이드 연동 · 출판용 PDF 생성", style="Muted.TLabel").pack(side=tk.LEFT, padx=6)
+        # 🌟 시안 2 (Option 2) 2열 분할 레이아웃: 좌측 설정(Step 1,2,3) | 우측 프리뷰 및 생성(Output Summary Preview)
+        studio_container = ttk.Frame(self.tab_studio)
+        studio_container.pack(fill=tk.BOTH, expand=True)
 
-        main_paned = ttk.PanedWindow(self.tab_studio, orient=tk.VERTICAL)
-        main_paned.pack(fill=tk.BOTH, expand=True)
+        studio_container.columnconfigure(0, weight=5, uniform="studio_col")
+        studio_container.columnconfigure(1, weight=5, uniform="studio_col")
+        studio_container.rowconfigure(0, weight=1)
 
-        top_container = ttk.Frame(main_paned)
-        main_paned.add(top_container, weight=3)
+        # =============================================================
+        # [LEFT COLUMN] Input & Content Setup Card
+        # =============================================================
+        left_card = tk.Frame(studio_container, bg="#ffffff", bd=0, highlightthickness=1, highlightbackground="#e2e8f0")
+        left_card.grid(row=0, column=0, sticky="nsew", padx=(0, 8), pady=0)
 
-        # 3단계 카드 배치 (그리드 레이아웃)
-        top_container.columnconfigure(0, weight=1)
-        top_container.columnconfigure(1, weight=1)
-        top_container.columnconfigure(2, weight=1)
+        left_scroll_canvas = tk.Canvas(left_card, bg="#ffffff", highlightthickness=0)
+        left_sb = ttk.Scrollbar(left_card, orient=tk.VERTICAL, command=left_scroll_canvas.yview)
+        left_content = tk.Frame(left_scroll_canvas, bg="#ffffff", padx=16, pady=16)
+
+        left_content.bind("<Configure>", lambda e: left_scroll_canvas.configure(scrollregion=left_scroll_canvas.bbox("all")))
+        canvas_win = left_scroll_canvas.create_window((0, 0), window=left_content, anchor="nw")
+        left_scroll_canvas.configure(yscrollcommand=left_sb.set)
+
+        def on_canvas_configure(e):
+            left_scroll_canvas.itemconfig(canvas_win, width=e.width)
+        left_scroll_canvas.bind("<Configure>", on_canvas_configure)
+
+        left_scroll_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        left_sb.pack(side=tk.RIGHT, fill=tk.Y)
 
         # -------------------------------------------------------------
         # Step 1: 대상 과목 및 수업 정보
         # -------------------------------------------------------------
-        card1 = ttk.LabelFrame(top_container, text=" 01 · 대상 과목 및 수업 정보 ", padding="10")
-        card1.grid(row=0, column=0, sticky="nsew", padx=4, pady=4)
+        s1_head = tk.Frame(left_content, bg="#ffffff")
+        s1_head.pack(fill=tk.X, pady=(0, 6))
+        tk.Label(s1_head, text=" 1 ", font=("Pretendard", 9, "bold"), bg="#1c4732", fg="#ffffff", padx=4, pady=1).pack(side=tk.LEFT, padx=(0, 8))
+        tk.Label(s1_head, text="Step 1. Course Selection (대상 과목 선택)", font=("Pretendard", 11, "bold"), bg="#ffffff", fg="#0f172a").pack(side=tk.LEFT)
 
-        ttk.Label(card1, text="대상 과목:", font=("Pretendard", 9, "bold")).pack(anchor=tk.W, pady=(0, 2))
-        self.studio_course_combo = ttk.Combobox(card1, state="readonly", font=("Pretendard", 10))
+        tk.Label(left_content, text="Select Course (수강 과목):", font=("Pretendard", 9, "bold"), bg="#ffffff", fg="#475569").pack(anchor=tk.W, pady=(2, 2))
+        self.studio_course_combo = ttk.Combobox(left_content, state="readonly", font=("Pretendard", 10))
         self.studio_course_combo.pack(fill=tk.X, pady=(0, 8))
         self.studio_course_combo.bind("<<ComboboxSelected>>", lambda e: self.on_studio_course_changed())
 
-        date_header_row = ttk.Frame(card1)
-        date_header_row.pack(fill=tk.X, pady=(0, 2))
-        ttk.Label(date_header_row, text="수업 날짜 (YYYY-MM-DD):", font=("Pretendard", 9, "bold")).pack(side=tk.LEFT)
+        # 일자 및 주차 행
+        row_dt = tk.Frame(left_content, bg="#ffffff")
+        row_dt.pack(fill=tk.X, pady=(0, 8))
 
-        date_btn_box = ttk.Frame(date_header_row)
-        date_btn_box.pack(side=tk.RIGHT)
-        ttk.Button(date_btn_box, text="◀", width=3, style="Secondary.TButton", command=lambda: self.adjust_studio_date(-1)).pack(side=tk.LEFT, padx=1)
-        ttk.Button(date_btn_box, text="오늘", width=4, style="Secondary.TButton", command=lambda: self.studio_date_var.set(datetime.now().strftime("%Y-%m-%d"))).pack(side=tk.LEFT, padx=1)
-        ttk.Button(date_btn_box, text="▶", width=3, style="Secondary.TButton", command=lambda: self.adjust_studio_date(1)).pack(side=tk.LEFT, padx=1)
-
+        col_date = tk.Frame(row_dt, bg="#ffffff")
+        col_date.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8))
+        tk.Label(col_date, text="Class Date (수업 일자):", font=("Pretendard", 9, "bold"), bg="#ffffff", fg="#475569").pack(anchor=tk.W, pady=(0, 2))
+        
+        d_box = tk.Frame(col_date, bg="#ffffff")
+        d_box.pack(fill=tk.X)
         self.studio_date_var = tk.StringVar(value=datetime.now().strftime("%Y-%m-%d"))
         self.studio_date_entry = tk.Entry(
-            card1,
+            d_box,
             textvariable=self.studio_date_var,
-            font=("Pretendard", 10),
+            font=("Pretendard", 9),
             bg="#ffffff",
             fg="#0f172a",
             insertbackground="#1c4732",
@@ -826,44 +884,60 @@ class UnifiedDashboardApp:
             bd=1,
             takefocus=True
         )
-        self.studio_date_entry.pack(fill=tk.X, pady=(0, 8))
+        self.studio_date_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 4))
         self.studio_date_entry.bind("<Button-1>", lambda e: self.studio_date_entry.focus_set())
         self.add_context_menu(self.studio_date_entry)
 
-        ttk.Label(card1, text="수업 주차:", font=("Pretendard", 9, "bold")).pack(anchor=tk.W, pady=(0, 2))
-        self.studio_week_combo = ttk.Combobox(card1, values=[f"{w}주차" for w in range(1, 17)], state="readonly", font=("Pretendard", 10))
+        ttk.Button(d_box, text="◀", width=3, style="Secondary.TButton", command=lambda: self.adjust_studio_date(-1)).pack(side=tk.LEFT, padx=1)
+        ttk.Button(d_box, text="오늘", width=4, style="Secondary.TButton", command=lambda: self.studio_date_var.set(datetime.now().strftime("%Y-%m-%d"))).pack(side=tk.LEFT, padx=1)
+        ttk.Button(d_box, text="▶", width=3, style="Secondary.TButton", command=lambda: self.adjust_studio_date(1)).pack(side=tk.LEFT, padx=1)
+
+        col_wk = tk.Frame(row_dt, bg="#ffffff")
+        col_wk.pack(side=tk.RIGHT, fill=tk.X)
+        tk.Label(col_wk, text="Week (주차):", font=("Pretendard", 9, "bold"), bg="#ffffff", fg="#475569").pack(anchor=tk.W, pady=(0, 2))
+        self.studio_week_combo = ttk.Combobox(col_wk, values=[f"{w}주차" for w in range(1, 17)], state="readonly", font=("Pretendard", 9), width=8)
         self.studio_week_combo.set("1주차")
-        self.studio_week_combo.pack(fill=tk.X, pady=(0, 8))
+        self.studio_week_combo.pack(fill=tk.X)
 
-        ttk.Label(card1, text="출력 언어 모드:", font=("Pretendard", 9, "bold")).pack(anchor=tk.W, pady=(0, 2))
-        self.studio_lang_combo = ttk.Combobox(card1, values=LANG_OPTIONS, state="readonly", font=("Pretendard", 9))
+        tk.Label(left_content, text="Language Mode (출력 언어):", font=("Pretendard", 9, "bold"), bg="#ffffff", fg="#475569").pack(anchor=tk.W, pady=(0, 2))
+        self.studio_lang_combo = ttk.Combobox(left_content, values=LANG_OPTIONS, state="readonly", font=("Pretendard", 9))
         self.studio_lang_combo.set(LANG_OPTIONS[0])
-        self.studio_lang_combo.pack(fill=tk.X)
+        self.studio_lang_combo.pack(fill=tk.X, pady=(0, 14))
+
+        # 구분선
+        tk.Frame(left_content, bg="#f1f5f9", height=1).pack(fill=tk.X, pady=(0, 12))
 
         # -------------------------------------------------------------
-        # Step 2: 음성 녹음 자료 선택 (음성 부재 대비 옵션 포함)
+        # Step 2: Content Input (강의 음성 및 슬라이드 자료 연동)
         # -------------------------------------------------------------
-        card2 = ttk.LabelFrame(top_container, text=" 02 · 강의 음성 기록 ", padding="10")
-        card2.grid(row=0, column=1, sticky="nsew", padx=4, pady=4)
+        s2_head = tk.Frame(left_content, bg="#ffffff")
+        s2_head.pack(fill=tk.X, pady=(0, 6))
+        tk.Label(s2_head, text=" 2 ", font=("Pretendard", 9, "bold"), bg="#1c4732", fg="#ffffff", padx=4, pady=1).pack(side=tk.LEFT, padx=(0, 8))
+        tk.Label(s2_head, text="Step 2. Content Input (강의 음성 & 슬라이드 연동)", font=("Pretendard", 11, "bold"), bg="#ffffff", fg="#0f172a").pack(side=tk.LEFT)
 
-        self.no_audio_var = tk.BooleanVar(value=False)
-        self.no_audio_check = ttk.Checkbutton(
-            card2,
-            text="☑ 음성 녹음 없음 (슬라이드 집중 분석 모드)",
-            variable=self.no_audio_var,
-            command=self.toggle_no_audio_mode
-        )
-        self.no_audio_check.pack(anchor=tk.W, pady=(0, 6))
+        self.audio_select_frame = tk.Frame(left_content, bg="#ffffff")
+        self.audio_select_frame.pack(fill=tk.X, pady=(0, 8))
 
-        self.audio_select_frame = ttk.Frame(card2)
-        self.audio_select_frame.pack(fill=tk.BOTH, expand=True)
-
-        audio_btn_row = ttk.Frame(self.audio_select_frame)
+        tk.Label(self.audio_select_frame, text="Audio Recording (음성 파일):", font=("Pretendard", 9, "bold"), bg="#ffffff", fg="#475569").pack(anchor=tk.W, pady=(0, 2))
+        
+        audio_btn_row = tk.Frame(self.audio_select_frame, bg="#ffffff")
         audio_btn_row.pack(fill=tk.X, pady=(0, 4))
-        ttk.Button(audio_btn_row, text="📂 오디오 찾기...", style="Secondary.TButton", command=self.browse_studio_audio).pack(side=tk.LEFT, padx=(0, 4))
-        self.rec_btn = ttk.Button(audio_btn_row, text="🔴 실시간 녹음", style="Secondary.TButton", command=self.toggle_realtime_recording)
+        
+        ttk.Button(audio_btn_row, text="📂 오디오 찾기...", style="Secondary.TButton", command=self.browse_studio_audio).pack(side=tk.LEFT, padx=(0, 6))
+        
+        self.rec_btn = SquareRoundButton(
+            audio_btn_row,
+            text="🔴  실시간 녹음",
+            bg="#fef2f2",
+            fg="#dc2626",
+            hover_bg="#fee2e2",
+            radius=8,
+            height=30,
+            font=("Pretendard", 9, "bold"),
+            command=self.toggle_realtime_recording,
+            parent_bg="#ffffff"
+        )
         self.rec_btn.pack(side=tk.LEFT)
-
 
         self.studio_audio_var = tk.StringVar(value="")
         self.studio_audio_entry = tk.Entry(
@@ -879,147 +953,127 @@ class UnifiedDashboardApp:
             bd=1,
             takefocus=True
         )
-        self.studio_audio_entry.pack(fill=tk.X, pady=(0, 6))
+        self.studio_audio_entry.pack(fill=tk.X, pady=(2, 4))
         self.studio_audio_entry.bind("<Button-1>", lambda e: self.studio_audio_entry.focus_set())
         self.add_context_menu(self.studio_audio_entry)
 
-        ttk.Label(self.audio_select_frame, text="감지된 녹음 파일 (수신함 / 과목 폴더):", font=("Pretendard", 8, "bold"), foreground="#64748b").pack(anchor=tk.W)
-        self.audio_listbox = tk.Listbox(self.audio_select_frame, height=4, font=("Pretendard", 9), bg="#ffffff", relief=tk.SOLID, bd=1)
-        self.audio_listbox.pack(fill=tk.BOTH, expand=True)
+        tk.Label(self.audio_select_frame, text="감지된 녹음 파일 (수신함 / 과목 폴더):", font=("Pretendard", 8, "bold"), bg="#ffffff", fg="#94a3b8").pack(anchor=tk.W)
+        self.audio_listbox = tk.Listbox(self.audio_select_frame, height=3, font=("Pretendard", 8), bg="#f8fafc", relief=tk.SOLID, bd=1)
+        self.audio_listbox.pack(fill=tk.X, pady=(2, 8))
         self.audio_listbox.bind("<<ListboxSelect>>", self.on_audio_listbox_select)
 
-        self.no_audio_hint = ttk.Label(
-            card2,
-            text="💡 슬라이드 집중 독학 모드가 켜졌습니다.\n음성 녹음 없이도 공식 슬라이드 내용만을\n정밀 파싱하여 체계적인 시험 강의노트를 생성합니다.",
-            font=("Pretendard", 9),
-            foreground="#0284c7"
-        )
+        # 슬라이드 섹션
+        slide_head_row = tk.Frame(left_content, bg="#ffffff")
+        slide_head_row.pack(fill=tk.X, pady=(0, 4))
+        tk.Label(slide_head_row, text="Lecture Slides (강의 슬라이드):", font=("Pretendard", 9, "bold"), bg="#ffffff", fg="#475569").pack(side=tk.LEFT)
 
-        # -------------------------------------------------------------
-        # Step 3: 연계 강의자료(슬라이드 PDF) 선택
-        # -------------------------------------------------------------
-        card3 = ttk.LabelFrame(top_container, text=" 03 · 강의 슬라이드 연동 ", padding="10")
-        card3.grid(row=0, column=2, sticky="nsew", padx=4, pady=4)
+        # 시안 2 스타일 파일 포맷 배지
+        badge_box = tk.Frame(slide_head_row, bg="#ffffff")
+        badge_box.pack(side=tk.RIGHT)
+        for fmt in ("PDF", "PPTX", "HWPX"):
+            tk.Label(badge_box, text=f" {fmt} ", font=("Pretendard", 7, "bold"), bg="#f1f5f9", fg="#64748b", relief=tk.FLAT).pack(side=tk.LEFT, padx=1)
 
-        slide_btn_row = ttk.Frame(card3)
+        slide_btn_row = tk.Frame(left_content, bg="#ffffff")
         slide_btn_row.pack(fill=tk.X, pady=(0, 4))
-        ttk.Button(slide_btn_row, text="➕ 자료/슬라이드 추가...", style="Secondary.TButton", command=self.browse_studio_slides).pack(side=tk.LEFT, padx=(0, 4))
-        ttk.Button(slide_btn_row, text="📷 칠판 판서 사진...", style="Secondary.TButton", command=self.browse_blackboard_photo).pack(side=tk.LEFT)
+        ttk.Button(slide_btn_row, text="➕ 자료 추가...", style="Secondary.TButton", command=self.browse_studio_slides).pack(side=tk.LEFT, padx=(0, 4))
+        ttk.Button(slide_btn_row, text="📷 칠판 판서...", style="Secondary.TButton", command=self.browse_blackboard_photo).pack(side=tk.LEFT, padx=(0, 4))
         ttk.Button(slide_btn_row, text="🔄 새로고침", style="Secondary.TButton", command=self.refresh_studio_slides).pack(side=tk.RIGHT)
 
+        slide_canvas_frame = tk.Frame(left_content, bg="#ffffff")
+        slide_canvas_frame.pack(fill=tk.X, pady=(0, 14))
 
-        ttk.Label(card3, text="분석에 포함할 슬라이드 파일 (체크):", font=("Pretendard", 8, "bold"), foreground="#64748b").pack(anchor=tk.W, pady=(0, 2))
-
-        # 슬라이드 체크박스 목록용 스크롤 프레임
-        slide_canvas_frame = ttk.Frame(card3)
-        slide_canvas_frame.pack(fill=tk.BOTH, expand=True)
-
-        self.slide_canvas = tk.Canvas(slide_canvas_frame, bg="#ffffff", highlightthickness=1, highlightbackground="#e2e8f0")
+        self.slide_canvas = tk.Canvas(slide_canvas_frame, height=90, bg="#f8fafc", highlightthickness=1, highlightbackground="#e2e8f0")
         slide_sb = ttk.Scrollbar(slide_canvas_frame, orient=tk.VERTICAL, command=self.slide_canvas.yview)
-        self.slide_inner_frame = ttk.Frame(self.slide_canvas)
+        self.slide_inner_frame = tk.Frame(self.slide_canvas, bg="#f8fafc")
         self.slide_inner_frame.bind("<Configure>", lambda e: self.slide_canvas.configure(scrollregion=self.slide_canvas.bbox("all")))
         self.slide_canvas.create_window((0, 0), window=self.slide_inner_frame, anchor="nw")
         self.slide_canvas.configure(yscrollcommand=slide_sb.set)
 
         self.slide_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         slide_sb.pack(side=tk.RIGHT, fill=tk.Y)
+        self.slide_check_vars = {}
 
-        self.slide_check_vars = {} # {pdf_path: BooleanVar}
+        # 구분선
+        tk.Frame(left_content, bg="#f1f5f9", height=1).pack(fill=tk.X, pady=(0, 12))
 
         # -------------------------------------------------------------
-        # Action Card: 생성 실행 & 실시간 상태 & 결과 뷰어
+        # Step 3: Process & Refine (옵션)
         # -------------------------------------------------------------
-        bottom_container = ttk.Frame(main_paned)
-        main_paned.add(bottom_container, weight=4)
+        s3_head = tk.Frame(left_content, bg="#ffffff")
+        s3_head.pack(fill=tk.X, pady=(0, 6))
+        tk.Label(s3_head, text=" 3 ", font=("Pretendard", 9, "bold"), bg="#1c4732", fg="#ffffff", padx=4, pady=1).pack(side=tk.LEFT, padx=(0, 8))
+        tk.Label(s3_head, text="Step 3. Process & Refine (분석 모드 설정)", font=("Pretendard", 11, "bold"), bg="#ffffff", fg="#0f172a").pack(side=tk.LEFT)
 
-        action_bar = ttk.Frame(bottom_container)
-        action_bar.pack(fill=tk.X, pady=(8, 8))
-
-        self.generate_studio_btn = SquareRoundButton(
-            action_bar,
-            text="✨  학습노트 및 출판용 PDF 생성",
-            bg="#1c4732",
-            hover_bg="#265e43",
-            active_bg="#143324",
-            radius=9,
-            height=38,
-            font=("Pretendard", 10, "bold"),
-            command=self.execute_studio_generation
+        self.no_audio_var = tk.BooleanVar(value=False)
+        self.no_audio_check = ttk.Checkbutton(
+            left_content,
+            text="☑ 음성 녹음 없음 (슬라이드 집중 분석 모드)",
+            variable=self.no_audio_var,
+            command=self.toggle_no_audio_mode
         )
-        self.generate_studio_btn.pack(side=tk.LEFT, padx=(0, 10))
+        self.no_audio_check.pack(anchor=tk.W, pady=(0, 4))
 
-        self.studio_stop_btn = SquareRoundButton(
-            action_bar,
-            text="⏹  작업 중단",
-            bg="#dc2626",
-            hover_bg="#b91c1c",
-            active_bg="#991b1b",
-            radius=9,
-            height=38,
-            state="disabled",
-            font=("Pretendard", 10, "bold"),
-            command=self.abort_studio_generation
+        self.no_audio_hint = tk.Label(
+            left_content,
+            text="💡 슬라이드 집중 독학 모드가 켜졌습니다.\n음성 녹음 없이도 공식 슬라이드 내용만을 정밀 파싱하여 체계적인 시험 강의노트를 생성합니다.",
+            font=("Pretendard", 8),
+            bg="#f0f9ff",
+            fg="#0284c7",
+            justify=tk.LEFT,
+            padx=8,
+            pady=6,
+            relief=tk.FLAT
         )
-        self.studio_stop_btn.pack(side=tk.LEFT, padx=(0, 10))
 
-        self.studio_open_pdf_btn = SquareRoundButton(
-            action_bar,
-            text="📄  출판용 PDF 열기",
-            bg="#2e5944",
-            hover_bg="#3a7056",
-            active_bg="#224333",
-            radius=9,
-            height=38,
-            state="disabled",
-            font=("Pretendard", 10, "bold"),
-            command=self.open_last_generated_pdf
-        )
-        self.studio_open_pdf_btn.pack(side=tk.LEFT, padx=(0, 10))
+        # =============================================================
+        # [RIGHT COLUMN] Output Summary Preview & Live Console
+        # =============================================================
+        right_card = tk.Frame(studio_container, bg="#ffffff", bd=0, highlightthickness=1, highlightbackground="#e2e8f0")
+        right_card.grid(row=0, column=1, sticky="nsew", padx=(8, 0), pady=0)
 
-        self.studio_open_folder_btn = SquareRoundButton(
-            action_bar,
-            text="📂  강의노트 폴더 열기",
-            bg="#e2e8f0",
-            hover_bg="#cbd5e1",
-            fg="#14281e",
-            radius=9,
-            height=38,
-            font=("Pretendard", 10, "bold"),
-            command=self.open_studio_notes_folder
-        )
-        self.studio_open_folder_btn.pack(side=tk.LEFT, padx=(0, 10))
+        # 시안 2 상단 타이틀
+        prev_head = tk.Frame(right_card, bg="#ffffff", padx=16, pady=12)
+        prev_head.pack(fill=tk.X)
+        tk.Label(prev_head, text="Output Summary Preview", font=("Pretendard", 12, "bold"), bg="#ffffff", fg="#0f172a").pack(side=tk.LEFT)
+        tk.Label(prev_head, text="· 산출물 실시간 프리뷰 & 콘솔", font=("Pretendard", 9), bg="#ffffff", fg="#64748b").pack(side=tk.LEFT, padx=(4, 0))
 
-        self.studio_clear_log_btn = SquareRoundButton(
-            action_bar,
-            text="🧹  콘솔 비우기",
-            bg="#e2e8f0",
-            hover_bg="#cbd5e1",
-            fg="#14281e",
-            radius=9,
-            height=38,
-            font=("Pretendard", 10, "bold"),
-            command=self.clear_studio_log
-        )
-        self.studio_clear_log_btn.pack(side=tk.LEFT)
+        # 시안 2 스타일 구조화된 요약 프리뷰 박스
+        preview_box = tk.Frame(right_card, bg="#f8fafc", bd=0, highlightthickness=1, highlightbackground="#e2e8f0", padx=14, pady=10)
+        preview_box.pack(fill=tk.X, padx=16, pady=(0, 10))
 
-        # 프로그레스바 및 상태/ETA 메시지
-        status_row = ttk.Frame(bottom_container)
+        # 4대 핵심 구조 안내
+        sec1 = tk.Frame(preview_box, bg="#f8fafc")
+        sec1.pack(fill=tk.X, pady=2)
+        tk.Label(sec1, text="Key Concepts", font=("Pretendard", 9, "bold"), bg="#f8fafc", fg="#1c4732").pack(anchor=tk.W)
+        tk.Label(sec1, text="• 핵심 개념, 학술 정의 및 공식 자동 추출\n• 교수님 육성 발언 시점([🎙️ MM:SS]) 타임스탬프 색인", font=("Pretendard", 8), bg="#f8fafc", fg="#475569", justify=tk.LEFT).pack(anchor=tk.W, padx=(8, 0))
+
+        sec2 = tk.Frame(preview_box, bg="#f8fafc")
+        sec2.pack(fill=tk.X, pady=2)
+        tk.Label(sec2, text="Chapter Summaries", font=("Pretendard", 9, "bold"), bg="#f8fafc", fg="#1c4732").pack(anchor=tk.W)
+        tk.Label(sec2, text="• 단원별 심층 요약 및 강의 슬라이드 페이지 매핑\n• 칠판 판서 필기 텍스트 정밀 시각화", font=("Pretendard", 8), bg="#f8fafc", fg="#475569", justify=tk.LEFT).pack(anchor=tk.W, padx=(8, 0))
+
+        sec3 = tk.Frame(preview_box, bg="#f8fafc")
+        sec3.pack(fill=tk.X, pady=2)
+        tk.Label(sec3, text="Practice Questions", font=("Pretendard", 9, "bold"), bg="#f8fafc", fg="#1c4732").pack(anchor=tk.W)
+        tk.Label(sec3, text="• 객관식/서술형/손풀이 10문항 자동 출제 및 단계별 해설\n• 시험 직전 대비 3분 치트시트(1Page) 연계", font=("Pretendard", 8), bg="#f8fafc", fg="#475569", justify=tk.LEFT).pack(anchor=tk.W, padx=(8, 0))
+
+        # 실시간 진행 상황 및 로그 콘솔
+        console_frame = tk.Frame(right_card, bg="#ffffff", padx=16)
+        console_frame.pack(fill=tk.BOTH, expand=True)
+
+        status_row = tk.Frame(console_frame, bg="#ffffff")
         status_row.pack(fill=tk.X, pady=(2, 4))
 
-        self.studio_progress = ttk.Progressbar(status_row, mode="determinate", length=220)
-        self.studio_progress.pack(side=tk.LEFT, padx=(0, 10))
+        self.studio_progress = ttk.Progressbar(status_row, mode="determinate", length=180)
+        self.studio_progress.pack(side=tk.LEFT, padx=(0, 8))
 
         self.studio_status_var = tk.StringVar(value="원하는 음성 및 슬라이드를 선택한 후 생성 버튼을 누르세요.")
-        ttk.Label(status_row, textvariable=self.studio_status_var, font=("Pretendard", 9, "bold"), foreground="#475569").pack(side=tk.LEFT)
+        tk.Label(status_row, textvariable=self.studio_status_var, font=("Pretendard", 8, "bold"), bg="#ffffff", fg="#475569").pack(side=tk.LEFT)
 
         self.studio_eta_var = tk.StringVar(value="")
-        ttk.Label(status_row, textvariable=self.studio_eta_var, font=("Pretendard", 9, "bold"), foreground="#2563eb").pack(side=tk.RIGHT)
+        tk.Label(status_row, textvariable=self.studio_eta_var, font=("Pretendard", 8, "bold"), bg="#ffffff", fg="#1c4732").pack(side=tk.RIGHT)
 
-        # 실시간 진행 로그 콘솔
-        console_box = ttk.LabelFrame(bottom_container, text=" 💻 실시간 생성 로그 및 소요 시간 (Live Logs & ETA) ", padding="6")
-        console_box.pack(fill=tk.BOTH, expand=True)
-
-        txt_wrap = ttk.Frame(console_box)
+        txt_wrap = tk.Frame(console_frame, bg="#ffffff")
         txt_wrap.pack(fill=tk.BOTH, expand=True)
 
         term_font = ("Menlo", 9) if sys.platform == "darwin" else ("Consolas", 9)
@@ -1034,11 +1088,11 @@ class UnifiedDashboardApp:
             padx=10,
             pady=8
         )
-        txt_sb = ttk.Scrollbar(txt_wrap, orient=tk.VERTICAL, command=self.studio_log_text.yview)
-        self.studio_log_text.config(yscrollcommand=txt_sb.set)
+        sb = ttk.Scrollbar(txt_wrap, orient=tk.VERTICAL, command=self.studio_log_text.yview)
+        self.studio_log_text.config(yscrollcommand=sb.set)
 
         self.studio_log_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        txt_sb.pack(side=tk.RIGHT, fill=tk.Y)
+        sb.pack(side=tk.RIGHT, fill=tk.Y)
         self.add_context_menu(self.studio_log_text)
 
         # 로그 컬러 태그
@@ -1050,63 +1104,87 @@ class UnifiedDashboardApp:
         self.studio_log_text.tag_config("highlight", foreground="#c084fc")
         self.studio_log_text.tag_config("normal", foreground="#e2e8f0")
 
-        self.append_studio_log("준비 완료: 음성 파일과 슬라이드 자료를 선택하고 [⚡ 맞춤형 학습노트 생성 시작]을 클릭하세요.", "normal")
+        self.append_studio_log("준비 완료: 음성/슬라이드를 선택한 뒤 [학습노트 및 출판용 PDF 생성]을 클릭하세요.", "normal")
 
-    def append_studio_log(self, text, tag="normal"):
-        if not hasattr(self, "studio_log_text"):
-            return
-        self.studio_log_text.config(state=tk.NORMAL)
-        timestamp = datetime.now().strftime("[%H:%M:%S] ")
-        self.studio_log_text.insert(tk.END, timestamp, "time")
+        # 시안 2 하단 액션 바: 우측 돌출형 초록색 생성 버튼
+        action_bar = tk.Frame(right_card, bg="#ffffff", padx=16, pady=10)
+        action_bar.pack(fill=tk.X)
 
-        if tag == "normal":
-            if "Step" in text or "단계" in text or "과목:" in text:
-                tag = "step"
-            elif "✅" in text or "성공" in text or "🎉" in text:
-                tag = "success"
-            elif "⚠️" in text or "주의" in text:
-                tag = "warning"
-            elif "❌" in text or "오류" in text or "실패" in text:
-                tag = "error"
-            elif "•" in text or "📌" in text or "📄" in text:
-                tag = "highlight"
+        self.studio_open_folder_btn = SquareRoundButton(
+            action_bar,
+            text="📂  폴더 열기",
+            bg="#f1f5f9",
+            hover_bg="#e2e8f0",
+            fg="#334155",
+            radius=8,
+            height=36,
+            font=("Pretendard", 9, "bold"),
+            command=self.open_studio_notes_folder,
+            parent_bg="#ffffff"
+        )
+        self.studio_open_folder_btn.pack(side=tk.LEFT, padx=(0, 6))
 
-        self.studio_log_text.insert(tk.END, f"{text}\n", tag)
-        self.studio_log_text.see(tk.END)
-        self.studio_log_text.config(state=tk.DISABLED)
+        self.studio_clear_log_btn = SquareRoundButton(
+            action_bar,
+            text="🧹  콘솔 지우기",
+            bg="#f1f5f9",
+            hover_bg="#e2e8f0",
+            fg="#334155",
+            radius=8,
+            height=36,
+            font=("Pretendard", 9, "bold"),
+            command=self.clear_studio_log,
+            parent_bg="#ffffff"
+        )
+        self.studio_clear_log_btn.pack(side=tk.LEFT, padx=(0, 6))
 
-    def on_studio_log_event(self, msg, step=None, eta=None):
-        if step is not None:
-            step_progress = {1: 25, 2: 55, 3: 80, 4: 95}
-            self.studio_progress["value"] = step_progress.get(step, 50)
-        if eta is not None:
-            self.studio_current_eta = eta
+        self.studio_stop_btn = SquareRoundButton(
+            action_bar,
+            text="⏹  작업 중단",
+            bg="#dc2626",
+            hover_bg="#b91c1c",
+            active_bg="#991b1b",
+            radius=8,
+            height=36,
+            state="disabled",
+            font=("Pretendard", 9, "bold"),
+            command=self.abort_studio_generation,
+            parent_bg="#ffffff"
+        )
+        self.studio_stop_btn.pack(side=tk.LEFT, padx=(0, 6))
 
-        self.append_studio_log(msg)
+        self.studio_open_pdf_btn = SquareRoundButton(
+            action_bar,
+            text="📄  출판용 PDF 열기",
+            bg="#2e5944",
+            hover_bg="#3a7056",
+            active_bg="#224333",
+            radius=8,
+            height=36,
+            state="disabled",
+            font=("Pretendard", 9, "bold"),
+            command=self.open_last_generated_pdf,
+            parent_bg="#ffffff"
+        )
+        self.studio_open_pdf_btn.pack(side=tk.LEFT, padx=(0, 6))
 
-        clean_msg = msg.strip().replace("\n", " ")
-        if len(clean_msg) > 55:
-            clean_msg = clean_msg[:52] + "..."
-        self.studio_status_var.set(clean_msg)
+        # 시안 2 메인 초록색 'Generate' 버튼
+        self.generate_studio_btn = SquareRoundButton(
+            action_bar,
+            text="✨  학습노트 및 출판용 PDF 생성",
+            bg="#1c4732",
+            hover_bg="#265e43",
+            active_bg="#143324",
+            radius=9,
+            height=38,
+            font=("Pretendard", 10, "bold"),
+            command=self.execute_studio_generation,
+            parent_bg="#ffffff"
+        )
+        self.generate_studio_btn.pack(side=tk.RIGHT)
 
-    def update_studio_timer(self):
-        if not self.studio_is_running:
-            return
 
-        elapsed = int(time.time() - self.studio_start_time)
-        el_min = elapsed // 60
-        el_sec = elapsed % 60
-
-        if self.studio_current_eta > 0:
-            self.studio_current_eta = max(2, self.studio_current_eta - 1)
-            eta_str = f"약 {self.studio_current_eta}초"
-        elif self.studio_current_eta == 0:
-            eta_str = "마무리 중..."
-        else:
-            eta_str = "계산 중..."
-
-        self.studio_eta_var.set(f"⏱️ 경과 {el_min:02d}:{el_sec:02d} | 남은 시간: {eta_str}")
-        self.root.after(1000, self.update_studio_timer)
+    
 
     def adjust_studio_date(self, days_delta):
         try:
@@ -3600,17 +3678,35 @@ class UnifiedDashboardApp:
                     return
                 res = rec.start_recording(course)
                 if res.get("status") == "success":
-                    self.rec_btn.config(text="⏹️ 녹음 중지 및 저장", style="Danger.TButton")
+                    self.rec_is_active = True
+                    self.rec_start_time = time.time()
+                    self.update_rec_timer_loop()
                     self.studio_audio_var.set(res["output_file"])
                     messagebox.showinfo("실시간 녹음 시작", f"마이크 실시간 녹음이 시작되었습니다.\n저장 대상: {res['file_name']}")
+                else:
+                    messagebox.showerror("녹음 오류", res.get("message", "녹음 시작 실패"))
             else:
+                self.rec_is_active = False
                 res = rec.stop_recording()
-                self.rec_btn.config(text="🔴 실시간 녹음", style="Secondary.TButton")
+                if hasattr(self, "rec_btn"):
+                    self.rec_btn.config(text="🔴  실시간 녹음", bg="#fef2f2", fg="#dc2626")
                 if res.get("status") == "success":
                     messagebox.showinfo("녹음 완료", f"실시간 오디오가 해당 과목 폴더에 성공적으로 저장되었습니다.\n(경과 시간: {res.get('duration_sec', 0)}초)")
                     self.refresh_studio_file_listboxes()
+                else:
+                    messagebox.showerror("녹음 중지 오류", res.get("message", "녹음 중지 실패"))
         except Exception as e:
             messagebox.showerror("녹음 오류", f"실시간 녹음 처리 중 오류: {e}")
+
+    def update_rec_timer_loop(self):
+        if getattr(self, "rec_is_active", False):
+            elapsed = int(time.time() - getattr(self, "rec_start_time", time.time()))
+            m, s = divmod(elapsed, 60)
+            if hasattr(self, "rec_btn"):
+                self.rec_btn.config(text=f"⏹️  녹음 중지 ({m:02d}:{s:02d})", bg="#dc2626", fg="#ffffff")
+            self.root.after(1000, self.update_rec_timer_loop)
+
+    
 
     def browse_blackboard_photo(self):
         course = self.studio_course_combo.get()
