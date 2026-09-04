@@ -313,6 +313,7 @@ class SquareRoundButton(tk.Canvas):
                 self.cmd()
 
     def config(self, **kwargs):
+        redraw = False
         if "state" in kwargs:
             self.btn_state = kwargs.pop("state")
             if self.btn_state == "disabled":
@@ -327,15 +328,37 @@ class SquareRoundButton(tk.Canvas):
                 self.bind("<Button-1>", self.on_press)
                 self.bind("<ButtonRelease-1>", self.on_release)
                 super().config(cursor="hand2")
-            self.draw(self.normal_bg)
+            redraw = True
         if "text" in kwargs:
             self.btn_text = kwargs.pop("text")
-            self.draw(self.normal_bg)
+            new_w = max(self.w, len(self.btn_text) * 11 + self.radius * 2 + 20)
+            if new_w > self.w:
+                self.w = new_w
+                super().config(width=self.w)
+            redraw = True
         if "bg" in kwargs:
             self.normal_bg = kwargs.pop("bg")
+            redraw = True
+        if "background" in kwargs:
+            self.normal_bg = kwargs.pop("background")
+            redraw = True
+        if "fg" in kwargs:
+            self.normal_fg = kwargs.pop("fg")
+            redraw = True
+        if "foreground" in kwargs:
+            self.normal_fg = kwargs.pop("foreground")
+            redraw = True
+        if "hover_bg" in kwargs:
+            self.hover_bg = kwargs.pop("hover_bg")
+        if "active_bg" in kwargs:
+            self.active_bg = kwargs.pop("active_bg")
+        if redraw:
             self.draw(self.normal_bg)
-        if kwargs:
-            super().config(**kwargs)
+        # Any remaining valid Tk canvas options
+        valid_canvas = {"cursor", "highlightbackground", "highlightcolor", "highlightthickness", "width", "height"}
+        canvas_kwargs = {k: v for k, v in kwargs.items() if k in valid_canvas}
+        if canvas_kwargs:
+            super().config(**canvas_kwargs)
     configure = config
 
     def __setitem__(self, key, value):
@@ -348,6 +371,8 @@ class SquareRoundButton(tk.Canvas):
             return self.btn_text
         elif key in ("bg", "background"):
             return self.normal_bg
+        elif key in ("fg", "foreground"):
+            return self.normal_fg
         return super().cget(key)
 
     def __getitem__(self, key):
@@ -3702,22 +3727,32 @@ class UnifiedDashboardApp:
                 if res.get("status") == "success":
                     self.rec_is_active = True
                     self.rec_start_time = time.time()
-                    self.update_rec_timer_loop()
                     self.studio_audio_var.set(res["output_file"])
-                    messagebox.showinfo("실시간 녹음 시작", f"마이크 실시간 녹음이 시작되었습니다.\n저장 대상: {res['file_name']}")
+                    self.update_rec_timer_loop()
+                    self.append_studio_log(f"🔴 [실시간 녹음 시작] {res['file_name']}")
+                    messagebox.showinfo("실시간 녹음 시작", f"마이크 실시간 녹음이 시작되었습니다.\n\n저장 대상: {res['file_name']}\n녹음 완료 후 [녹음 중지] 버튼을 누르면 파일이 자동 등록됩니다.")
                 else:
                     messagebox.showerror("녹음 오류", res.get("message", "녹음 시작 실패"))
             else:
                 self.rec_is_active = False
                 res = rec.stop_recording()
                 if hasattr(self, "rec_btn"):
-                    self.rec_btn.config(text="🔴  실시간 녹음", bg="#fef2f2", fg="#dc2626")
+                    self.rec_btn.config(
+                        text="🔴  실시간 녹음",
+                        bg="#fef2f2",
+                        fg="#dc2626",
+                        hover_bg="#fee2e2",
+                        active_bg="#fecaca"
+                    )
                 if res.get("status") == "success":
+                    self.append_studio_log(f"⏹️ [실시간 녹음 완료] {res.get('duration_sec', 0)}초 녹음 완료 -> {res.get('output_file')}")
                     messagebox.showinfo("녹음 완료", f"실시간 오디오가 해당 과목 폴더에 성공적으로 저장되었습니다.\n(경과 시간: {res.get('duration_sec', 0)}초)")
                     self.refresh_studio_file_listboxes()
                 else:
                     messagebox.showerror("녹음 중지 오류", res.get("message", "녹음 중지 실패"))
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             messagebox.showerror("녹음 오류", f"실시간 녹음 처리 중 오류: {e}")
 
     def update_rec_timer_loop(self):
@@ -3725,7 +3760,13 @@ class UnifiedDashboardApp:
             elapsed = int(time.time() - getattr(self, "rec_start_time", time.time()))
             m, s = divmod(elapsed, 60)
             if hasattr(self, "rec_btn"):
-                self.rec_btn.config(text=f"⏹️  녹음 중지 ({m:02d}:{s:02d})", bg="#dc2626", fg="#ffffff")
+                self.rec_btn.config(
+                    text=f"⏹️  녹음 중지 ({m:02d}:{s:02d})",
+                    bg="#dc2626",
+                    fg="#ffffff",
+                    hover_bg="#b91c1c",
+                    active_bg="#991b1b"
+                )
             self.root.after(1000, self.update_rec_timer_loop)
 
     

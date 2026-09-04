@@ -22,7 +22,10 @@ import config_manager
 
 
 def find_mac_recorder_bin():
+    exe_dir = os.path.dirname(os.path.abspath(sys.executable))
     candidates = [
+        os.path.join(exe_dir, "mac_audio_rec"),
+        os.path.abspath(os.path.join(exe_dir, "..", "Resources", "bin", "mac_audio_rec")),
         os.path.join(SCRIPT_DIR, "..", "bin", "mac_audio_rec"),
         os.path.join(SCRIPT_DIR, "mac_audio_rec"),
         "/Users/ryuhwanjin/Desktop/URY project/URY_macOS/system/bin/mac_audio_rec",
@@ -76,7 +79,27 @@ class AudioRecorder:
             else:
                 cmd = ["ffmpeg", "-y", "-f", "dshow", "-i", "audio=Microphone", self.output_file]
 
-            self.process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            self.process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            # 프로세스 정상 구동 여부 즉각 확인 (0.2초 대기)
+            time.sleep(0.2)
+            exit_code = self.process.poll()
+            if exit_code is not None:
+                err_out = ""
+                if self.process.stderr:
+                    err_out = self.process.stderr.read()
+                self.process = None
+                self.is_recording = False
+                return {
+                    "status": "error",
+                    "message": f"녹음기 프로세스 즉시 종료됨 (코드 {exit_code}):\n{err_out.strip()}"
+                }
+
             self.is_recording = True
             self.start_time = time.time()
 
@@ -89,6 +112,7 @@ class AudioRecorder:
 
         except Exception as e:
             self.is_recording = False
+            self.process = None
             print(f"⚠️ 녹음 구동 오류: {e}")
             return {"status": "error", "message": str(e)}
 
@@ -113,14 +137,17 @@ class AudioRecorder:
             out_file = self.output_file
             self.process = None
 
-            print(f"⏹️ [AudioRecorder] 녹음 완료 ({duration_sec}초 경과): {out_file}")
+            file_size = os.path.getsize(out_file) if (out_file and os.path.exists(out_file)) else 0
+            print(f"⏹️ [AudioRecorder] 녹음 완료 ({duration_sec}초 경과, {file_size} bytes): {out_file}")
             return {
                 "status": "success",
                 "output_file": out_file,
-                "duration_sec": duration_sec
+                "duration_sec": duration_sec,
+                "file_size": file_size
             }
         except Exception as e:
             self.is_recording = False
+            self.process = None
             return {"status": "error", "message": str(e)}
 
 
