@@ -214,15 +214,153 @@ PERIOD_TO_DAYS = {
 }
 
 # 64x64 미니멀 그린 북 & 리프 앱 아이콘 Base64 데이터 (v0.2)
-APP_ICON_PNG = "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"
+APP_ICON_PNG = "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"
+
+
+class SquareRoundButton(tk.Canvas):
+    """
+    macOS Apple Square-Round 스타일 부드러운 둥근 모서리 버튼
+    - 직사각형이 아닌 부드러운 곡률(radius=8~10px)의 스퀘어클 버튼
+    - Hover / Active / Disabled 반응형 인터랙션
+    """
+    def __init__(self, parent, text="", command=None, bg="#1c4732", fg="#ffffff",
+                 hover_bg="#255e42", active_bg="#143525", radius=8,
+                 font=("Pretendard", 10, "bold"), width=None, height=34,
+                 state="normal", parent_bg=None, **kwargs):
+        self.cmd = command
+        self.btn_text = text
+        self.radius = radius
+        self.normal_bg = bg
+        self.hover_bg = hover_bg or bg
+        self.active_bg = active_bg or bg
+        self.normal_fg = fg
+        self.font = font
+        self.btn_state = state
+        self.h = height
+        
+        if parent_bg is None:
+            try:
+                p_bg = parent.cget("bg")
+                parent_bg = p_bg if p_bg else "#ffffff"
+            except Exception:
+                try:
+                    p_bg = parent.cget("background")
+                    parent_bg = p_bg if p_bg else "#ffffff"
+                except Exception:
+                    parent_bg = "#ffffff"
+        self.parent_bg = parent_bg
+        
+        if width is None:
+            self.w = max(72, len(text) * 11 + radius * 2 + 20)
+        else:
+            self.w = width
+            
+        super().__init__(parent, width=self.w, height=self.h, bg=self.parent_bg,
+                         highlightthickness=0, bd=0, **kwargs)
+        
+        self.rect_id = None
+        self.text_id = None
+        self.draw(self.normal_bg)
+        
+        if self.btn_state != "disabled":
+            self.bind("<Enter>", self.on_enter)
+            self.bind("<Leave>", self.on_leave)
+            self.bind("<Button-1>", self.on_press)
+            self.bind("<ButtonRelease-1>", self.on_release)
+            self.config(cursor="hand2")
+            
+    def draw(self, fill_color):
+        self.delete("all")
+        x1, y1 = 1, 1
+        x2, y2 = self.w - 1, self.h - 1
+        r = self.radius
+        points = [
+            x1 + r, y1, x1 + r, y1,
+            x2 - r, y1, x2 - r, y1,
+            x2, y1,
+            x2, y1 + r, x2, y1 + r,
+            x2, y2 - r, x2, y2 - r,
+            x2, y2,
+            x2 - r, y2, x2 - r, y2,
+            x1 + r, y2, x1 + r, y2,
+            x1, y2,
+            x1, y2 - r, x1, y2 - r,
+            x1, y1 + r, x1, y1 + r,
+            x1, y1
+        ]
+        is_dis = (self.btn_state == "disabled")
+        t_color = "#94a3b8" if is_dis else self.normal_fg
+        b_color = "#e2e8f0" if is_dis else fill_color
+        self.rect_id = self.create_polygon(points, fill=b_color, outline="", smooth=True)
+        self.text_id = self.create_text(self.w // 2, self.h // 2, text=self.btn_text, fill=t_color, font=self.font)
+
+    def on_enter(self, e):
+        if self.btn_state != "disabled":
+            self.draw(self.hover_bg)
+
+    def on_leave(self, e):
+        if self.btn_state != "disabled":
+            self.draw(self.normal_bg)
+
+    def on_press(self, e):
+        if self.btn_state != "disabled":
+            self.draw(self.active_bg)
+
+    def on_release(self, e):
+        if self.btn_state != "disabled":
+            self.draw(self.hover_bg)
+            if self.cmd:
+                self.cmd()
+
+    def config(self, **kwargs):
+        if "state" in kwargs:
+            self.btn_state = kwargs.pop("state")
+            if self.btn_state == "disabled":
+                self.unbind("<Enter>")
+                self.unbind("<Leave>")
+                self.unbind("<Button-1>")
+                self.unbind("<ButtonRelease-1>")
+                super().config(cursor="")
+            else:
+                self.bind("<Enter>", self.on_enter)
+                self.bind("<Leave>", self.on_leave)
+                self.bind("<Button-1>", self.on_press)
+                self.bind("<ButtonRelease-1>", self.on_release)
+                super().config(cursor="hand2")
+            self.draw(self.normal_bg)
+        if "text" in kwargs:
+            self.btn_text = kwargs.pop("text")
+            self.draw(self.normal_bg)
+        if "bg" in kwargs:
+            self.normal_bg = kwargs.pop("bg")
+            self.draw(self.normal_bg)
+        if kwargs:
+            super().config(**kwargs)
+    configure = config
+
+    def __setitem__(self, key, value):
+        self.config(**{key: value})
+
+    def cget(self, key):
+        if key == "state":
+            return self.btn_state
+        elif key == "text":
+            return self.btn_text
+        elif key in ("bg", "background"):
+            return self.normal_bg
+        return super().cget(key)
+
+    def __getitem__(self, key):
+        return self.cget(key)
+
 
 class CinematicSplashScreen:
     """
-    🌿 URY Engine — 미니멀 논-사이버네틱 시네마틱 스플래시 오프닝
-    - 2번 앱 아이콘과 100% 동일한 포레스트 그린(#1c4732) & 웜 아이보리(#fbf9f4) 팔레트
-    - 타이핑: "Ultimate Result for You" (U, R, Y 볼드 강조)
-    - 중간 문자 소멸 후 중앙 모노그램 [ U   R   Y ] 완성 및 메인 화면 자동 전환
-    - 순수 미니멀리즘 (AI 체크박스, 로딩바, 스킵버튼 완전 배제)
+    🌿 URY Engine — 미니멀 시네마틱 스플래시 오프닝
+    - 100% 가로 중앙 정렬된 "Ultimate Result for You" 타이핑
+    - U(0), R(9), Y(20) 세 글자 볼드 강조
+    - 3글자 압축 머지 ➔ [ U   R   Y ] 엠블럼 완성 후 대시보드 오픈
+    - 스킵버튼/체크박스/로딩바 완전 배제
     """
     def __init__(self, root, on_finish=None):
         self.root = root
@@ -248,34 +386,50 @@ class CinematicSplashScreen:
         self.canvas.create_rectangle(3, 3, w-3, h-3, outline="#285a41", width=1.5)
         
         self.full_text = "Ultimate Result for You"
-        self.char_items = []
-        self.idx = 0
-        self.cur_x = 75
         self.base_y = h // 2
         
-        # 세이지 타이핑 커서
-        self.cursor_id = self.canvas.create_line(self.cur_x, self.base_y - 14, self.cur_x, self.base_y + 14, fill="#82a585", width=2)
+        # 1. 런타임 캔버스 폰트 메트릭으로 전 글자 너비 정밀 사전 측정
+        char_meta = []
+        total_text_width = 0
+        for i, ch in enumerate(self.full_text):
+            is_init = (i in (0, 9, 20)) # U, R, Y
+            font = ("Helvetica Neue", 25, "bold") if is_init else ("Helvetica Neue", 22, "normal")
+            color = "#fbf9f4" if is_init else "#cbdcd0"
+            temp_id = self.canvas.create_text(0, 0, text=ch, font=font, anchor=tk.W)
+            bbox = self.canvas.bbox(temp_id)
+            self.canvas.delete(temp_id)
+            ch_w = (bbox[2] - bbox[0]) if bbox else 14
+            if ch == ' ':
+                ch_w = 12
+            char_meta.append((ch, is_init, font, color, ch_w))
+            total_text_width += ch_w + 1
+            
+        # 2. 100% 완벽한 중앙 정렬 시작 x 좌표 산출
+        start_x = (w - total_text_width) // 2
+        
+        self.char_steps = []
+        cur_x = start_x
+        for ch, is_init, font, color, ch_w in char_meta:
+            self.char_steps.append((ch, is_init, font, color, cur_x, ch_w))
+            cur_x += ch_w + 1
+            
+        self.char_items = []
+        self.idx = 0
+        
+        # 초기 커서 (첫 글자 위치)
+        self.cursor_id = self.canvas.create_line(start_x, self.base_y - 14, start_x, self.base_y + 14, fill="#82a585", width=2)
         
         self.win.after(100, self.step_type)
         
     def step_type(self):
-        if self.idx < len(self.full_text):
-            char = self.full_text[self.idx]
-            is_initial = (self.idx in (0, 9, 20)) # U, R, Y
+        if self.idx < len(self.char_steps):
+            ch, is_init, font, color, cur_x, ch_w = self.char_steps[self.idx]
+            item = self.canvas.create_text(cur_x, self.base_y, text=ch, fill=color, font=font, anchor=tk.W)
+            self.char_items.append((item, is_init, ch))
             
-            font = ("Helvetica Neue", 25, "bold") if is_initial else ("Helvetica Neue", 22, "normal")
-            color = "#fbf9f4" if is_initial else "#cbdcd0"
-            
-            item = self.canvas.create_text(self.cur_x, self.base_y, text=char, fill=color, font=font, anchor=tk.W)
-            self.char_items.append((item, is_initial, char))
-            
-            bbox = self.canvas.bbox(item)
-            char_w = (bbox[2] - bbox[0]) if bbox else 14
-            if char == ' ':
-                char_w = 12
-            self.cur_x += char_w + 1
-            
-            self.canvas.coords(self.cursor_id, self.cur_x + 1, self.base_y - 13, self.cur_x + 1, self.base_y + 13)
+            # 커서를 방금 입력된 글자 바로 뒤로 이동
+            next_x = cur_x + ch_w + 1
+            self.canvas.coords(self.cursor_id, next_x, self.base_y - 13, next_x, self.base_y + 13)
             self.idx += 1
             self.win.after(34, self.step_type)
         else:
@@ -287,8 +441,9 @@ class CinematicSplashScreen:
             self.canvas.delete(item)
                 
         w, h = 580, 340
-        self.mono_id = self.canvas.create_text(w//2, h//2 - 14, text="U   R   Y", fill="#fbf9f4", font=("Helvetica Neue", 48, "bold"))
-        self.sub_id = self.canvas.create_text(w//2, h//2 + 38, text="U L T I M A T E   R E S U L T   F O R   Y O U", fill="#82a585", font=("Helvetica Neue", 9, "bold"))
+        # 중앙 모노그램 완벽 중앙 정렬
+        self.mono_id = self.canvas.create_text(w//2, h//2 - 14, text="U   R   Y", fill="#fbf9f4", font=("Helvetica Neue", 48, "bold"), anchor=tk.CENTER)
+        self.sub_id = self.canvas.create_text(w//2, h//2 + 38, text="U L T I M A T E   R E S U L T   F O R   Y O U", fill="#82a585", font=("Helvetica Neue", 9, "bold"), anchor=tk.CENTER)
         
         self.win.after(650, self.finish)
         
@@ -537,40 +692,20 @@ class UnifiedDashboardApp:
         left.pack(side=tk.LEFT, fill=tk.Y)
 
         ttk.Label(left, text="🌿 URY Engine v0.2", style="HeaderTitle.TLabel").pack(anchor=tk.W)
-        ttk.Label(left, text="Academic Management Studio · Ultimate Result for You", style="HeaderSub.TLabel").pack(anchor=tk.W)
+        ttk.Label(left, text="Academic Studio · Ultimate Result for You", style="HeaderSub.TLabel").pack(anchor=tk.W)
 
         right = ttk.Frame(self.header_frame, style="Header.TFrame")
         right.pack(side=tk.RIGHT, fill=tk.Y)
 
-        # ☀️/🌙 실시간 듀얼 테마 토글 버튼
-        is_dark = (getattr(self, "theme_mode", "light") == "dark")
-        btn_text = " ☀️ 라이트 모드 " if is_dark else " 🌙 다크 모드 "
-        self.theme_toggle_btn = tk.Button(
-            right,
-            text=btn_text,
-            font=("Pretendard", 9, "bold"),
-            bg="#26543e" if is_dark else "#143324",
-            fg="#d8f3dc",
-            activebackground="#2f664b",
-            activeforeground="#ffffff",
-            relief=tk.FLAT,
-            bd=0,
-            padx=10,
-            pady=4,
-            cursor="hand2",
-            command=self.toggle_theme
-        )
-        self.theme_toggle_btn.pack(side=tk.LEFT, padx=(0, 8))
-
         sem_text = self.settings.get("semester", "2026년 2학기")
-        self.sem_badge_label = tk.Label(right, text=f" 📅 {sem_text} ", font=("Pretendard", 9, "bold"), bg="#143324" if not is_dark else "#1a382b", fg="#d8f3dc", relief=tk.FLAT, padx=8, pady=4)
+        self.sem_badge_label = tk.Label(right, text=f" 📅 {sem_text} ", font=("Pretendard", 9, "bold"), bg="#143324", fg="#d8f3dc", relief=tk.FLAT, padx=10, pady=5)
         self.sem_badge_label.pack(side=tk.LEFT, padx=(0, 8))
 
         api_key = self.settings.get("gemini_api_key", "").strip()
         has_key = len(api_key) >= 10
-        api_text = " 🟢 Gemini API 연결됨 " if has_key else " 🔴 API Key 등록 필요 "
+        api_text = " 🟢 API 연결됨 " if has_key else " 🔴 API 등록 필요 "
         api_fg = "#4ade80" if has_key else "#f87171"
-        self.api_badge_label = tk.Label(right, text=api_text, font=("Pretendard", 9, "bold"), bg="#143324" if not is_dark else "#1a382b", fg=api_fg, relief=tk.FLAT, padx=8, pady=4)
+        self.api_badge_label = tk.Label(right, text=api_text, font=("Pretendard", 9, "bold"), bg="#143324", fg=api_fg, relief=tk.FLAT, padx=10, pady=5)
         self.api_badge_label.pack(side=tk.LEFT)
 
     def create_tabs(self):
@@ -798,49 +933,74 @@ class UnifiedDashboardApp:
         main_paned.add(bottom_container, weight=4)
 
         action_bar = ttk.Frame(bottom_container)
-        action_bar.pack(fill=tk.X, pady=(6, 6))
+        action_bar.pack(fill=tk.X, pady=(8, 8))
 
-        self.generate_studio_btn = ttk.Button(
+        self.generate_studio_btn = SquareRoundButton(
             action_bar,
-            text="학습노트 및 출판용 PDF 생성",
-            style="Action.TButton",
+            text="✨  학습노트 및 출판용 PDF 생성",
+            bg="#1c4732",
+            hover_bg="#265e43",
+            active_bg="#143324",
+            radius=9,
+            height=38,
+            font=("Pretendard", 10, "bold"),
             command=self.execute_studio_generation
         )
-        self.generate_studio_btn.pack(side=tk.LEFT, ipady=6, padx=(0, 8))
+        self.generate_studio_btn.pack(side=tk.LEFT, padx=(0, 10))
 
-        self.studio_stop_btn = ttk.Button(
+        self.studio_stop_btn = SquareRoundButton(
             action_bar,
-            text="작업 중단",
-            style="Danger.TButton",
-            state=tk.DISABLED,
+            text="⏹  작업 중단",
+            bg="#dc2626",
+            hover_bg="#b91c1c",
+            active_bg="#991b1b",
+            radius=9,
+            height=38,
+            state="disabled",
+            font=("Pretendard", 10, "bold"),
             command=self.abort_studio_generation
         )
-        self.studio_stop_btn.pack(side=tk.LEFT, ipady=6, padx=(0, 8))
+        self.studio_stop_btn.pack(side=tk.LEFT, padx=(0, 10))
 
-        self.studio_open_pdf_btn = ttk.Button(
+        self.studio_open_pdf_btn = SquareRoundButton(
             action_bar,
-            text="출판용 PDF 열기",
-            style="Primary.TButton",
-            state=tk.DISABLED,
+            text="📄  출판용 PDF 열기",
+            bg="#2e5944",
+            hover_bg="#3a7056",
+            active_bg="#224333",
+            radius=9,
+            height=38,
+            state="disabled",
+            font=("Pretendard", 10, "bold"),
             command=self.open_last_generated_pdf
         )
-        self.studio_open_pdf_btn.pack(side=tk.LEFT, ipady=6, padx=(0, 8))
+        self.studio_open_pdf_btn.pack(side=tk.LEFT, padx=(0, 10))
 
-        self.studio_open_folder_btn = ttk.Button(
+        self.studio_open_folder_btn = SquareRoundButton(
             action_bar,
-            text="📂 [강의노트 폴더 열기]",
-            style="Secondary.TButton",
+            text="📂  강의노트 폴더 열기",
+            bg="#e2e8f0",
+            hover_bg="#cbd5e1",
+            fg="#14281e",
+            radius=9,
+            height=38,
+            font=("Pretendard", 10, "bold"),
             command=self.open_studio_notes_folder
         )
-        self.studio_open_folder_btn.pack(side=tk.LEFT, ipady=6, padx=(0, 8))
+        self.studio_open_folder_btn.pack(side=tk.LEFT, padx=(0, 10))
 
-        self.studio_clear_log_btn = ttk.Button(
+        self.studio_clear_log_btn = SquareRoundButton(
             action_bar,
-            text="🧹 [콘솔 비우기]",
-            style="Secondary.TButton",
+            text="🧹  콘솔 비우기",
+            bg="#e2e8f0",
+            hover_bg="#cbd5e1",
+            fg="#14281e",
+            radius=9,
+            height=38,
+            font=("Pretendard", 10, "bold"),
             command=self.clear_studio_log
         )
-        self.studio_clear_log_btn.pack(side=tk.LEFT, ipady=6)
+        self.studio_clear_log_btn.pack(side=tk.LEFT)
 
         # 프로그레스바 및 상태/ETA 메시지
         status_row = ttk.Frame(bottom_container)
@@ -1342,11 +1502,11 @@ class UnifiedDashboardApp:
         btn_bar = ttk.Frame(form)
         btn_bar.pack(fill=tk.X, pady=(10, 0))
 
-        ttk.Button(btn_bar, text="📅 [공부 기간 맞춤 학습 로드맵 생성]", style="Primary.TButton", command=self.generate_period_roadmap_action).pack(side=tk.LEFT, ipady=5, padx=(0, 8))
-        ttk.Button(btn_bar, text="📝 [AI 맞춤 모의시험 & 해설 PDF 생성]", style="Action.TButton", command=self.generate_mock_exam_now_action).pack(side=tk.LEFT, ipady=5, padx=(0, 8))
-        ttk.Button(btn_bar, text="✍️ [답안 제출 및 AI 자동 채점]", style="Action.TButton", command=self.open_grading_dialog_action).pack(side=tk.LEFT, ipady=5, padx=(0, 8))
-        ttk.Button(btn_bar, text="⚡ [3분 치트시트(1Page) 생성]", style="Primary.TButton", command=self.generate_cheatsheet_action).pack(side=tk.LEFT, ipady=5, padx=(0, 8))
-        ttk.Button(btn_bar, text="📂 [과목 예상문제 폴더 열기]", style="Secondary.TButton", command=self.open_exam_folder_action).pack(side=tk.LEFT, ipady=5)
+        SquareRoundButton(btn_bar, text="📅  학습 로드맵 생성", bg="#1c4732", hover_bg="#265e43", radius=8, height=36, font=("Pretendard", 10, "bold"), command=self.generate_period_roadmap_action).pack(side=tk.LEFT, padx=(0, 8))
+        SquareRoundButton(btn_bar, text="📝  모의시험 및 해설 PDF", bg="#205c3b", hover_bg="#2a774d", radius=8, height=36, font=("Pretendard", 10, "bold"), command=self.generate_mock_exam_now_action).pack(side=tk.LEFT, padx=(0, 8))
+        SquareRoundButton(btn_bar, text="✍️  답안 제출 및 채점", bg="#285943", hover_bg="#357357", radius=8, height=36, font=("Pretendard", 10, "bold"), command=self.open_grading_dialog_action).pack(side=tk.LEFT, padx=(0, 8))
+        SquareRoundButton(btn_bar, text="⚡  치트시트 생성", bg="#3a6652", hover_bg="#4a8067", radius=8, height=36, font=("Pretendard", 10, "bold"), command=self.generate_cheatsheet_action).pack(side=tk.LEFT, padx=(0, 8))
+        SquareRoundButton(btn_bar, text="📂  문제 폴더 열기", bg="#e2e8f0", hover_bg="#cbd5e1", fg="#14281e", radius=8, height=36, font=("Pretendard", 10, "bold"), command=self.open_exam_folder_action).pack(side=tk.LEFT)
 
         # 실시간 진행 상황 및 로그 콘솔 프레임 (ETA & Progress Bar)
         exam_log_frame = ttk.LabelFrame(frame, text=" 💻 모의시험 & 로드맵 실시간 진행 로그 및 소요 시간 (Live Logs & ETA) ", padding="6")
@@ -2135,7 +2295,7 @@ class UnifiedDashboardApp:
         btn_box.pack(side=tk.RIGHT, fill=tk.Y)
 
         ttk.Button(btn_box, text="📎 자료 첨부...", style="Secondary.TButton", command=self.attach_tutor_material_file).pack(fill=tk.X, pady=(0, 4))
-        self.tutor_send_btn = ttk.Button(btn_box, text="🚀 [질문 전송]\n(Enter)", style="Primary.TButton", command=self.send_tutor_message)
+        self.tutor_send_btn = SquareRoundButton(btn_box, text="질문 전송 (Enter)", bg="#1c4732", hover_bg="#265e43", radius=8, height=36, font=("Pretendard", 10, "bold"), command=self.send_tutor_message)
         self.tutor_send_btn.pack(fill=tk.BOTH, expand=True, ipadx=10)
 
 
@@ -2622,10 +2782,10 @@ class UnifiedDashboardApp:
         act_bar = ttk.Frame(frame)
         act_bar.pack(fill=tk.X, pady=(8, 0))
 
-        ttk.Button(act_bar, text="📖 [선택 차시 강의노트 PDF 열기]", style="Primary.TButton", command=self.dash_open_note_action).pack(side=tk.LEFT, ipady=4, padx=(0, 8))
-        ttk.Button(act_bar, text="📂 [선택 주차 폴더 열기]", style="Secondary.TButton", command=self.dash_open_folder_action).pack(side=tk.LEFT, ipady=4, padx=(0, 8))
-        ttk.Button(act_bar, text="⚡ [이 주차 3분 치트시트 생성]", style="Action.TButton", command=self.dash_generate_cheatsheet_action).pack(side=tk.LEFT, ipady=4, padx=(0, 8))
-        ttk.Button(act_bar, text="📝 [이 주차 맞춤 모의시험 출제]", style="Primary.TButton", command=self.dash_goto_exam_action).pack(side=tk.LEFT, ipady=4)
+        SquareRoundButton(act_bar, text="📖  선택 강의노트 PDF 열기", bg="#1c4732", hover_bg="#265e43", radius=8, height=36, font=("Pretendard", 9, "bold"), command=self.dash_open_note_action).pack(side=tk.LEFT, padx=(0, 8))
+        SquareRoundButton(act_bar, text="📂  선택 주차 폴더 열기", bg="#e2e8f0", hover_bg="#cbd5e1", fg="#14281e", radius=8, height=36, font=("Pretendard", 9, "bold"), command=self.dash_open_folder_action).pack(side=tk.LEFT, padx=(0, 8))
+        SquareRoundButton(act_bar, text="⚡  3분 치트시트 생성", bg="#205c3b", hover_bg="#2a774d", radius=8, height=36, font=("Pretendard", 9, "bold"), command=self.dash_generate_cheatsheet_action).pack(side=tk.LEFT, padx=(0, 8))
+        SquareRoundButton(act_bar, text="📝  맞춤 모의시험 출제", bg="#285943", hover_bg="#357357", radius=8, height=36, font=("Pretendard", 9, "bold"), command=self.dash_goto_exam_action).pack(side=tk.LEFT)
 
     def open_current_dash_course_folder(self):
         cname = self.dash_course_combo.get().strip()
@@ -2878,87 +3038,6 @@ class UnifiedDashboardApp:
     # 탭 4: ⚙️ 과목 및 시스템 설정
     # =========================================================================
     def build_settings_tab(self):
-        # 상단 테마 및 포인트 컬러 커스텀 카드
-        theme_card = ttk.LabelFrame(self.tab_settings, text=" UI 테마 및 포인트 색상 커스텀 ", padding="10")
-        theme_card.pack(fill=tk.X, pady=(0, 8))
-
-        theme_row = ttk.Frame(theme_card)
-        theme_row.pack(fill=tk.X, pady=(0, 6))
-
-        ttk.Label(theme_row, text="테마 모드:", font=("Pretendard", 9, "bold"), width=11).pack(side=tk.LEFT)
-        is_dark = (getattr(self, "theme_mode", "light") == "dark")
-        t_btn_text = " ☀️ 라이트 모드로 전환 " if is_dark else " 🌙 다크 모드로 전환 "
-        self.tab_theme_toggle_btn = tk.Button(
-            theme_row,
-            text=t_btn_text,
-            font=("Pretendard", 9, "bold"),
-            bg="#26543e" if is_dark else "#e2e8f0",
-            fg="#fbf9f4" if is_dark else "#14281e",
-            activebackground="#2f664b" if is_dark else "#cbd5e1",
-            relief=tk.FLAT,
-            bd=0,
-            padx=10,
-            pady=3,
-            cursor="hand2",
-            command=self.toggle_theme
-        )
-        self.tab_theme_toggle_btn.pack(side=tk.LEFT, padx=(0, 16))
-
-        color_row = ttk.Frame(theme_card)
-        color_row.pack(fill=tk.X, pady=(4, 2))
-
-        ttk.Label(color_row, text="포인트 컬러:", font=("Pretendard", 9, "bold"), width=11).pack(side=tk.LEFT)
-
-        presets = [
-            ("🌿 URY Forest", "#1c4732", "#fbf9f4"),
-            ("🌲 Emerald", "#105e46", "#ffffff"),
-            ("🍵 Sage", "#3d6753", "#fbf9f4"),
-            ("🌊 Slate", "#1e3a5f", "#ffffff"),
-            ("🌌 Charcoal", "#2b303a", "#ffffff"),
-        ]
-
-        for label, hex_c, fg_c in presets:
-            btn = tk.Button(
-                color_row,
-                text=label,
-                font=("Pretendard", 8, "bold"),
-                bg=hex_c,
-                fg=fg_c,
-                activebackground=hex_c,
-                activeforeground=fg_c,
-                relief=tk.FLAT,
-                bd=0,
-                padx=8,
-                pady=3,
-                cursor="hand2",
-                command=lambda c=hex_c: self.set_theme_accent(c)
-            )
-            btn.pack(side=tk.LEFT, padx=(0, 6))
-
-        picker_btn = tk.Button(
-            color_row,
-            text="🎨 직접 색상 선택...",
-            font=("Pretendard", 8, "bold"),
-            bg="#334155",
-            fg="#ffffff",
-            activebackground="#475569",
-            activeforeground="#ffffff",
-            relief=tk.FLAT,
-            bd=0,
-            padx=8,
-            pady=3,
-            cursor="hand2",
-            command=self.choose_custom_color
-        )
-        picker_btn.pack(side=tk.LEFT, padx=(6, 12))
-
-        accent = getattr(self, "theme_accent", "#1c4732")
-        self.accent_preview_chip = tk.Label(color_row, text="  ", bg=accent, width=3, relief=tk.SOLID, bd=1)
-        self.accent_preview_chip.pack(side=tk.LEFT, padx=(0, 6))
-
-        self.accent_hex_label = ttk.Label(color_row, text=f"현재 선택된 포인트 색상: {accent}", style="Muted.TLabel")
-        self.accent_hex_label.pack(side=tk.LEFT)
-
         # 상단 설정 카드 (학기 & API Key)
         top_frame = ttk.LabelFrame(self.tab_settings, text=" 학기 및 Gemini API 설정 ", padding="10")
         top_frame.pack(fill=tk.X, pady=(0, 8))
@@ -3049,7 +3128,7 @@ class UnifiedDashboardApp:
         self.api_entry.bind("<Button-1>", lambda e: self.api_entry.focus_set())
         self.add_context_menu(self.api_entry)
 
-        ttk.Button(api_row, text="💾 설정 저장", style="Primary.TButton", command=self.save_settings_action).pack(side=tk.RIGHT)
+        SquareRoundButton(api_row, text="💾 설정 저장", bg="#1c4732", hover_bg="#265e43", radius=8, height=32, font=("Pretendard", 9, "bold"), command=self.save_settings_action).pack(side=tk.RIGHT)
 
         # 과목 관리 테이블
         course_frame = ttk.LabelFrame(self.tab_settings, text=" 📚 수강 과목 관리 목록 ", padding="8")
@@ -3084,9 +3163,9 @@ class UnifiedDashboardApp:
         c_btn_row = ttk.Frame(self.tab_settings)
         c_btn_row.pack(fill=tk.X, pady=(0, 8))
 
-        ttk.Button(c_btn_row, text="➕ 과목 추가", style="Secondary.TButton", command=self.add_course_dialog).pack(side=tk.LEFT, padx=(0, 6))
-        ttk.Button(c_btn_row, text="✏️ 선택 과목 수정", style="Secondary.TButton", command=self.edit_course_dialog).pack(side=tk.LEFT, padx=(0, 6))
-        ttk.Button(c_btn_row, text="🗑️ 과목 삭제", style="Danger.TButton", command=self.delete_course_action).pack(side=tk.LEFT)
+        SquareRoundButton(c_btn_row, text="➕  과목 추가", bg="#1c4732", hover_bg="#265e43", radius=8, height=34, font=("Pretendard", 9, "bold"), command=self.add_course_dialog).pack(side=tk.LEFT, padx=(0, 8))
+        SquareRoundButton(c_btn_row, text="✏️  선택 과목 수정", bg="#e2e8f0", hover_bg="#cbd5e1", fg="#14281e", radius=8, height=34, font=("Pretendard", 9, "bold"), command=self.edit_course_dialog).pack(side=tk.LEFT, padx=(0, 8))
+        SquareRoundButton(c_btn_row, text="🗑️  과목 삭제", bg="#fee2e2", hover_bg="#fecaca", fg="#dc2626", radius=8, height=34, font=("Pretendard", 9, "bold"), command=self.delete_course_action).pack(side=tk.LEFT)
 
         # 하단 전체 파이프라인 일괄 수동 실행 옵션 (사용자가 원할 때만 실행)
         batch_frame = ttk.LabelFrame(self.tab_settings, text=" 🚀 전체 파이프라인 일괄 수동 실행 (옵션) ", padding="8")

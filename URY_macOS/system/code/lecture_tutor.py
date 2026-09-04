@@ -220,12 +220,12 @@ def ask_lecture_tutor(cname, user_query, conversation_history=None, tutor_name=N
         "generationConfig": {"temperature": 0.3}
     }
 
-    # 초고속 실시간 대화형 모델 우선순위 큐 구성 (1초 이내 초고속 응답)
+    # 초고속 실시간 대화형 공식 정식 모델 우선순위 (1~2초 이내 안정적 응답)
     fast_priority_models = [
-        "gemini-3.5-flash-lite",
-        "gemini-flash-lite-latest",
-        "gemini-3.1-flash-lite",
-        "gemini-flash-latest",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-2.5-flash",
+        "gemini-1.5-pro",
     ]
     supported = config_manager.get_supported_gemini_models(api_key)
     ordered_models = []
@@ -236,11 +236,12 @@ def ask_lecture_tutor(cname, user_query, conversation_history=None, tutor_name=N
         if m not in ordered_models:
             ordered_models.append(m)
 
+    last_error_msg = ""
     for model in ordered_models:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
         req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
         try:
-            with urllib.request.urlopen(req, timeout=12) as resp:
+            with urllib.request.urlopen(req, timeout=25) as resp:
                 res = json.loads(resp.read().decode("utf-8"))
                 candidates = res.get("candidates", [])
                 if candidates and "content" in candidates[0]:
@@ -249,18 +250,29 @@ def ask_lecture_tutor(cname, user_query, conversation_history=None, tutor_name=N
                         raw_answer = parts[0]["text"].strip()
                         return verify_and_guard_answer(raw_answer, kb)
         except urllib.error.HTTPError as e:
-            if e.code in (503, 429, 500, 502, 504):
-                log_func(f"  ⚠️ [{model}] HTTP {e.code} 서버 지연/과부하 감지 -> 즉각 대체 모델로 초고속 전환...")
-                continue
-            else:
-                continue
-        except (urllib.error.URLError, TimeoutError):
-            log_func(f"  ⚠️ [{model}] 응답 지연(Timeout) -> 즉각 대체 모델로 전환...")
+            err_body = ""
+            try:
+                err_body = e.read().decode("utf-8")
+            except Exception:
+                pass
+            if e.code in (400, 403):
+                if "API_KEY_INVALID" in err_body or "API key not valid" in err_body:
+                    return "⚠️ 등록된 Gemini API 키가 유효하지 않습니다. [설정] 탭에서 올바른 API 키를 등록해주세요."
+                if "QUOTA_EXCEEDED" in err_body or "RESOURCE_EXHAUSTED" in err_body:
+                    last_error_msg = "Google Gemini API 무료 할당량이 일시적으로 소진되었습니다."
+                    continue
+            last_error_msg = f"HTTP {e.code} ({model})"
             continue
-        except Exception:
+        except (urllib.error.URLError, TimeoutError) as e:
+            last_error_msg = f"네트워크 타임아웃 ({model})"
+            continue
+        except Exception as e:
+            last_error_msg = str(e)
             continue
 
-    return "❌ 죄송합니다. 구글 AI 서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요."
+    if last_error_msg:
+        return f"❌ 답변 생성에 실패했습니다 ({last_error_msg}). 잠시 후 다시 질문하시거나 [설정] 탭의 API 키를 확인해주세요."
+    return "❌ 답변 생성에 실패했습니다. 인터넷 연결 및 [설정] 탭의 API 키를 확인해주세요."
 
 if __name__ == "__main__":
     print("lecture_tutor module loaded successfully!")
