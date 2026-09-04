@@ -25,6 +25,10 @@ build/
 *.tar.gz
 *.dmg
 *.exe
+URY_*_v*/
+URY_*_Release/
+URY_*_Standalone*/
+URY_*_Project*/
 
 # ==========================================
 # 🎙️ 음성 및 비디오 녹음 파일

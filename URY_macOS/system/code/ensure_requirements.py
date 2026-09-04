@@ -40,10 +40,10 @@ def check_and_install_dependencies():
     print("=" * 65)
 
     install_cmds = [
-        [sys.executable, "-m", "pip", "install", "--quiet"] + missing,
-        [sys.executable, "-m", "pip", "install", "--user", "--quiet"] + missing,
-        [sys.executable, "-m", "pip", "install", "--break-system-packages", "--user", "--quiet"] + missing,
-        [sys.executable, "-m", "pip", "install", "--break-system-packages", "--quiet"] + missing,
+        [sys.executable, "-m", "pip", "install", "--timeout", "5", "--retries", "1", "--quiet"] + missing,
+        [sys.executable, "-m", "pip", "install", "--timeout", "5", "--retries", "1", "--user", "--quiet"] + missing,
+        [sys.executable, "-m", "pip", "install", "--timeout", "5", "--retries", "1", "--break-system-packages", "--user", "--quiet"] + missing,
+        [sys.executable, "-m", "pip", "install", "--timeout", "5", "--retries", "1", "--break-system-packages", "--quiet"] + missing,
     ]
 
     success = False
