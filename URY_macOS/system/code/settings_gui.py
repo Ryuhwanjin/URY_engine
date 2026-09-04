@@ -20,7 +20,7 @@ import threading
 import subprocess
 from datetime import datetime, timedelta
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox, filedialog, colorchooser
 
 # =========================================================================
 # 🛡️ macOS Cocoa Tkinter SIGABRT 크래시 방지용 네이티브 안전 파일 다이얼로그
@@ -209,24 +209,99 @@ PERIOD_TO_DAYS = {
     "D-14 (2주 체계적 마스터)": 14
 }
 
-# 32x32 모던 학사모 앱 아이콘 Base64 데이터
-APP_ICON_PNG = (
-    "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlz"
-    "AAAOxAAADsQBlSsOGwAAAZRJREFUWIXt1r9rk0EYwPGP0kpdHBy6dJFQh0JbB3FzdVEXi5uTiIOI"
-    "4OTk6ubgIuJURBcncevo4qSgi5ODi1MHR6eKODgUF8GhV5q8d/fl+XkL7wPHcbfkueee5y7XB395"
-    "tQW36t54hV57mEsz0f5Z4z5e4DGe4Hn7vYo7OJb5cM6u4Fts4y2+Zvy2j43sW2yN34e4k/nB6Q3A"
-    "Z3zP/A7ex3aCdxM/xPsET/Eomz76uJv4r1gXAHv4mvl9fEz4S2IH9xK8jf0sfh/Xszu4vQD8wh7e"
-    "RvgM6wXbWb44e05n02m2b474g3f4iG+4iP3s3s58O5s8vQF4hf2Y38M/wVfYjPABVhM8jO3M/4xt"
-    "AfCMw2gXz67+A2wLgFcYxPyu4C/YjPBdrCT4c8ze37BfAD5hL/NXsbkQvB37mX8eWyPAG/Rifh2n"
-    "CwDe4zDmv2J3IfA79GP+Q2wVAIz7zU3+Q/kX38M3bOPuQh85jN75MvO/U9236H8GfgNXoUoxeQ79"
-    "VwAAAABJRU5ErkJggg=="
-)
+# 64x64 미니멀 그린 북 & 리프 앱 아이콘 Base64 데이터 (v0.2)
+APP_ICON_PNG = "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"
+
+class CinematicSplashScreen:
+    """
+    🌿 URY Engine — 미니멀 논-사이버네틱 시네마틱 스플래시 오프닝
+    - 2번 앱 아이콘과 100% 동일한 포레스트 그린(#1c4732) & 웜 아이보리(#fbf9f4) 팔레트
+    - 타이핑: "Ultimate Result for You" (U, R, Y 볼드 강조)
+    - 중간 문자 소멸 후 중앙 모노그램 [ U   R   Y ] 완성 및 메인 화면 자동 전환
+    - 순수 미니멀리즘 (AI 체크박스, 로딩바, 스킵버튼 완전 배제)
+    """
+    def __init__(self, root, on_finish=None):
+        self.root = root
+        self.on_finish = on_finish
+        
+        self.win = tk.Toplevel(root)
+        self.win.overrideredirect(True)
+        self.win.configure(bg="#1c4732")
+        
+        w, h = 580, 340
+        sw = self.win.winfo_screenwidth()
+        sh = self.win.winfo_screenheight()
+        x = max(0, (sw - w) // 2)
+        y = max(0, (sh - h) // 2)
+        self.win.geometry(f"{w}x{h}+{x}+{y}")
+        self.win.lift()
+        self.win.attributes("-topmost", True)
+        
+        self.canvas = tk.Canvas(self.win, width=w, height=h, bg="#1c4732", highlightthickness=0)
+        self.canvas.pack(fill=tk.BOTH, expand=True)
+        
+        # 은은하고 얇은 단일 외곽선
+        self.canvas.create_rectangle(3, 3, w-3, h-3, outline="#285a41", width=1.5)
+        
+        self.full_text = "Ultimate Result for You"
+        self.char_items = []
+        self.idx = 0
+        self.cur_x = 75
+        self.base_y = h // 2
+        
+        # 세이지 타이핑 커서
+        self.cursor_id = self.canvas.create_line(self.cur_x, self.base_y - 14, self.cur_x, self.base_y + 14, fill="#82a585", width=2)
+        
+        self.win.after(100, self.step_type)
+        
+    def step_type(self):
+        if self.idx < len(self.full_text):
+            char = self.full_text[self.idx]
+            is_initial = (self.idx in (0, 9, 20)) # U, R, Y
+            
+            font = ("Helvetica Neue", 25, "bold") if is_initial else ("Helvetica Neue", 22, "normal")
+            color = "#fbf9f4" if is_initial else "#cbdcd0"
+            
+            item = self.canvas.create_text(self.cur_x, self.base_y, text=char, fill=color, font=font, anchor=tk.W)
+            self.char_items.append((item, is_initial, char))
+            
+            bbox = self.canvas.bbox(item)
+            char_w = (bbox[2] - bbox[0]) if bbox else 14
+            if char == ' ':
+                char_w = 12
+            self.cur_x += char_w + 1
+            
+            self.canvas.coords(self.cursor_id, self.cur_x + 1, self.base_y - 13, self.cur_x + 1, self.base_y + 13)
+            self.idx += 1
+            self.win.after(34, self.step_type)
+        else:
+            self.canvas.delete(self.cursor_id)
+            self.win.after(320, self.step_collapse)
+            
+    def step_collapse(self):
+        for item, _, _ in self.char_items:
+            self.canvas.delete(item)
+                
+        w, h = 580, 340
+        self.mono_id = self.canvas.create_text(w//2, h//2 - 14, text="U   R   Y", fill="#fbf9f4", font=("Helvetica Neue", 48, "bold"))
+        self.sub_id = self.canvas.create_text(w//2, h//2 + 38, text="U L T I M A T E   R E S U L T   F O R   Y O U", fill="#82a585", font=("Helvetica Neue", 9, "bold"))
+        
+        self.win.after(650, self.finish)
+        
+    def finish(self):
+        try:
+            self.win.destroy()
+        except Exception:
+            pass
+        if self.on_finish:
+            self.on_finish()
+
 
 class UnifiedDashboardApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("🎓 URY Engine — AI Academic Studio (v0.1)")
-        self.root.geometry("1060x890")
+        self.root.title("URY Engine — Academic Studio v0.2")
+        self.root.geometry("1080x900")
         self.root.minsize(980, 780)
 
         config_manager.fix_mac_quarantine()
@@ -234,6 +309,12 @@ class UnifiedDashboardApp:
         self.bind_mac_shortcuts()
 
         self.settings = config_manager.load_settings()
+        self.theme_mode = self.settings.get("theme_mode", "light")
+        self.theme_accent = self.settings.get("theme_accent", "#1c4732")
+
+        # 시네마틱 스플래시 오프닝 구동 (메인 창 잠시 은닉)
+        self.root.withdraw()
+        self.splash = CinematicSplashScreen(self.root, on_finish=self.on_splash_done)
         self.courses = list(self.settings.get("courses", []))
         self.selected_courses_for_run = set()
         self.last_generated_pdf = None
@@ -247,6 +328,71 @@ class UnifiedDashboardApp:
         self.create_header_card()
         self.create_tabs()
         self.populate_course_table()
+
+
+    def on_splash_done(self):
+        try:
+            self.root.deiconify()
+            self.root.lift()
+            self.root.focus_force()
+        except Exception:
+            pass
+
+    def set_theme_accent(self, color_hex):
+        if not color_hex or not color_hex.startswith("#"):
+            return
+        self.theme_accent = color_hex
+        self.settings["theme_accent"] = color_hex
+        config_manager.save_settings(self.settings)
+        self.setup_styles()
+        self.refresh_theme_widgets()
+
+    def choose_custom_color(self):
+        curr = getattr(self, "theme_accent", "#1c4732")
+        picked = colorchooser.askcolor(color=curr, title="포인트 테마 색상 선택")
+        if picked and picked[1]:
+            self.set_theme_accent(picked[1])
+
+    def toggle_theme(self):
+        self.theme_mode = "dark" if self.theme_mode == "light" else "light"
+        self.settings["theme_mode"] = self.theme_mode
+        config_manager.save_settings(self.settings)
+        self.setup_styles()
+        self.refresh_theme_widgets()
+
+    def refresh_theme_widgets(self):
+        is_dark = (self.theme_mode == "dark")
+        accent = getattr(self, "theme_accent", "#1c4732")
+        if hasattr(self, "theme_toggle_btn"):
+            self.theme_toggle_btn.config(
+                text=" ☀️ 라이트 모드 " if is_dark else " 🌙 다크 모드 ",
+                bg="#26543e" if is_dark else "#143324",
+                fg="#fbf9f4"
+            )
+        if hasattr(self, "tab_theme_toggle_btn"):
+            self.tab_theme_toggle_btn.config(
+                text=" ☀️ 라이트 모드로 전환 " if is_dark else " 🌙 다크 모드로 전환 ",
+                bg="#26543e" if is_dark else "#e2e8f0",
+                fg="#fbf9f4" if is_dark else "#14281e"
+            )
+        if hasattr(self, "header_frame"):
+            self.header_frame.configure(style="Header.TFrame")
+        if hasattr(self, "sem_badge_label"):
+            self.sem_badge_label.config(
+                bg="#143324" if not is_dark else "#1a382b",
+                fg="#d8f3dc"
+            )
+        if hasattr(self, "api_badge_label"):
+            has_key = len(self.settings.get("gemini_api_key", "").strip()) >= 10
+            api_fg = "#4ade80" if has_key else "#f87171"
+            self.api_badge_label.config(
+                bg="#143324" if not is_dark else "#1a382b",
+                fg=api_fg
+            )
+        if hasattr(self, "accent_preview_chip"):
+            self.accent_preview_chip.config(bg=accent)
+        if hasattr(self, "accent_hex_label"):
+            self.accent_hex_label.config(text=f"현재 선택된 포인트 색상: {accent}")
 
     def setup_icon(self):
         try:
@@ -290,77 +436,126 @@ class UnifiedDashboardApp:
         style = ttk.Style()
         style.theme_use("clam")
 
-        self.root.configure(bg="#f8fafc")
+        # 🌿 2번 앱 아이콘과 100% 통일된 포레스트 그린 테마 시스템
+        is_dark = (getattr(self, "theme_mode", "light") == "dark")
+        accent = getattr(self, "theme_accent", "#1c4732")
+
+        if is_dark:
+            bg_main = "#0e1f16"        # 다크 포레스트 배경
+            bg_card = "#163024"        # 카드 배경
+            bg_header = "#11261d"      # 헤더 배경
+            border_c = "#26543e"       # 카드 보더
+            fg_main = "#fbf9f4"        # 웜 아이보리 텍스트
+            fg_muted = "#8fa896"       # 세이지 그레이
+            tab_inactive = "#1a382b"   # 비활성 탭
+            tab_active = accent        # 활성 탭 (사용자 지정 포인트)
+            tab_active_fg = "#ffffff"
+            btn_primary = accent
+            btn_primary_act = "#235c41"
+        else:
+            bg_main = "#f4f7f5"        # 산뜻한 라이트 세이지 틴트
+            bg_card = "#ffffff"        # 퓨어 화이트 카드
+            bg_header = "#1c4732"      # 아이콘 원색 매칭 딥 포레스트 헤더
+            border_c = "#d4e0d8"       # 부드러운 보더
+            fg_main = "#14281e"        # 포레스트 차콜 텍스트
+            fg_muted = "#566b5e"       # 차분한 세이지 그레이
+            tab_inactive = "#e2e8f0"   # 비활성 탭
+            tab_active = accent        # 활성 탭 (포레스트 그린)
+            tab_active_fg = "#ffffff"
+            btn_primary = accent
+            btn_primary_act = "#143324"
+
+        self.root.configure(bg=bg_main)
 
         # 폰트 계층
         f_title = ("Pretendard", 11, "bold")
         f_body = ("Pretendard", 10)
         f_small = ("Pretendard", 9)
 
-        style.configure(".", background="#f8fafc", foreground="#0f172a", font=f_body)
-        style.configure("TFrame", background="#f8fafc")
-        style.configure("Card.TFrame", background="#ffffff", relief=tk.SOLID, borderwidth=1)
-        style.configure("TLabel", background="#f8fafc", foreground="#1e293b", font=f_body)
-        style.configure("Card.TLabel", background="#ffffff", foreground="#1e293b", font=f_body)
-        style.configure("Muted.TLabel", background="#f8fafc", foreground="#64748b", font=f_small)
-        style.configure("CardMuted.TLabel", background="#ffffff", foreground="#64748b", font=f_small)
+        style.configure(".", background=bg_main, foreground=fg_main, font=f_body)
+        style.configure("TFrame", background=bg_main)
+        style.configure("Card.TFrame", background=bg_card, relief=tk.SOLID, borderwidth=1)
+        style.configure("TLabel", background=bg_main, foreground=fg_main, font=f_body)
+        style.configure("Card.TLabel", background=bg_card, foreground=fg_main, font=f_body)
+        style.configure("Muted.TLabel", background=bg_main, foreground=fg_muted, font=f_small)
+        style.configure("CardMuted.TLabel", background=bg_card, foreground=fg_muted, font=f_small)
 
         # 헤더
-        style.configure("Header.TFrame", background="#0f172a")
-        style.configure("HeaderTitle.TLabel", background="#0f172a", foreground="#ffffff", font=("Pretendard", 14, "bold"))
-        style.configure("HeaderSub.TLabel", background="#0f172a", foreground="#94a3b8", font=f_small)
+        style.configure("Header.TFrame", background=bg_header)
+        style.configure("HeaderTitle.TLabel", background=bg_header, foreground="#fbf9f4", font=("Pretendard", 14, "bold"))
+        style.configure("HeaderSub.TLabel", background=bg_header, foreground="#d8f3dc", font=f_small)
 
-        # 탭
-        style.configure("TNotebook", background="#f8fafc", borderwidth=0)
-        style.configure("TNotebook.Tab", font=f_title, padding=[16, 8], background="#e2e8f0", foreground="#475569")
+        # 모던 알약형 플로팅 세그먼트 탭
+        style.configure("TNotebook", background=bg_main, borderwidth=0)
+        style.configure("TNotebook.Tab", font=f_title, padding=[18, 9], background=tab_inactive, foreground=fg_muted)
         style.map("TNotebook.Tab",
-                  background=[("selected", "#ffffff"), ("active", "#cbd5e1")],
-                  foreground=[("selected", "#4f46e5"), ("active", "#0f172a")])
+                  background=[("selected", tab_active), ("active", "#cbd5e1" if not is_dark else "#224737")],
+                  foreground=[("selected", tab_active_fg), ("active", fg_main)])
 
         # 버튼들
-        style.configure("Primary.TButton", font=f_title, background="#4f46e5", foreground="#ffffff", borderwidth=0)
-        style.map("Primary.TButton", background=[("active", "#4338ca"), ("disabled", "#94a3b8")])
+        style.configure("Primary.TButton", font=f_title, background=btn_primary, foreground="#ffffff", borderwidth=0)
+        style.map("Primary.TButton", background=[("active", btn_primary_act), ("disabled", "#94a3b8")])
 
         style.configure("Action.TButton", font=("Pretendard", 11, "bold"), background="#10b981", foreground="#ffffff", borderwidth=0)
         style.map("Action.TButton", background=[("active", "#059669"), ("disabled", "#94a3b8")])
 
-        style.configure("Secondary.TButton", font=f_body, background="#e2e8f0", foreground="#1e293b", borderwidth=0)
-        style.map("Secondary.TButton", background=[("active", "#cbd5e1")])
+        style.configure("Secondary.TButton", font=f_body, background="#e2e8f0" if not is_dark else "#224737", foreground=fg_main, borderwidth=0)
+        style.map("Secondary.TButton", background=[("active", "#cbd5e1" if not is_dark else "#2a5743")])
 
         style.configure("Danger.TButton", font=f_body, background="#ef4444", foreground="#ffffff", borderwidth=0)
         style.map("Danger.TButton", background=[("active", "#dc2626"), ("disabled", "#94a3b8")])
 
         # 트리뷰 (과목 테이블)
-        style.configure("Treeview.Heading", font=("Pretendard", 10, "bold"), background="#f1f5f9", foreground="#0f172a")
-        style.configure("Treeview", font=f_body, rowheight=28, background="#ffffff", fieldbackground="#ffffff")
-        style.map("Treeview", background=[("selected", "#e0e7ff")], foreground=[("selected", "#312e81")])
+        style.configure("Treeview.Heading", font=("Pretendard", 10, "bold"), background="#f1f5f9" if not is_dark else "#1a382b", foreground=fg_main)
+        style.configure("Treeview", font=f_body, rowheight=28, background=bg_card, fieldbackground=bg_card, foreground=fg_main)
+        style.map("Treeview", background=[("selected", "#d8f3dc" if not is_dark else "#235c41")], foreground=[("selected", "#14281e" if not is_dark else "#ffffff")])
 
         # 라벨프레임
-        style.configure("TLabelframe", background="#ffffff", bordercolor="#e2e8f0", borderwidth=1)
-        style.configure("TLabelframe.Label", background="#ffffff", foreground="#334155", font=f_title)
+        style.configure("TLabelframe", background=bg_card, bordercolor=border_c, borderwidth=1)
+        style.configure("TLabelframe.Label", background=bg_card, foreground=fg_main, font=f_title)
 
     def create_header_card(self):
-        header = ttk.Frame(self.root, style="Header.TFrame", padding="16 12 16 12")
-        header.pack(fill=tk.X)
+        self.header_frame = ttk.Frame(self.root, style="Header.TFrame", padding="16 12 16 12")
+        self.header_frame.pack(fill=tk.X)
 
-        left = ttk.Frame(header, style="Header.TFrame")
+        left = ttk.Frame(self.header_frame, style="Header.TFrame")
         left.pack(side=tk.LEFT, fill=tk.Y)
 
-        ttk.Label(left, text="🎓 URY Engine  v0.1", style="HeaderTitle.TLabel").pack(anchor=tk.W)
-        ttk.Label(left, text="대학 전공 학업 관리 AI 자동화 스튜디오 (Ultimate Result for You)", style="HeaderSub.TLabel").pack(anchor=tk.W)
+        ttk.Label(left, text="🌿 URY Engine v0.2", style="HeaderTitle.TLabel").pack(anchor=tk.W)
+        ttk.Label(left, text="Academic Management Studio · Ultimate Result for You", style="HeaderSub.TLabel").pack(anchor=tk.W)
 
-        right = ttk.Frame(header, style="Header.TFrame")
+        right = ttk.Frame(self.header_frame, style="Header.TFrame")
         right.pack(side=tk.RIGHT, fill=tk.Y)
 
+        # ☀️/🌙 실시간 듀얼 테마 토글 버튼
+        is_dark = (getattr(self, "theme_mode", "light") == "dark")
+        btn_text = " ☀️ 라이트 모드 " if is_dark else " 🌙 다크 모드 "
+        self.theme_toggle_btn = tk.Button(
+            right,
+            text=btn_text,
+            font=("Pretendard", 9, "bold"),
+            bg="#26543e" if is_dark else "#143324",
+            fg="#d8f3dc",
+            activebackground="#2f664b",
+            activeforeground="#ffffff",
+            relief=tk.FLAT,
+            bd=0,
+            padx=10,
+            pady=4,
+            cursor="hand2",
+            command=self.toggle_theme
+        )
+        self.theme_toggle_btn.pack(side=tk.LEFT, padx=(0, 8))
+
         sem_text = self.settings.get("semester", "2026년 2학기")
-        self.sem_badge_label = tk.Label(right, text=f" 📅 {sem_text} ", font=("Pretendard", 9, "bold"), bg="#1e293b", fg="#38bdf8", relief=tk.FLAT, padx=8, pady=4)
+        self.sem_badge_label = tk.Label(right, text=f" 📅 {sem_text} ", font=("Pretendard", 9, "bold"), bg="#143324" if not is_dark else "#1a382b", fg="#d8f3dc", relief=tk.FLAT, padx=8, pady=4)
         self.sem_badge_label.pack(side=tk.LEFT, padx=(0, 8))
 
         api_key = self.settings.get("gemini_api_key", "").strip()
         has_key = len(api_key) >= 10
         api_text = " 🟢 Gemini API 연결됨 " if has_key else " 🔴 API Key 등록 필요 "
         api_fg = "#4ade80" if has_key else "#f87171"
-        self.api_badge_label = tk.Label(right, text=api_text, font=("Pretendard", 9, "bold"), bg="#1e293b", fg=api_fg, relief=tk.FLAT, padx=8, pady=4)
+        self.api_badge_label = tk.Label(right, text=api_text, font=("Pretendard", 9, "bold"), bg="#143324" if not is_dark else "#1a382b", fg=api_fg, relief=tk.FLAT, padx=8, pady=4)
         self.api_badge_label.pack(side=tk.LEFT)
 
     def create_tabs(self):
@@ -369,32 +564,32 @@ class UnifiedDashboardApp:
 
         # 탭 1: 🎙️ 학습노트 생성 스튜디오
         self.tab_studio = ttk.Frame(self.notebook, padding="10")
-        self.notebook.add(self.tab_studio, text=" 🎙️ 학습노트 생성 스튜디오 ")
+        self.notebook.add(self.tab_studio, text=" 학습노트 스튜디오 ")
         self.build_studio_tab()
 
         # 탭 2: 📝 실전 모의시험 & 공부기간 로드맵
         self.tab_exam = ttk.Frame(self.notebook, padding="10")
-        self.notebook.add(self.tab_exam, text=" 📝 실전 모의시험 & 맞춤 로드맵 ")
+        self.notebook.add(self.tab_exam, text=" 시험 대비 & 로드맵 ")
         self.build_exam_tab()
 
         # 탭 3: 💬 AI 강의 튜터 (교수님 Q&A)
         self.tab_tutor = ttk.Frame(self.notebook, padding="10")
-        self.notebook.add(self.tab_tutor, text=" 💬 AI 강의 튜터 (교수님 Q&A) ")
+        self.notebook.add(self.tab_tutor, text=" 조교 Q&A ")
         self.build_tutor_tab()
 
         # 탭 4: 📊 주차별 진도 대시보드
         self.tab_dashboard = ttk.Frame(self.notebook, padding="10")
-        self.notebook.add(self.tab_dashboard, text=" 📊 주차별 진도 대시보드 ")
+        self.notebook.add(self.tab_dashboard, text=" 학업 진도 ")
         self.build_dashboard_tab()
 
         # 탭 5: ⚙️ 과목 및 시스템 설정
         self.tab_settings = ttk.Frame(self.notebook, padding="10")
-        self.notebook.add(self.tab_settings, text=" ⚙️ 과목 및 시스템 설정 ")
+        self.notebook.add(self.tab_settings, text=" 설정 ")
         self.build_settings_tab()
 
         # 탭 6: 🛠️ 고급 도구 (프롬프트 / 보관함 / 법적고지)
         self.tab_advanced = ttk.Frame(self.notebook, padding="10")
-        self.notebook.add(self.tab_advanced, text=" 🛠️ 고급 도구 & 프롬프트 ")
+        self.notebook.add(self.tab_advanced, text=" 고급 도구 ")
         self.build_advanced_tab()
 
         self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
@@ -403,9 +598,9 @@ class UnifiedDashboardApp:
         self.refresh_course_combos()
         try:
             current_tab = self.notebook.tab(self.notebook.select(), "text").strip()
-            if "대시보드" in current_tab and hasattr(self, "refresh_dashboard"):
+            if any(k in current_tab for k in ("진도", "대시보드")) and hasattr(self, "refresh_dashboard"):
                 self.refresh_dashboard()
-            elif "AI 강의 튜터" in current_tab and hasattr(self, "on_tutor_course_changed"):
+            elif any(k in current_tab for k in ("조교", "튜터", "Q&A")) and hasattr(self, "on_tutor_course_changed"):
                 self.on_tutor_course_changed()
         except Exception:
             pass
@@ -432,8 +627,8 @@ class UnifiedDashboardApp:
         # 상단 안내 바
         banner = ttk.Frame(self.tab_studio)
         banner.pack(fill=tk.X, pady=(0, 8))
-        ttk.Label(banner, text="✨ 사용자 주도형 3단계 학습노트 스튜디오", font=("Pretendard", 11, "bold"), foreground="#4f46e5").pack(side=tk.LEFT)
-        ttk.Label(banner, text="— 과목 지정 ➔ 음성 선택(음성 부재 지원) ➔ 슬라이드 선택 ➔ 출판용 PDF 원클릭 생성", style="Muted.TLabel").pack(side=tk.LEFT, padx=6)
+        ttk.Label(banner, text="학습노트 스튜디오", font=("Pretendard", 11, "bold"), foreground=getattr(self, "theme_accent", "#1c4732")).pack(side=tk.LEFT)
+        ttk.Label(banner, text="— 과목 지정 · 강의 음성 기록 · 슬라이드 연동 · 출판용 PDF 생성", style="Muted.TLabel").pack(side=tk.LEFT, padx=6)
 
         main_paned = ttk.PanedWindow(self.tab_studio, orient=tk.VERTICAL)
         main_paned.pack(fill=tk.BOTH, expand=True)
@@ -449,7 +644,7 @@ class UnifiedDashboardApp:
         # -------------------------------------------------------------
         # Step 1: 대상 과목 및 수업 정보
         # -------------------------------------------------------------
-        card1 = ttk.LabelFrame(top_container, text=" [Step 1] 대상 과목 및 수업 정보 ", padding="10")
+        card1 = ttk.LabelFrame(top_container, text=" 01 · 대상 과목 및 수업 정보 ", padding="10")
         card1.grid(row=0, column=0, sticky="nsew", padx=4, pady=4)
 
         ttk.Label(card1, text="대상 과목:", font=("Pretendard", 9, "bold")).pack(anchor=tk.W, pady=(0, 2))
@@ -474,9 +669,9 @@ class UnifiedDashboardApp:
             font=("Pretendard", 10),
             bg="#ffffff",
             fg="#0f172a",
-            insertbackground="#4f46e5",
-            selectbackground="#e0e7ff",
-            selectforeground="#1e1b4b",
+            insertbackground="#1c4732",
+            selectbackground="#d8f3dc",
+            selectforeground="#14281e",
             relief=tk.SOLID,
             bd=1,
             takefocus=True
@@ -498,7 +693,7 @@ class UnifiedDashboardApp:
         # -------------------------------------------------------------
         # Step 2: 음성 녹음 자료 선택 (음성 부재 대비 옵션 포함)
         # -------------------------------------------------------------
-        card2 = ttk.LabelFrame(top_container, text=" [Step 2] 음성 녹음 자료 선택 ", padding="10")
+        card2 = ttk.LabelFrame(top_container, text=" 02 · 강의 음성 기록 ", padding="10")
         card2.grid(row=0, column=1, sticky="nsew", padx=4, pady=4)
 
         self.no_audio_var = tk.BooleanVar(value=False)
@@ -527,9 +722,9 @@ class UnifiedDashboardApp:
             font=("Pretendard", 9),
             bg="#ffffff",
             fg="#0f172a",
-            insertbackground="#4f46e5",
-            selectbackground="#e0e7ff",
-            selectforeground="#1e1b4b",
+            insertbackground="#1c4732",
+            selectbackground="#d8f3dc",
+            selectforeground="#14281e",
             relief=tk.SOLID,
             bd=1,
             takefocus=True
@@ -553,7 +748,7 @@ class UnifiedDashboardApp:
         # -------------------------------------------------------------
         # Step 3: 연계 강의자료(슬라이드 PDF) 선택
         # -------------------------------------------------------------
-        card3 = ttk.LabelFrame(top_container, text=" [Step 3] 연계 강의자료 (슬라이드 PDF) ", padding="10")
+        card3 = ttk.LabelFrame(top_container, text=" 03 · 강의 슬라이드 연동 ", padding="10")
         card3.grid(row=0, column=2, sticky="nsew", padx=4, pady=4)
 
         slide_btn_row = ttk.Frame(card3)
@@ -592,7 +787,7 @@ class UnifiedDashboardApp:
 
         self.generate_studio_btn = ttk.Button(
             action_bar,
-            text="✨ [AI 맞춤 학습노트 & 출판용 PDF 생성]",
+            text="학습노트 및 출판용 PDF 생성",
             style="Action.TButton",
             command=self.execute_studio_generation
         )
@@ -600,7 +795,7 @@ class UnifiedDashboardApp:
 
         self.studio_stop_btn = ttk.Button(
             action_bar,
-            text="🛑 [작업 즉시 중단 (Kill)]",
+            text="작업 중단",
             style="Danger.TButton",
             state=tk.DISABLED,
             command=self.abort_studio_generation
@@ -609,7 +804,7 @@ class UnifiedDashboardApp:
 
         self.studio_open_pdf_btn = ttk.Button(
             action_bar,
-            text="📄 [출판용 PDF 열기]",
+            text="출판용 PDF 열기",
             style="Primary.TButton",
             state=tk.DISABLED,
             command=self.open_last_generated_pdf
@@ -1055,9 +1250,9 @@ class UnifiedDashboardApp:
             font=("Pretendard", 10),
             bg="#ffffff",
             fg="#0f172a",
-            insertbackground="#4f46e5",
-            selectbackground="#e0e7ff",
-            selectforeground="#1e1b4b",
+            insertbackground="#1c4732",
+            selectbackground="#d8f3dc",
+            selectforeground="#14281e",
             relief=tk.SOLID,
             bd=1,
             takefocus=True
@@ -1088,9 +1283,9 @@ class UnifiedDashboardApp:
             font=("Pretendard", 10),
             bg="#ffffff",
             fg="#0f172a",
-            insertbackground="#4f46e5",
-            selectbackground="#e0e7ff",
-            selectforeground="#1e1b4b",
+            insertbackground="#1c4732",
+            selectbackground="#d8f3dc",
+            selectforeground="#14281e",
             relief=tk.SOLID,
             bd=1,
             takefocus=True
@@ -1682,7 +1877,7 @@ class UnifiedDashboardApp:
         # Header banner
         header = ttk.Frame(dialog, padding="12 10")
         header.pack(fill=tk.X)
-        ttk.Label(header, text=f"✍️ [{cname}] 실전 모의시험 AI 정밀 채점기", font=("Pretendard", 12, "bold"), foreground="#4f46e5").pack(anchor=tk.W)
+        ttk.Label(header, text=f"[{cname}] 실전 모의시험 정밀 채점기", font=("Pretendard", 12, "bold"), foreground="#1c4732").pack(anchor=tk.W)
         ttk.Label(header, text="학생 답안을 입력하시면 AI 채점관이 공식 정답표 1:1 대조 및 서술형 키워드(60%)+논리(40%) 기준표에 따라 예상 등급과 취약점을 분석합니다.", style="Muted.TLabel").pack(anchor=tk.W, pady=(2, 0))
 
         # Selection bar
@@ -1793,7 +1988,7 @@ class UnifiedDashboardApp:
                 return
 
             grade_btn.config(state="disabled")
-            status_lbl.config(text="🤖 AI 채점관이 답안을 분석하고 정밀 채점 중입니다... (약 10~20초 소요)", foreground="#4f46e5")
+            status_lbl.config(text="답안 분석 및 평가 리포트 생성 중입니다... (약 10~20초 소요)", foreground="#1c4732")
 
             def worker():
                 try:
@@ -1814,7 +2009,7 @@ class UnifiedDashboardApp:
                         self.exam_preview_text.insert(tk.END, rep_cnt)
                         dialog.report_path = rep_path
                         open_rep_btn.config(state="normal")
-                        messagebox.showinfo("채점 완료", f"🎉 [{cname}] {exam_type} AI 정밀 채점이 완료되었습니다!\n\n총점 및 취약점 분석 리포트가 생성되었습니다.", parent=dialog)
+                        messagebox.showinfo("채점 완료", f"🎉 [{cname}] {exam_type} 정밀 채점이 완료되었습니다!\n\n총점 및 취약점 분석 리포트가 생성되었습니다.", parent=dialog)
                     self.root.after(0, success)
                 except Exception as ex:
                     def failure():
@@ -1828,7 +2023,7 @@ class UnifiedDashboardApp:
         grade_btn.config(command=run_grading)
 
     # =========================================================================
-    # 탭 3: 💬 AI 강의 튜터 (과목별 독립 세션 & 커스텀 조교 닉네임 & 강의계획서 연동)
+    # 탭 3: 조교 Q&A (과목별 독립 세션 & 커스텀 조교 닉네임 & 강의계획서 연동)
     # =========================================================================
     def build_tutor_tab(self):
         self.tutor_histories = {}  # cname -> list of {"role": ..., "text": ...}
@@ -1848,7 +2043,7 @@ class UnifiedDashboardApp:
         self.tutor_course_combo.bind("<<ComboboxSelected>>", lambda e: self.on_tutor_course_changed())
 
         # 담당 조교 닉네임 표시 및 원클릭 변경
-        self.tutor_name_badge = ttk.Label(top_bar, text="🤖 조교: 수석 조교", font=("Pretendard", 10, "bold"), foreground="#4f46e5")
+        self.tutor_name_badge = ttk.Label(top_bar, text="전담 조교: 수석 조교", font=("Pretendard", 10, "bold"), foreground="#1c4732")
         self.tutor_name_badge.pack(side=tk.LEFT, padx=(0, 4))
         ttk.Button(top_bar, text="✏️ 닉네임 변경", style="Secondary.TButton", command=self.rename_tutor_nickname_dialog).pack(side=tk.LEFT, padx=(0, 8))
 
@@ -2668,8 +2863,89 @@ class UnifiedDashboardApp:
     # 탭 4: ⚙️ 과목 및 시스템 설정
     # =========================================================================
     def build_settings_tab(self):
+        # 상단 테마 및 포인트 컬러 커스텀 카드
+        theme_card = ttk.LabelFrame(self.tab_settings, text=" UI 테마 및 포인트 색상 커스텀 ", padding="10")
+        theme_card.pack(fill=tk.X, pady=(0, 8))
+
+        theme_row = ttk.Frame(theme_card)
+        theme_row.pack(fill=tk.X, pady=(0, 6))
+
+        ttk.Label(theme_row, text="테마 모드:", font=("Pretendard", 9, "bold"), width=11).pack(side=tk.LEFT)
+        is_dark = (getattr(self, "theme_mode", "light") == "dark")
+        t_btn_text = " ☀️ 라이트 모드로 전환 " if is_dark else " 🌙 다크 모드로 전환 "
+        self.tab_theme_toggle_btn = tk.Button(
+            theme_row,
+            text=t_btn_text,
+            font=("Pretendard", 9, "bold"),
+            bg="#26543e" if is_dark else "#e2e8f0",
+            fg="#fbf9f4" if is_dark else "#14281e",
+            activebackground="#2f664b" if is_dark else "#cbd5e1",
+            relief=tk.FLAT,
+            bd=0,
+            padx=10,
+            pady=3,
+            cursor="hand2",
+            command=self.toggle_theme
+        )
+        self.tab_theme_toggle_btn.pack(side=tk.LEFT, padx=(0, 16))
+
+        color_row = ttk.Frame(theme_card)
+        color_row.pack(fill=tk.X, pady=(4, 2))
+
+        ttk.Label(color_row, text="포인트 컬러:", font=("Pretendard", 9, "bold"), width=11).pack(side=tk.LEFT)
+
+        presets = [
+            ("🌿 URY Forest", "#1c4732", "#fbf9f4"),
+            ("🌲 Emerald", "#105e46", "#ffffff"),
+            ("🍵 Sage", "#3d6753", "#fbf9f4"),
+            ("🌊 Slate", "#1e3a5f", "#ffffff"),
+            ("🌌 Charcoal", "#2b303a", "#ffffff"),
+        ]
+
+        for label, hex_c, fg_c in presets:
+            btn = tk.Button(
+                color_row,
+                text=label,
+                font=("Pretendard", 8, "bold"),
+                bg=hex_c,
+                fg=fg_c,
+                activebackground=hex_c,
+                activeforeground=fg_c,
+                relief=tk.FLAT,
+                bd=0,
+                padx=8,
+                pady=3,
+                cursor="hand2",
+                command=lambda c=hex_c: self.set_theme_accent(c)
+            )
+            btn.pack(side=tk.LEFT, padx=(0, 6))
+
+        picker_btn = tk.Button(
+            color_row,
+            text="🎨 직접 색상 선택...",
+            font=("Pretendard", 8, "bold"),
+            bg="#334155",
+            fg="#ffffff",
+            activebackground="#475569",
+            activeforeground="#ffffff",
+            relief=tk.FLAT,
+            bd=0,
+            padx=8,
+            pady=3,
+            cursor="hand2",
+            command=self.choose_custom_color
+        )
+        picker_btn.pack(side=tk.LEFT, padx=(6, 12))
+
+        accent = getattr(self, "theme_accent", "#1c4732")
+        self.accent_preview_chip = tk.Label(color_row, text="  ", bg=accent, width=3, relief=tk.SOLID, bd=1)
+        self.accent_preview_chip.pack(side=tk.LEFT, padx=(0, 6))
+
+        self.accent_hex_label = ttk.Label(color_row, text=f"현재 선택된 포인트 색상: {accent}", style="Muted.TLabel")
+        self.accent_hex_label.pack(side=tk.LEFT)
+
         # 상단 설정 카드 (학기 & API Key)
-        top_frame = ttk.LabelFrame(self.tab_settings, text=" ⚙️ 학기 및 Gemini API 설정 ", padding="10")
+        top_frame = ttk.LabelFrame(self.tab_settings, text=" 학기 및 Gemini API 설정 ", padding="10")
         top_frame.pack(fill=tk.X, pady=(0, 8))
 
         sem_row = ttk.Frame(top_frame)
@@ -2684,9 +2960,9 @@ class UnifiedDashboardApp:
             font=("Pretendard", 10),
             bg="#ffffff",
             fg="#0f172a",
-            insertbackground="#4f46e5",
-            selectbackground="#e0e7ff",
-            selectforeground="#1e1b4b",
+            insertbackground="#1c4732",
+            selectbackground="#d8f3dc",
+            selectforeground="#14281e",
             relief=tk.SOLID,
             bd=1,
             takefocus=True
@@ -2704,9 +2980,9 @@ class UnifiedDashboardApp:
             font=("Pretendard", 10),
             bg="#ffffff",
             fg="#0f172a",
-            insertbackground="#4f46e5",
-            selectbackground="#e0e7ff",
-            selectforeground="#1e1b4b",
+            insertbackground="#1c4732",
+            selectbackground="#d8f3dc",
+            selectforeground="#14281e",
             relief=tk.SOLID,
             bd=1,
             takefocus=True
@@ -2724,9 +3000,9 @@ class UnifiedDashboardApp:
             font=("Pretendard", 10),
             bg="#ffffff",
             fg="#0f172a",
-            insertbackground="#4f46e5",
-            selectbackground="#e0e7ff",
-            selectforeground="#1e1b4b",
+            insertbackground="#1c4732",
+            selectbackground="#d8f3dc",
+            selectforeground="#14281e",
             relief=tk.SOLID,
             bd=1,
             takefocus=True
@@ -2747,9 +3023,9 @@ class UnifiedDashboardApp:
             font=("Pretendard", 10),
             bg="#ffffff",
             fg="#0f172a",
-            insertbackground="#4f46e5",
-            selectbackground="#e0e7ff",
-            selectforeground="#1e1b4b",
+            insertbackground="#1c4732",
+            selectbackground="#d8f3dc",
+            selectforeground="#14281e",
             relief=tk.SOLID,
             bd=1,
             takefocus=True
@@ -2880,14 +3156,14 @@ class UnifiedDashboardApp:
 
         ttk.Label(form, text="과목명:").pack(anchor=tk.W, pady=(0, 2))
         name_var = tk.StringVar(value=course_data.get("course_name", ""))
-        name_entry = tk.Entry(form, textvariable=name_var, font=("Pretendard", 10), bg="#ffffff", fg="#0f172a", insertbackground="#4f46e5", selectbackground="#e0e7ff", selectforeground="#1e1b4b", relief=tk.SOLID, bd=1, takefocus=True)
+        name_entry = tk.Entry(form, textvariable=name_var, font=("Pretendard", 10), bg="#ffffff", fg="#0f172a", insertbackground="#1c4732", selectbackground="#d8f3dc", selectforeground="#14281e", relief=tk.SOLID, bd=1, takefocus=True)
         name_entry.pack(fill=tk.X, pady=(0, 6))
         name_entry.bind("<Button-1>", lambda e: name_entry.focus_set())
         self.add_context_menu(name_entry)
 
         ttk.Label(form, text="전담 조교 닉네임 (예: 데베박사, 회계요정):").pack(anchor=tk.W, pady=(0, 2))
         tutor_var = tk.StringVar(value=course_data.get("tutor_name", f"{course_data.get('course_name', '')} 수석 조교" if course_data.get('course_name') else "수석 조교"))
-        tutor_entry = tk.Entry(form, textvariable=tutor_var, font=("Pretendard", 10), bg="#ffffff", fg="#0f172a", insertbackground="#4f46e5", selectbackground="#e0e7ff", selectforeground="#1e1b4b", relief=tk.SOLID, bd=1, takefocus=True)
+        tutor_entry = tk.Entry(form, textvariable=tutor_var, font=("Pretendard", 10), bg="#ffffff", fg="#0f172a", insertbackground="#1c4732", selectbackground="#d8f3dc", selectforeground="#14281e", relief=tk.SOLID, bd=1, takefocus=True)
         tutor_entry.pack(fill=tk.X, pady=(0, 6))
         tutor_entry.bind("<Button-1>", lambda e: tutor_entry.focus_set())
         self.add_context_menu(tutor_entry)
@@ -2919,14 +3195,14 @@ class UnifiedDashboardApp:
 
         ttk.Label(form, text="폴더명:").pack(anchor=tk.W, pady=(0, 2))
         folder_var = tk.StringVar(value=course_data.get("folder_name", ""))
-        folder_entry = tk.Entry(form, textvariable=folder_var, font=("Pretendard", 10), bg="#ffffff", fg="#0f172a", insertbackground="#4f46e5", selectbackground="#e0e7ff", selectforeground="#1e1b4b", relief=tk.SOLID, bd=1, takefocus=True)
+        folder_entry = tk.Entry(form, textvariable=folder_var, font=("Pretendard", 10), bg="#ffffff", fg="#0f172a", insertbackground="#1c4732", selectbackground="#d8f3dc", selectforeground="#14281e", relief=tk.SOLID, bd=1, takefocus=True)
         folder_entry.pack(fill=tk.X, pady=(0, 6))
         folder_entry.bind("<Button-1>", lambda e: folder_entry.focus_set())
         self.add_context_menu(folder_entry)
 
         ttk.Label(form, text="수업 요일 (쉼표로 구분, 예: 화, 목):").pack(anchor=tk.W, pady=(0, 2))
         days_var = tk.StringVar(value=", ".join(course_data.get("days", ["월"])))
-        days_entry = tk.Entry(form, textvariable=days_var, font=("Pretendard", 10), bg="#ffffff", fg="#0f172a", insertbackground="#4f46e5", selectbackground="#e0e7ff", selectforeground="#1e1b4b", relief=tk.SOLID, bd=1, takefocus=True)
+        days_entry = tk.Entry(form, textvariable=days_var, font=("Pretendard", 10), bg="#ffffff", fg="#0f172a", insertbackground="#1c4732", selectbackground="#d8f3dc", selectforeground="#14281e", relief=tk.SOLID, bd=1, takefocus=True)
         days_entry.pack(fill=tk.X, pady=(0, 6))
         days_entry.bind("<Button-1>", lambda e: days_entry.focus_set())
         self.add_context_menu(days_entry)
