@@ -1397,6 +1397,28 @@ class UnifiedDashboardApp:
         self.append_studio_log("   앱을 재시작할 필요 없이 설정을 변경하여 즉시 다시 생성할 수 있습니다.", "step")
         messagebox.showwarning("작업 중단", "학습노트 생성이 즉시 중단되었습니다.\n\n앱을 껐다 켤 필요 없이 옵션을 변경하여 다시 실행할 수 있습니다.")
 
+    def append_studio_log(self, text, tag="normal"):
+        if not hasattr(self, "studio_log_text"):
+            return
+        self.studio_log_text.config(state=tk.NORMAL)
+        timestamp = datetime.now().strftime("[%H:%M:%S] ")
+        self.studio_log_text.insert(tk.END, timestamp, "time")
+
+        if tag == "normal":
+            if any(k in text for k in ["시작", "가동", "Step", "단계"]):
+                tag = "step"
+            elif any(k in text for k in ["✅", "성공", "🎉", "완료", "완성"]):
+                tag = "success"
+            elif any(k in text for k in ["⚠️", "주의", "경고"]):
+                tag = "warning"
+            elif any(k in text for k in ["❌", "오류", "실패"]):
+                tag = "error"
+            elif any(k in text for k in ["•", "📌", "📄", "📂", "🤖", "🖨️", "🎯", "⚡"]):
+                tag = "highlight"
+
+        self.studio_log_text.insert(tk.END, text + "\n", tag)
+        self.studio_log_text.see(tk.END)
+
     def clear_studio_log(self):
         """실시간 콘솔 로그 화면 비우기"""
         self.studio_log_text.config(state=tk.NORMAL)
