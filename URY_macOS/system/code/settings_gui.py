@@ -1307,6 +1307,10 @@ class UnifiedDashboardApp:
         # 2. 슬라이드 PDF 목록 갱신
         self.refresh_studio_slides()
 
+    def refresh_studio_file_listboxes(self):
+        """스튜디오 오디오 및 슬라이드 목록 동시 새로고침"""
+        self.on_studio_course_changed()
+
     def refresh_studio_slides(self):
         for widget in self.slide_inner_frame.winfo_children():
             widget.destroy()
@@ -3746,8 +3750,12 @@ class UnifiedDashboardApp:
                     )
                 if res.get("status") == "success":
                     self.append_studio_log(f"⏹️ [실시간 녹음 완료] {res.get('duration_sec', 0)}초 녹음 완료 -> {res.get('output_file')}")
-                    messagebox.showinfo("녹음 완료", f"실시간 오디오가 해당 과목 폴더에 성공적으로 저장되었습니다.\n(경과 시간: {res.get('duration_sec', 0)}초)")
+                    out_f = res.get("output_file")
+                    if out_f and os.path.exists(out_f):
+                        self.studio_audio_var.set(out_f)
+                        self.auto_detect_date_from_name(out_f)
                     self.refresh_studio_file_listboxes()
+                    messagebox.showinfo("녹음 완료", f"실시간 오디오가 해당 과목 폴더에 성공적으로 저장되었습니다.\n(경과 시간: {res.get('duration_sec', 0)}초)")
                 else:
                     messagebox.showerror("녹음 중지 오류", res.get("message", "녹음 중지 실패"))
         except Exception as e:
