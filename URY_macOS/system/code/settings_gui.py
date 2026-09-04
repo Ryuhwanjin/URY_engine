@@ -485,8 +485,6 @@ class UnifiedDashboardApp:
     def __init__(self, root):
         self.root = root
         self.root.title("URY Engine — Academic Studio v0.2")
-        self.root.geometry("1080x900")
-        self.root.minsize(980, 780)
 
         config_manager.fix_mac_quarantine()
         self.setup_icon()
@@ -495,6 +493,21 @@ class UnifiedDashboardApp:
         self.settings = config_manager.load_settings()
         self.theme_mode = self.settings.get("theme_mode", "light")
         self.theme_accent = self.settings.get("theme_accent", "#1c4732")
+
+        # 창모드 해상도 자유 조절 및 이전 크기/위치 복원
+        self.root.resizable(True, True)
+        self.root.minsize(820, 560)
+        saved_geo = self.settings.get("window_geometry", "")
+        if saved_geo and self.settings.get("remember_window_size", True):
+            try:
+                self.root.geometry(saved_geo)
+            except Exception:
+                self.root.geometry("1180x820")
+        else:
+            self.root.geometry("1180x820")
+
+        self.root.protocol("WM_DELETE_WINDOW", self.on_app_close)
+        self.root.bind("<Configure>", self.on_window_configure)
 
         # 시네마틱 스플래시 오프닝 구동 (메인 창 잠시 은닉)
         self.root.withdraw()
@@ -610,6 +623,9 @@ class UnifiedDashboardApp:
                 self.root.bind_class(widget_name, "<Command-x>", lambda e: e.widget.event_generate("<<Cut>>"))
             self.root.bind_class("Entry", "<Command-a>", lambda e: (e.widget.select_range(0, tk.END), "break")[1])
             self.root.bind_class("Text", "<Command-a>", lambda e: (e.widget.tag_add("sel", "1.0", "end"), "break")[1])
+
+            self.root.bind("<Command-f>", self.toggle_fullscreen)
+            self.root.bind("<F11>", self.toggle_fullscreen)
         except Exception:
             pass
 
@@ -623,6 +639,101 @@ class UnifiedDashboardApp:
             widget.bind("<Button-2>", lambda e: menu.post(e.x_root, e.y_root))
             widget.bind("<Control-Button-1>", lambda e: menu.post(e.x_root, e.y_root))
         widget.bind("<Button-3>", lambda e: menu.post(e.x_root, e.y_root))
+
+    def on_window_configure(self, event):
+        if event.widget == self.root:
+            w = event.width
+            h = event.height
+            if hasattr(self, "res_status_label"):
+                self.res_status_label.config(text=f"현재 창 크기: {w} × {h} px  (마우스 드래그로 자유롭게 조절 가능)")
+            if hasattr(self, "res_width_var") and hasattr(self, "res_height_var"):
+                if not getattr(self, "_res_editing", False):
+                    self.res_width_var.set(str(w))
+                    self.res_height_var.set(str(h))
+
+    def save_current_window_state(self):
+        try:
+            if self.settings.get("remember_window_size", True):
+                is_full = False
+                if sys.platform == "darwin":
+                    try:
+                        is_full = bool(self.root.attributes("-fullscreen"))
+                    except Exception:
+                        pass
+                if not is_full:
+                    geo = self.root.geometry()
+                    self.settings["window_geometry"] = geo
+                    config_manager.save_settings(self.settings)
+        except Exception:
+            pass
+
+    def on_app_close(self):
+        try:
+            self.save_current_window_state()
+        except Exception:
+            pass
+        self.root.destroy()
+
+    def apply_resolution(self, width, height):
+        try:
+            if sys.platform == "darwin":
+                try:
+                    if self.root.attributes("-fullscreen"):
+                        self.root.attributes("-fullscreen", False)
+                except Exception:
+                    pass
+            screen_w = self.root.winfo_screenwidth()
+            screen_h = self.root.winfo_screenheight()
+            x = max(0, (screen_w - width) // 2)
+            y = max(30, (screen_h - height) // 2 - 20)
+            self.root.geometry(f"{width}x{height}+{x}+{y}")
+            if hasattr(self, "res_status_label"):
+                self.res_status_label.config(text=f"현재 창 크기: {width} × {height} px  (마우스 드래그로 자유롭게 조절 가능)")
+            self.save_current_window_state()
+        except Exception as e:
+            messagebox.showwarning("해상도 변경 오류", f"창 크기를 적용할 수 없습니다: {e}")
+
+    def toggle_fullscreen(self, event=None):
+        try:
+            if sys.platform == "darwin":
+                cur = bool(self.root.attributes("-fullscreen"))
+                self.root.attributes("-fullscreen", not cur)
+            else:
+                is_full = getattr(self, "_is_fullscreen", False)
+                self.root.state("zoomed" if not is_full else "normal")
+                self._is_fullscreen = not is_full
+        except Exception:
+            pass
+
+    def show_resolution_quick_menu(self):
+        menu = tk.Menu(self.root, tearoff=0)
+        menu.add_command(label="🖥️ 창모드 해상도 빠른 선택", state="disabled")
+        menu.add_separator()
+
+        presets = [
+            ("📱 1024 × 680 (콤팩트 · 13인치 노트북)", 1024, 680),
+            ("💻 1160 × 800 (표준 모드)", 1160, 800),
+            ("🖥️ 1280 × 820 (권장 창모드)", 1280, 820),
+            ("✨ 1440 × 900 (맥북 레티나 최적)", 1440, 900),
+            ("🖥️ 1600 × 980 (대화면 모니터)", 1600, 980),
+        ]
+        for label, w, h in presets:
+            menu.add_command(label=label, command=lambda width=w, height=h: self.apply_resolution(width, height))
+
+        menu.add_separator()
+        menu.add_command(label="⛶ 전체 화면 전환 (Cmd+F)", command=self.toggle_fullscreen)
+        menu.add_command(label="⚙️ 상세 해상도 설정...", command=lambda: self.switch_to_tab(4))
+
+        try:
+            x = self.res_quick_btn.winfo_rootx()
+            y = self.res_quick_btn.winfo_rooty() + self.res_quick_btn.winfo_height() + 4
+            menu.post(x, y)
+        except Exception:
+            menu.post(self.root.winfo_pointerx(), self.root.winfo_pointery())
+
+    def toggle_remember_window_size(self):
+        self.settings["remember_window_size"] = self.remember_window_var.get()
+        config_manager.save_settings(self.settings)
 
     ask_open_file_safe = staticmethod(safe_askopenfilename)
     ask_open_files_safe = staticmethod(safe_askopenfilenames)
@@ -743,9 +854,23 @@ class UnifiedDashboardApp:
             btn.pack(side=tk.LEFT, padx=1)
             self.tab_pills.append(btn)
 
-        # 우측: 학기 및 API 연결 상태 배지
+        # 우측: 해상도 선택기 / 학기 / API 연결 상태 배지
         right = tk.Frame(self.header_frame, bg="#ffffff")
         right.pack(side=tk.RIGHT, padx=(10, 18), fill=tk.Y)
+
+        self.res_quick_btn = SquareRoundButton(
+            right,
+            text="🖥️ 창 크기 ▾",
+            bg="#f1f5f9",
+            fg="#1e293b",
+            hover_bg="#e2e8f0",
+            radius=8,
+            height=30,
+            font=("Pretendard", 9, "bold"),
+            command=self.show_resolution_quick_menu,
+            parent_bg="#ffffff"
+        )
+        self.res_quick_btn.pack(side=tk.LEFT, pady=13, padx=(0, 8))
 
         sem_text = self.settings.get("semester", "2026년 2학기")
         self.sem_badge_label = tk.Label(right, text=f" 📅 {sem_text} ", font=("Pretendard", 9, "bold"), bg="#f1f5f9", fg="#1e293b", relief=tk.FLAT, padx=10, pady=5)
@@ -872,6 +997,15 @@ class UnifiedDashboardApp:
         def on_canvas_configure(e):
             left_scroll_canvas.itemconfig(canvas_win, width=e.width)
         left_scroll_canvas.bind("<Configure>", on_canvas_configure)
+
+        def bind_wheel(canvas):
+            def _on_wheel(e):
+                if sys.platform == "darwin":
+                    canvas.yview_scroll(int(-1 * e.delta), "units")
+                else:
+                    canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
+            canvas.bind("<MouseWheel>", _on_wheel)
+        bind_wheel(left_scroll_canvas)
 
         left_scroll_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         left_sb.pack(side=tk.RIGHT, fill=tk.Y)
@@ -1079,9 +1213,21 @@ class UnifiedDashboardApp:
         right_card = tk.Frame(studio_container, bg="#ffffff", bd=0, highlightthickness=1, highlightbackground="#edf2f7")
         right_card.grid(row=0, column=1, sticky="nsew", padx=(6, 10), pady=8)
 
-        # A4 감성 학습 매거진 페이퍼 시트 (단일 캔버스 구조)
-        paper_container = tk.Frame(right_card, bg="#ffffff", padx=18, pady=16)
-        paper_container.pack(fill=tk.BOTH, expand=True)
+        right_scroll_canvas = tk.Canvas(right_card, bg="#ffffff", highlightthickness=0)
+        right_sb = ttk.Scrollbar(right_card, orient=tk.VERTICAL, command=right_scroll_canvas.yview)
+        paper_container = tk.Frame(right_scroll_canvas, bg="#ffffff", padx=18, pady=16)
+
+        paper_container.bind("<Configure>", lambda e: right_scroll_canvas.configure(scrollregion=right_scroll_canvas.bbox("all")))
+        r_canvas_win = right_scroll_canvas.create_window((0, 0), window=paper_container, anchor="nw")
+        right_scroll_canvas.configure(yscrollcommand=right_sb.set)
+
+        def on_r_canvas_configure(e):
+            right_scroll_canvas.itemconfig(r_canvas_win, width=e.width)
+        right_scroll_canvas.bind("<Configure>", on_r_canvas_configure)
+        bind_wheel(right_scroll_canvas)
+
+        right_scroll_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        right_sb.pack(side=tk.RIGHT, fill=tk.Y)
 
         # 상단 리포트 헤더 배너
         paper_banner = tk.Frame(paper_container, bg="#ffffff")
@@ -3315,8 +3461,9 @@ class UnifiedDashboardApp:
             insertbackground="#1c4732",
             selectbackground="#d8f3dc",
             selectforeground="#14281e",
-            relief=tk.SOLID,
-            bd=1,
+            relief=tk.FLAT,
+            highlightthickness=1,
+            highlightbackground="#cbd5e1",
             takefocus=True
         )
         self.semester_entry.pack(side=tk.LEFT, padx=(0, 10))
@@ -3335,8 +3482,9 @@ class UnifiedDashboardApp:
             insertbackground="#1c4732",
             selectbackground="#d8f3dc",
             selectforeground="#14281e",
-            relief=tk.SOLID,
-            bd=1,
+            relief=tk.FLAT,
+            highlightthickness=1,
+            highlightbackground="#cbd5e1",
             takefocus=True
         )
         self.start_date_entry.pack(side=tk.LEFT, padx=(0, 10))
@@ -3355,8 +3503,9 @@ class UnifiedDashboardApp:
             insertbackground="#1c4732",
             selectbackground="#d8f3dc",
             selectforeground="#14281e",
-            relief=tk.SOLID,
-            bd=1,
+            relief=tk.FLAT,
+            highlightthickness=1,
+            highlightbackground="#cbd5e1",
             takefocus=True
         )
         self.end_date_entry.pack(side=tk.LEFT)
@@ -3378,8 +3527,9 @@ class UnifiedDashboardApp:
             insertbackground="#1c4732",
             selectbackground="#d8f3dc",
             selectforeground="#14281e",
-            relief=tk.SOLID,
-            bd=1,
+            relief=tk.FLAT,
+            highlightthickness=1,
+            highlightbackground="#cbd5e1",
             takefocus=True
         )
         self.api_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10))
@@ -3387,6 +3537,135 @@ class UnifiedDashboardApp:
         self.add_context_menu(self.api_entry)
 
         SquareRoundButton(api_row, text="💾 설정 저장", bg="#1c4732", hover_bg="#265e43", radius=8, height=32, font=("Pretendard", 9, "bold"), command=self.save_settings_action).pack(side=tk.RIGHT)
+
+        # 화면 해상도 및 창모드 크기 조절 카드
+        res_frame = ttk.LabelFrame(self.tab_settings, text=" 🖥️ 화면 해상도 및 창모드 크기 조절 (Window Resolution) ", padding="10")
+        res_frame.pack(fill=tk.X, pady=(0, 8))
+
+        res_info_row = ttk.Frame(res_frame)
+        res_info_row.pack(fill=tk.X, pady=(0, 6))
+
+        cur_w = self.root.winfo_width() if self.root.winfo_width() > 100 else 1180
+        cur_h = self.root.winfo_height() if self.root.winfo_height() > 100 else 820
+        self.res_status_label = ttk.Label(
+            res_info_row,
+            text=f"현재 창 크기: {cur_w} × {cur_h} px  (모서리 드래그로 자유롭게 크기 조절 가능)",
+            font=("Pretendard", 9, "bold"),
+            foreground="#1c4732"
+        )
+        self.res_status_label.pack(side=tk.LEFT)
+
+        # 프리셋 버튼 모음
+        preset_row = ttk.Frame(res_frame)
+        preset_row.pack(fill=tk.X, pady=(0, 8))
+
+        ttk.Label(preset_row, text="빠른 프리셋:", font=("Pretendard", 9, "bold"), width=10).pack(side=tk.LEFT)
+
+        res_presets = [
+            ("1024×680 콤팩트", 1024, 680),
+            ("1160×800 표준", 1160, 800),
+            ("1280×820 권장", 1280, 820),
+            ("1440×900 레티나", 1440, 900),
+            ("1600×980 대화면", 1600, 980),
+        ]
+        for p_label, pw, ph in res_presets:
+            SquareRoundButton(
+                preset_row,
+                text=p_label,
+                bg="#f1f5f9",
+                hover_bg="#e2e8f0",
+                fg="#334155",
+                radius=8,
+                height=28,
+                font=("Pretendard", 8, "bold"),
+                command=lambda w=pw, h=ph: self.apply_resolution(w, h),
+                parent_bg="#ffffff"
+            ).pack(side=tk.LEFT, padx=(0, 6))
+
+        SquareRoundButton(
+            preset_row,
+            text="⛶ 전체 화면",
+            bg="#f1f5f9",
+            hover_bg="#e2e8f0",
+            fg="#1e293b",
+            radius=8,
+            height=28,
+            font=("Pretendard", 8, "bold"),
+            command=self.toggle_fullscreen,
+            parent_bg="#ffffff"
+        ).pack(side=tk.LEFT)
+
+        # 수치 직접 입력 행
+        custom_row = ttk.Frame(res_frame)
+        custom_row.pack(fill=tk.X, pady=(2, 0))
+
+        ttk.Label(custom_row, text="직접 입력:", font=("Pretendard", 9, "bold"), width=10).pack(side=tk.LEFT)
+
+        ttk.Label(custom_row, text="너비(W):", font=("Pretendard", 9)).pack(side=tk.LEFT, padx=(0, 4))
+        self.res_width_var = tk.StringVar(value=str(cur_w))
+        w_entry = tk.Entry(
+            custom_row,
+            textvariable=self.res_width_var,
+            width=6,
+            font=("Pretendard", 9),
+            bg="#ffffff",
+            fg="#0f172a",
+            relief=tk.FLAT,
+            highlightthickness=1,
+            highlightbackground="#cbd5e1"
+        )
+        w_entry.pack(side=tk.LEFT, padx=(0, 10))
+        w_entry.bind("<FocusIn>", lambda e: setattr(self, "_res_editing", True))
+        w_entry.bind("<FocusOut>", lambda e: setattr(self, "_res_editing", False))
+
+        ttk.Label(custom_row, text="높이(H):", font=("Pretendard", 9)).pack(side=tk.LEFT, padx=(0, 4))
+        self.res_height_var = tk.StringVar(value=str(cur_h))
+        h_entry = tk.Entry(
+            custom_row,
+            textvariable=self.res_height_var,
+            width=6,
+            font=("Pretendard", 9),
+            bg="#ffffff",
+            fg="#0f172a",
+            relief=tk.FLAT,
+            highlightthickness=1,
+            highlightbackground="#cbd5e1"
+        )
+        h_entry.pack(side=tk.LEFT, padx=(0, 10))
+        h_entry.bind("<FocusIn>", lambda e: setattr(self, "_res_editing", True))
+        h_entry.bind("<FocusOut>", lambda e: setattr(self, "_res_editing", False))
+
+        def apply_custom_res():
+            try:
+                w = int(self.res_width_var.get().strip())
+                h = int(self.res_height_var.get().strip())
+                if w < 700 or h < 500:
+                    messagebox.showwarning("입력 확인", "너비는 최소 700px, 높이는 최소 500px 이상이어야 합니다.")
+                    return
+                self.apply_resolution(w, h)
+            except ValueError:
+                messagebox.showwarning("입력 오류", "너비와 높이는 숫자만 입력해 주세요.")
+
+        SquareRoundButton(
+            custom_row,
+            text="크기 적용",
+            bg="#1c4732",
+            hover_bg="#265e43",
+            radius=8,
+            height=28,
+            font=("Pretendard", 9, "bold"),
+            command=apply_custom_res,
+            parent_bg="#ffffff"
+        ).pack(side=tk.LEFT, padx=(0, 14))
+
+        self.remember_window_var = tk.BooleanVar(value=self.settings.get("remember_window_size", True))
+        chk_remember = ttk.Checkbutton(
+            custom_row,
+            text="마지막 창 크기 및 위치 자동 저장 (재실행 시 복원)",
+            variable=self.remember_window_var,
+            command=self.toggle_remember_window_size
+        )
+        chk_remember.pack(side=tk.LEFT)
 
         # 과목 관리 테이블
         course_frame = ttk.LabelFrame(self.tab_settings, text=" 📚 수강 과목 관리 목록 ", padding="8")
