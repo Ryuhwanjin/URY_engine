@@ -269,8 +269,9 @@ class SquareRoundButton(tk.Canvas):
             self.bind("<ButtonRelease-1>", self.on_release)
             self.config(cursor="hand2")
             
-    def draw(self, fill_color):
+    def draw(self, fill_color=None):
         self.delete("all")
+        fill_color = fill_color or self.normal_bg
         x1, y1 = 1, 1
         x2, y2 = self.w - 1, self.h - 1
         r = self.radius
@@ -295,26 +296,37 @@ class SquareRoundButton(tk.Canvas):
         self.text_id = self.create_text(self.w // 2, self.h // 2, text=self.btn_text, fill=t_color, font=self.font)
         if not is_dis:
             for item in (self.rect_id, self.text_id):
-                self.tag_bind(item, "<Enter>", self.on_enter)
-                self.tag_bind(item, "<Leave>", self.on_leave)
                 self.tag_bind(item, "<Button-1>", self.on_press)
                 self.tag_bind(item, "<ButtonRelease-1>", self.on_release)
 
-    def on_enter(self, e):
-        if self.btn_state != "disabled":
-            self.draw(self.hover_bg)
+    def on_enter(self, e=None):
+        if self.btn_state != "disabled" and self.rect_id:
+            try:
+                self.itemconfig(self.rect_id, fill=self.hover_bg)
+            except Exception:
+                pass
 
-    def on_leave(self, e):
-        if self.btn_state != "disabled":
-            self.draw(self.normal_bg)
+    def on_leave(self, e=None):
+        if self.btn_state != "disabled" and self.rect_id:
+            try:
+                self.itemconfig(self.rect_id, fill=self.normal_bg)
+            except Exception:
+                pass
 
-    def on_press(self, e):
-        if self.btn_state != "disabled":
-            self.draw(self.active_bg)
+    def on_press(self, e=None):
+        if self.btn_state != "disabled" and self.rect_id:
+            try:
+                self.itemconfig(self.rect_id, fill=self.active_bg)
+            except Exception:
+                pass
 
-    def on_release(self, e):
+    def on_release(self, e=None):
         if self.btn_state != "disabled":
-            self.draw(self.hover_bg)
+            if self.rect_id:
+                try:
+                    self.itemconfig(self.rect_id, fill=self.hover_bg)
+                except Exception:
+                    pass
             if self.cmd:
                 self.cmd()
 
