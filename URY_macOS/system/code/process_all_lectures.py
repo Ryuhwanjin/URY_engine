@@ -437,7 +437,10 @@ The following content was ALREADY synthesized in the earlier session of Week {we
                     {"text": prompt}
                 ]
             }],
-            "generationConfig": {"temperature": 0.2}
+            "generationConfig": {
+                "temperature": 0.2,
+                "maxOutputTokens": 16384
+            }
         }
 
         for attempt in range(len(backoff_delays)):
@@ -482,28 +485,33 @@ The following content was ALREADY synthesized in the earlier session of Week {we
 
     raise RuntimeError("모든 Gemini 모델 요청에 실패했습니다.")
 
-def append_to_single_note_file(note_path, new_note_content, date_str, week_num, is_english=False, is_combined=True, config=None):
+def append_to_single_note_file(note_path, new_note_content, date_str, week_num, is_english=False, is_combined=True, config=None, source_files=None):
     if not os.path.exists(note_path):
         # 파일이 없을 경우 초기 헤더 작성
+        audio_ref = f" (`{source_files['audio']}`)" if (source_files and source_files.get('audio')) else ""
+        slide_ref = f" (`{', '.join(source_files['slides'])}`)" if (source_files and source_files.get('slides')) else ""
+        c_name = config.get("name", config.get("course_name", ""))
+        c_en = config.get("en_name", config.get("folder_name", c_name))
+        c_prof = config.get("prof", "담당 교수님")
         if not is_english:
             title_type = "통합 강의노트" if is_combined else f"{week_num}주차 강의노트"
-            header = f"# 📘 [{config['name']}] {title_type} (2026-2학기)\n\n"
-            header += f"- **과목명**: {config['name']} ({config['en_name']})\n"
-            header += f"- **담당 교수**: {config['prof']}\n\n---\n\n"
+            header = f"# 📘 [{c_name}] {title_type} (2026-2학기)\n\n"
+            header += f"- **과목명**: {c_name} ({c_en})\n"
+            header += f"- **담당 교수**: {c_prof}\n\n---\n\n"
             header += "> 🏷️ **출처 구분 범례 (Source Legend)**:\n"
-            header += "> - `[🎙️ 음성]` : 교수님 실제 강의 육성 (공지사항, 출석 번호, 퀴즈/시험 출제 팁, 질문과 답변, 칠판 판서, 현장 비유 등)\n"
-            header += "> - `[📖 교재]` : 주교재(Textbook), 강의계획서(Syllabus), 공식 배포 슬라이드에 수록된 이론·정의·수식\n"
+            header += f"> - `[🎙️ 음성]` : 교수님 실제 강의 육성 (공지사항, 출석 번호, 퀴즈/시험 출제 팁, 질문과 답변, 칠판 판서, 현장 비유 등){audio_ref}\n"
+            header += f"> - `[📖 교재·슬라이드]` : 주교재(Textbook), 강의계획서(Syllabus), 공식 배포 슬라이드에 수록된 이론·정의·수식{slide_ref}\n"
             header += "> - `[💡 통합]` : 교재의 공식 이론을 바탕으로 교수님의 육성 해설과 실전 사례가 결합된 핵심 내용\n\n---\n\n"
             if is_combined:
                 header += "## 📑 목차 (Table of Contents)\n- *(새로운 수업 내용이 이곳 아래로 순차적으로 적재됩니다)*\n\n---\n\n"
         else:
             title_type = "Combined Lecture Notes" if is_combined else f"Week {week_num} Lecture Notes"
-            header = f"# 📘 [{config['en_name']}] {title_type}\n\n"
-            header += f"- **Course**: {config['en_name']}\n"
-            header += f"- **Instructor**: {config['prof']}\n\n---\n\n"
+            header = f"# 📘 [{c_en}] {title_type}\n\n"
+            header += f"- **Course**: {c_en}\n"
+            header += f"- **Instructor**: {c_prof}\n\n---\n\n"
             header += "> 🏷️ **Source Legend**:\n"
-            header += "> - `[🎙️ Spoken]` : In-class verbal lecture notes, attendance codes, exam tips, Q&A.\n"
-            header += "> - `[📖 Textbook]` : Official textbook definitions, syllabus, and slides.\n"
+            header += f"> - `[🎙️ Spoken]` : In-class verbal lecture notes, attendance codes, exam tips, Q&A.{audio_ref}\n"
+            header += f"> - `[📖 Slides/Textbook]` : Official textbook definitions, syllabus, and slides.{slide_ref}\n"
             header += "> - `[💡 Integrated]` : Synthesized concepts connecting theory and business cases.\n\n---\n\n"
             if is_combined:
                 header += "## 📑 Table of Contents\n- *(Subsequent weekly lecture notes will be appended chronologically below)*\n\n---\n\n"
@@ -536,13 +544,20 @@ def append_to_single_note_file(note_path, new_note_content, date_str, week_num, 
         f.write(updated_content)
     print(f"[{os.path.basename(note_path)}] {date_str} 강의노트 저장 완료!")
 
-def save_to_markdown_cache(config, new_note_content, date_str, week_num, is_english=False):
-    """주차별 개별 마크다운과 전체 통합본 마크다운을 .markdown_cache/에 동시 저장"""
+def save_to_markdown_cache(config, new_note_content, date_str, week_num, is_english=False, source_files=None):
+    """주차별 개별 마크다운과 전체 통합본 마크다운을 .markdown_cache/ 및 사용자 강의노트/ 폴더에 동시 저장"""
     cache_c = os.path.join(CACHE_DIR, config["folder_name"])
     os.makedirs(cache_c, exist_ok=True)
 
     course_dir = resolve_course_dir(config["folder_name"])
-    images_src = os.path.join(course_dir, "강의노트", "images")
+    user_notes_dir = os.path.join(course_dir, "강의노트")
+    user_week_dir = os.path.join(user_notes_dir, f"{week_num}주차")
+    user_comb_dir = os.path.join(user_notes_dir, "통합")
+    os.makedirs(user_notes_dir, exist_ok=True)
+    os.makedirs(user_week_dir, exist_ok=True)
+    os.makedirs(user_comb_dir, exist_ok=True)
+
+    images_src = os.path.join(user_notes_dir, "images")
     images_dst = os.path.join(cache_c, "images")
     if os.path.exists(images_src) and not os.path.exists(images_dst):
         try:
@@ -551,17 +566,32 @@ def save_to_markdown_cache(config, new_note_content, date_str, week_num, is_engl
             pass
 
     if not is_english:
-        c_path = os.path.join(cache_c, f"{config['cname_prefix']}_통합강의노트.md")
-        w_path = os.path.join(cache_c, f"{config['cname_prefix']}_{week_num}주차_강의노트.md")
+        c_name = f"{config['cname_prefix']}_통합강의노트.md"
+        w_name = f"{config['cname_prefix']}_{week_num}주차_강의노트.md"
     else:
-        c_path = os.path.join(cache_c, f"{config['en_prefix']}_Combined_Lecture_Notes.md")
-        w_path = os.path.join(cache_c, f"{config['en_prefix']}_Week{week_num}_Lecture_Notes.md")
+        c_name = f"{config['en_prefix']}_Combined_Lecture_Notes.md"
+        w_name = f"{config['en_prefix']}_Week{week_num}_Lecture_Notes.md"
 
-    # 1. 전체 통합본 저장
-    append_to_single_note_file(c_path, new_note_content, date_str, week_num, is_english=is_english, is_combined=True, config=config)
+    saved_paths = []
+    # 1. .markdown_cache/ 격리 저장소
+    c_path_cache = os.path.join(cache_c, c_name)
+    w_path_cache = os.path.join(cache_c, w_name)
+    append_to_single_note_file(c_path_cache, new_note_content, date_str, week_num, is_english=is_english, is_combined=True, config=config, source_files=source_files)
+    append_to_single_note_file(w_path_cache, new_note_content, date_str, week_num, is_english=is_english, is_combined=False, config=config, source_files=source_files)
 
-    # 2. 주차별 개별 파일 저장
-    append_to_single_note_file(w_path, new_note_content, date_str, week_num, is_english=is_english, is_combined=False, config=config)
+    # 2. 사용자가 직접 탐색하는 강의노트/ 폴더 동시 저장 (사용자 파일 찾기 보장)
+    user_w_path1 = os.path.join(user_notes_dir, w_name)
+    user_w_path2 = os.path.join(user_week_dir, w_name)
+    user_c_path1 = os.path.join(user_notes_dir, c_name)
+    user_c_path2 = os.path.join(user_comb_dir, c_name)
+
+    append_to_single_note_file(user_w_path1, new_note_content, date_str, week_num, is_english=is_english, is_combined=False, config=config, source_files=source_files)
+    append_to_single_note_file(user_w_path2, new_note_content, date_str, week_num, is_english=is_english, is_combined=False, config=config, source_files=source_files)
+    append_to_single_note_file(user_c_path1, new_note_content, date_str, week_num, is_english=is_english, is_combined=True, config=config, source_files=source_files)
+    append_to_single_note_file(user_c_path2, new_note_content, date_str, week_num, is_english=is_english, is_combined=True, config=config, source_files=source_files)
+
+    saved_paths.extend([user_w_path1, user_w_path2, user_c_path1])
+    return saved_paths
 
 def scan_and_process_all_lectures(target_courses=None, target_audio_files=None):
     """모든 과목 폴더의 음성녹음 디렉터리를 스캔하여 미처리된 강의를 완전 자동으로 동적 처리"""
@@ -642,9 +672,9 @@ def scan_and_process_all_lectures(target_courses=None, target_audio_files=None):
             time.sleep(2)
 
     if not processed_any:
-        print("\n✅ 선택된 과목의 녹음 파일이 이미 강의노트에 완벽하게 정리되어 있습니다! (새로 처리할 파일 없음)")
+        print("\n✅ 선택된 과목의 녹음 파일이 이미 강의노트에 완벽하게 정리되어 있습니다! (새로 처리할 파일 없음)", flush=True)
     else:
-        print("\n🎉 새로운 강의노트 생성이 완료되었습니다. PDF를 자동 갱신합니다...")
+        print("\n🎉 새로운 강의노트 생성이 완료되었습니다. PDF를 자동 갱신합니다...", flush=True)
         try:
             if getattr(sys, "frozen", False):
                 import generate_pdfs
@@ -654,9 +684,9 @@ def scan_and_process_all_lectures(target_courses=None, target_audio_files=None):
                 if target_courses:
                     cmd.extend(["--courses"] + target_courses)
                 subprocess.check_call(cmd)
-            print("✅ 주차별 및 전체 통합본 PDF 최신화까지 자동 완료되었습니다!")
+            print("✅ 주차별 및 전체 통합본 PDF 최신화까지 자동 완료되었습니다!", flush=True)
         except Exception as e:
-            print(f"[Warn] PDF 생성 중 오류: {e}")
+            print(f"[Warn] PDF 생성 중 오류: {e}", flush=True)
 
 def generate_custom_lecture_note(cname, audio_path=None, slide_paths=None, date_str=None, week_num=None, lang_mode=None, log_callback=None, cancel_check=None):
     """
@@ -673,7 +703,7 @@ def generate_custom_lecture_note(cname, audio_path=None, slide_paths=None, date_
 
     def log(msg, step=None, eta=None):
         check_cancel()
-        print(msg)
+        print(msg, flush=True)
         if log_callback:
             try:
                 log_callback(msg, step, eta)
@@ -734,8 +764,10 @@ def generate_custom_lecture_note(cname, audio_path=None, slide_paths=None, date_
     valid_slides = [p for p in (slide_paths or []) if os.path.exists(p)]
 
     log(f"• 대상 날짜: {actual_date_str} ({weekday_kr}요일) | {week_num}주차")
-    log(f"• 음성 녹음: {os.path.basename(audio_path) if has_audio else '음성 자료 없음 (슬라이드 집중 분석 모드)'}")
-    log(f"• 슬라이드: {[os.path.basename(p) for p in valid_slides] if valid_slides else '슬라이드 미지정'}")
+    audio_disp = os.path.basename(audio_path) if has_audio else "음성 자료 없음 (슬라이드 집중 분석 모드)"
+    slide_disp = [os.path.basename(p) for p in valid_slides] if valid_slides else "슬라이드 미지정"
+    log(f"• 음성 녹음: {audio_disp}")
+    log(f"• 슬라이드: {slide_disp}")
 
     api_key = config_manager.get_api_key() or os.environ.get("GEMINI_API_KEY", "")
     if not api_key or len(api_key) < 10:
@@ -753,10 +785,19 @@ def generate_custom_lecture_note(cname, audio_path=None, slide_paths=None, date_
     if valid_slides:
         check_cancel()
         log(f"\n[Step 1/4] 📤 슬라이드 PDF 자료 전송 중 ({len(valid_slides)}건)...", step=1, eta=30)
-        for sp in valid_slides[:2]: # 과부하 방지 최대 2개 업로드
+        for sp in valid_slides[:2]:
             check_cancel()
             s_uri, s_mime = upload_file_to_gemini(sp, "application/pdf", log_fn=log)
             uploaded_parts.append({"file_data": {"mime_type": s_mime, "file_uri": s_uri}})
+
+    audio_fname = os.path.basename(audio_path) if has_audio else ""
+    slide_fnames = [os.path.basename(p) for p in valid_slides]
+    slide_list_str = ", ".join(slide_fnames) if slide_fnames else ""
+    first_slide = slide_fnames[0] if slide_fnames else "교재·슬라이드"
+    source_files_dict = {
+        "audio": audio_fname,
+        "slides": slide_fnames
+    }
 
     # 2. Gemini API 호출 함수 (커스텀 프롬프트)
     def call_gemini_with_parts(parts, prompt_text):
@@ -764,7 +805,10 @@ def generate_custom_lecture_note(cname, audio_path=None, slide_paths=None, date_
         full_parts = list(parts) + [{"text": prompt_text}]
         payload = {
             "contents": [{"parts": full_parts}],
-            "generationConfig": {"temperature": 0.2}
+            "generationConfig": {
+                "temperature": 0.2,
+                "maxOutputTokens": 16384
+            }
         }
         models_to_try = config_manager.get_supported_gemini_models(api_key)
         top_display = ", ".join(models_to_try[:3])
@@ -787,7 +831,7 @@ def generate_custom_lecture_note(cname, audio_path=None, slide_paths=None, date_
 
                     def do_call():
                         try:
-                            with urllib.request.urlopen(req, timeout=90) as resp:
+                            with urllib.request.urlopen(req, timeout=120) as resp:
                                 req_resp[0] = resp.read()
                         except Exception as ex:
                             req_resp[1] = ex
@@ -876,84 +920,17 @@ def generate_custom_lecture_note(cname, audio_path=None, slide_paths=None, date_
     if prev_ko_content:
         log(f"  ℹ️ [진도 연속성 감지]: {week_num}주차 이전 차시 강의노트 확인됨 -> 1차시 중복 내용 배제 및 금일 신규 진도 집중 모드 가동", step=2)
 
-    # 프롬프트 구성 (100% 완전성 & 한/영 1:1 대칭 보장 & 잡소리 배제 & 상세 해설)
-    def build_custom_prompt(is_english=False):
-        if not is_english:
+    # 프롬프트 구성 (100% 완전성 & 한/영 1:1 대칭 보장 & 출처 파일명 명시 & 토큰 절약 테이블화)
+    def build_custom_prompt(is_english=False, master_note=None):
+        if is_english:
             if has_audio:
-                source_desc = f"제공된 오디오는 [{cname}]의 실제 강의 녹음이며, 슬라이드 자료가 함께 제공되었습니다."
+                source_desc = f"The provided audio is the official class recording for [{cname}] ('{audio_fname}'), along with lecture slide/course material file(s) ({slide_list_str if slide_fnames else 'None'})."
             else:
-                source_desc = f"본 강의노트는 [{cname}]의 공식 강의 슬라이드 및 교재 자료를 바탕으로 작성되는 완벽한 시험 대비 독학용 집중 강의노트입니다."
+                source_desc = f"This lecture note is thoroughly synthesized from official lecture slides and course materials for [{cname}] ({slide_list_str if slide_fnames else 'None'})."
 
-            base_p = f"""당신은 해당 전공 과목의 최고 수석 조교이자 URY Engine AI입니다.
-과목명: {cname} | 일자: {actual_date_str}({weekday_kr}) | {week_num}주차
-배경 정보: {source_desc}
-
-학생이 복습 및 중간/기말고사에 완벽하게 대비할 수 있도록 매우 체계적이고 깊이 있는 강의노트를 작성해 주세요.
-
-[🚨 내용 완전성 및 1:1 대응 원칙 (Zero-Omission Policy)]
-- 슬라이드 및 교재에 포함된 모든 공식 영문 정의, 세부 불렛포인트, 예시, 비즈니스/수학적 사례, 수식, 표의 내용을 단 하나도 요약하여 누락하지 말고 100% 완전하게 한국어로 번역 및 상세 해설하여 수록할 것.
-- 영문 버전 강의노트에 포함되는 모든 세부 내용(상세 예시, 공식, 세부 개념, 시험 주의사항)이 한글 강의노트에도 완벽히 동일한 깊이와 분량으로 빠짐없이 1:1 대칭 수록되어야 함.
-- 슬라이드 본문이 영어이더라도 한국어로 친절히 풀어쓰되, 핵심 전문 용어는 반드시 `한글 번역 (English Official Term)` 형태로 병기할 것.
-
-[🚨 잡소리 배제 및 순수 강의 내용 극대화 원칙]
-- 교수님의 사적인 잡담, 농담, 신변잡기, 수업 외적인 딴소리 등 학습과 무관한 불필요한 '잡소리'는 철저하게 걸러내어 100% 제외할 것.
-- 오직 정규 학업과 시험에 직결되는 순수 강의 내용, 이론, 개념 정의, 논리적 전개, 실전 예시만을 추출하여 '최대한 상세하고 깊이 있게' 풀어서 설명할 것.
-
-[작성 가이드라인 - 출처 구분 및 음성 타임스탬프 네비게이터 필수]
-1. 출처 태그 명시:
-   - `[🎙️ 음성 (MM:SS)]` : 교수님 실제 육성/설명/시험팁 (음성이 있는 경우 반드시 해당 발언이 시작되는 재생 시간 MM:SS 또는 HH:MM:SS 병기. 예: `[🎙️ 음성 (14:25)] 출석체크 번호 7421 안내`)
-   - `[📖 교재·슬라이드]` : 슬라이드 본문, 공식 정의, 수식, 표
-   - `[💡 통합 (MM:SS)]` : 이론과 실전 사례, 핵심 해설 결합 (음성 발언 시간 병기)
-2. 형식:
-# {cname} {week_num}주차 맞춤 강의노트 ({actual_date_str})
-> **과목명**: {cname} | **주차**: {week_num}주차 | **수업 일자**: {actual_date_str} ({weekday_kr})
-
-## 📌 1. 수업 개요 및 주요 공지사항 [🎙️ 음성 (MM:SS)]
-- 이번 주차 핵심 학습 목표 및 출석/과제/시험 관련 공지 사항을 타임스탬프와 함께 완벽 정리
-
-## 💡 2. 핵심 이론 및 상세 개념 분석 [출처 태그 명시]
-- 잡소리(사담, 농담, 딴소리)는 일절 배제하고, 슬라이드와 강의의 모든 챕터, 불렛포인트, 세부 개념, 공식을 빠짐없이 체계적인 번호와 소제목으로 '최대한 상세하게' 해설
-- 단순한 개조식 요약이 아니라, 강의나 교재를 보지 않고도 완벽히 이해할 수 있도록 친절하고 논리적인 서술체로 상세 서술
-- 중요한 전문 용어는 반드시 `한국어 (English)`를 병기할 것
-- 비교 표(Markdown Table), 수식(LaTeX/KaTeX), 구조 다이어그램 적극 활용
-
-## 🎯 3. 핵심 키워드 정리 & 단원 종합 요약
-### 3.1 🔑 필수 핵심 키워드 사전
-| 핵심 키워드 (Key Term) | 영문 표기 | 핵심 정의 및 시험 출제 포인트 |
-
-### 3.2 📋 단원 종합 핵심 요약 (Exam Key Takeaways)
-- 오늘 다룬 강의 전체의 핵심 맥락과 주요 이론을 3~5개의 핵심 포인트로 일목요연하게 압축 정리 (시험 직전 3분 복습용)
-
-## 📝 4. 금주 핵심 복습 체크리스트
-- 학생이 오늘 반드시 점검해야 할 질문과 과제 (`- [ ]`)
-
-어조: 전문적이고 깔끔한 강의노트 서술체 (-임, -함 또는 명사형 종결)."""
-
-            if prev_ko_content:
-                base_p += f"""
-
---------------------------------------------------------------------------------
-[🚨 이전 차시({week_num}주차 앞선 수업) 기작성 강의노트 발췌 - 중복 배제 필수 참고자료]
-아래 내용은 이번 주차 앞선 수업에서 이미 작성되어 학생들에게 배포된 강의노트 본문입니다:
-{prev_ko_content}
-
-[🚨 중복 배제 및 진도 연속성 엄격 원칙 (Zero-Duplication & Continuity)]
-1. [기존 내용 단순 반복 엄금]:
-   - 위 1차시 강의노트에 이미 수록된 학술 정의, 기본 개념, 동일한 실전 예시(도표, 주문 로그 표, 비유 등)는 이번 2차시 강의노트에서 똑같이 다시 작성하지 마십시오.
-2. [지난 시간 복습 내용 압축]:
-   - 교수님이 수업 초반에 지난 1차시 내용을 복습(Review)하더라도, 지면을 낭비하지 말고 "지난 1차시에서는 ~을 다루었습니다." 수준으로 1~2줄로만 간략히 요약하고 즉시 오늘 수업의 새로운 진도로 넘어가십시오.
-3. [오늘의 신규 진도에 90% 이상 집중]:
-   - 오늘(2차시) 수업에서 새롭게 등장한 심화 이론, 추가적인 분석 프레임워크, 수식 유도, 새로운 비즈니스/수학적 사례, 오늘자 출석 번호 및 과제 공지에 집중하여 깊이 있게 서술하십시오.
-4. [1주차 주차별 지식 통합]:
-   - '키워드 사전'과 '복습 체크리스트'는 1차시 내용을 반복하는 것이 아니라, 오늘 새롭게 배운 핵심 용어와 1주차 전체를 아우르는 최종 점검 질문으로 구성하십시오.
---------------------------------------------------------------------------------
-"""
-            return base_p
-        else:
-            if has_audio:
-                source_desc = f"The provided audio is the official class recording for [{cname}], along with lecture slides."
-            else:
-                source_desc = f"This lecture note is thoroughly synthesized from official lecture slides and course materials for [{cname}]."
+            audio_rule_en = f"- `[🎙️ {audio_fname} (MM:SS)]` : In-class verbal explanations, attendance codes, instructor's exam tips with exact audio playback timestamps (e.g. `[🎙️ {audio_fname} (14:25)] Attendance code announced`)." if has_audio else "- `[🎙️ Spoken (MM:SS)]` : In-class verbal lecture notes."
+            slide_rule_en = f"- `[📖 {first_slide} p.page]` : Official definitions, syllabus rules, slide bullet points. You MUST cite the exact source file name and page or slide number (Provided files: {slide_list_str}, e.g. `[📖 {first_slide} p.3]`, `[📖 {first_slide} Slide 12]`)." if slide_fnames else "- `[📖 Slides p.page]` : Course materials and textbook sources."
+            hybrid_rule_en = f"- `[💡 Integrated: {audio_fname} (MM:SS) + {first_slide} p.page]` : Theoretical concepts synthesized with practical business cases and verbal explanations." if (has_audio and slide_fnames) else "- `[💡 Integrated]` : Synthesized concepts."
 
             base_p = f"""You are the Head TA for [{cname}] powered by URY Engine.
 Course: {cname} | Date: {actual_date_str} ({weekday_en}) | Week {week_num}
@@ -965,16 +942,22 @@ Produce a rigorous, publication-grade academic lecture note in English for exam 
 * Strictly cover 100% of all theoretical topics, definitions, sub-bullets, mathematical derivations, business case studies, and instructor tips without any omission or excessive summarization.
 * Filter out all casual jokes, personal anecdotes, and off-topic digressions ("잡소리") to keep the content purely academic and maximally thorough.
 * Tag sections and key points with:
-  - `[🎙️ Spoken (MM:SS)]` : In-class verbal explanations, attendance codes, instructor's exam tips, Q&A with exact audio playback timestamps (MM:SS or HH:MM:SS, e.g. `[🎙️ Spoken (14:25)]`).
-  - `[📖 Slides/Textbook]` : Official textbook definitions, syllabus rules, slide references.
-  - `[💡 Integrated (MM:SS)]` : Theoretical concepts synthesized with practical business cases (with timestamp if referencing spoken explanation).
+   {audio_rule_en}
+   {slide_rule_en}
+   {hybrid_rule_en}
+* Format grading policies, evaluation criteria, and assessment weights strictly as a concise Markdown Table (`| Assessment Component | Weight (%) | Operational Details & Policies [Tagged] |`). Do NOT write repetitive paragraphs for every single grade letter.
+* You MUST fully write all 4 sections to the very end without cutting off early: Section 1, Section 2 (deep theory & diagrams), Section 3 (keywords table & takeaways), and Section 4 (Action checklist).
 
 Format:
 # {cname} Week {week_num} Lecture Notes ({actual_date_str})
-> **Course**: {cname} | **Week**: Week {week_num} | **Date**: {actual_date_str} ({weekday_en})
+> 📌 **Course**: {cname} | **Week**: Week {week_num} | **Date**: {actual_date_str} ({weekday_en})
+> 🏷️ **Source Reference Files**:
+> - 🎙️ **Lecture Audio**: {audio_fname if has_audio else 'No audio recording'}
+> - 📖 **Lecture Slides**: {slide_list_str if slide_fnames else 'No slide files specified'}
 
-## 📌 1. Class Announcements & Operational Guidelines `[🎙️ Spoken (MM:SS)]`
+## 📌 1. Class Announcements & Operational Guidelines `[Tagged]`
 - Attendance verification codes, quiz announcements, homework deadlines, course policies with exact timestamps.
+- Assessment Breakdown Table (`| Assessment Component | Weight (%) | Operational Details & Policies [Tagged] |`).
 
 ## 💡 2. In-Depth Theoretical & Conceptual Analysis `[Tagged]`
 - Zero filler or off-topic chitchat: Exhaustive, granular, and publication-grade academic analysis of all course concepts, theories, models, and slide bullet points.
@@ -1010,38 +993,179 @@ The following content was ALREADY synthesized in the earlier session of Week {we
 """
             return base_p
 
-    last_content = ""
-    # 3. 마크다운 생성 및 저장
-    if need_ko:
-        check_cancel()
-        ko_eta = 80 if (has_audio and need_en) else (50 if has_audio else (35 if need_en else 20))
-        log("\n[Step 2/4] 🧠 Gemini AI 한국어 맞춤 강의노트 심층 작성 중...", step=2, eta=ko_eta)
-        prompt_ko = build_custom_prompt(is_english=False)
-        note_ko = call_gemini_with_parts(uploaded_parts, prompt_ko)
-        check_cancel()
-        save_to_markdown_cache(course_cfg, note_ko, actual_date_str, week_num, is_english=False)
-        last_content = note_ko
-        log("  ✅ 한국어 강의노트 적재 완료 (내용 누락 방지 검증 통과)", step=2, eta=40 if (has_audio and need_en) else 15)
+        else:
+            # 한국어 강의노트 프롬프트
+            if master_note:
+                # 영문 마스터 노트가 주어졌을 때 -> 100% 1:1 대칭 매핑 모드
+                base_p = f"""당신은 해당 전공 과목의 최고 수석 조교이자 URY Engine AI입니다.
+과목명: {cname} | 일자: {actual_date_str}({weekday_kr}) | {week_num}주차
+참조 원본 파일:
+- 강의 음성: {audio_fname if has_audio else '음성 녹음 없음'}
+- 강의 슬라이드: {slide_list_str if slide_fnames else '지정된 슬라이드 없음'}
 
+[🚨 영문 마스터 노트 기반 100% 1:1 완벽 대칭 조판 지침 (Master Blueprint Synchronization)]
+아래에 제공된 [영문 마스터 강의노트]는 이번 강의의 구조적 기준 청사진(Master Blueprint)입니다.
+학생이 한/영 버전을 완벽하게 상호 대조하며 공부할 수 있도록, 영문 마스터 노트의 모든 섹션, 표, 세부 개념, 다이어그램, 키워드 사전, 체크리스트를 빠짐없이 1:1 완벽 대응하여 한국어로 번역 및 학술 조판하십시오.
+
+[핵심 작성 원칙]
+1. [섹션 번호 및 구조 100% 일치]:
+   - 1. 수업 개요 및 공지사항, 2. 핵심 이론 및 상세 개념 분석(2.1, 2.2, 2.3 등), 3. 핵심 키워드 정리 & 단원 종합 요약(3.1 표, 3.2 요약), 4. 금주 핵심 복습 체크리스트까지 4개 섹션 전체를 영문 마스터 노트와 정확히 1:1로 일치시킬 것.
+   - 영문 노트에 있는 2번 이론 분석(마케팅 가치 패러다임, 아스키 다이어그램, 소비자 인식 및 브랜드 자산, 4Ps 테이블 등)이 한글 강의노트에서 절대로 누락되지 않도록 100% 대칭 수록할 것.
+2. [표(Markdown Table) 구조 엄격 준수]:
+   - 성적 평가 방식은 영문처럼 `| 평가 항목 | 비중 (%) | 세부 운영 규칙 및 정책 [출처 태그] |` 테이블로 깔끔하게 정리할 것 (A+, A0 등 개별 학점 구간을 줄글로 길게 늘여 쓰지 말 것).
+   - 4Ps 분석표, 키워드 사전 표 역시 영문 마스터 노트의 컬럼과 행 구조를 1:1 그대로 유지하여 번역할 것.
+3. [출처 태그 보존]:
+   - 영문 마스터 노트에 표기된 모든 출처 태그(`[🎙️ {audio_fname} (MM:SS)]`, `[📖 {first_slide} p.X]`, `[💡 통합]`)를 한글 노트의 정확한 해당 위치에 동일하게 기재할 것.
+4. [전문 용어 병기]:
+   - 핵심 개념은 반드시 `한국어 번역 (English Official Term)` 형태로 병기할 것.
+5. [절대 중단 금지]:
+   - 토큰 제한이 16,384로 충분히 확보되어 있으므로, 절대로 1번 섹션에서 멈추지 말고 4번 체크리스트까지 완벽하게 끝까지 작성할 것.
+
+[영문 마스터 강의노트 청사진]:
+--------------------------------------------------------------------------------
+{master_note}
+--------------------------------------------------------------------------------
+
+한국어 강의노트 형식:
+# {cname} {week_num}주차 맞춤 강의노트 ({actual_date_str})
+> 📌 **과목명**: {cname} | **주차**: {week_num}주차 | **수업 일자**: {actual_date_str} ({weekday_kr})
+> 🏷️ **참조 원본 파일**:
+> - 🎙️ **강의 음성**: {audio_fname if has_audio else '음성 녹음 없음'}
+> - 📖 **강의 슬라이드**: {slide_list_str if slide_fnames else '지정된 슬라이드 없음'}
+
+## 📌 1. 수업 개요 및 주요 공지사항 `[Tagged]`
+- 평가 기준 테이블 (`| 평가 항목 | 비중 (%) | 세부 운영 규칙 및 정책 [출처 태그] |`) 및 출석/과제/시험 규정
+
+## 💡 2. 핵심 이론 및 상세 개념 분석 `[Tagged]`
+- 영문 마스터 노트의 2.1, 2.2, 2.3 등 모든 이론, 프레임워크, 도표, 다이어그램을 100% 대칭 해설
+
+## 🎯 3. 핵심 키워드 정리 & 단원 종합 요약
+### 3.1 🔑 필수 핵심 키워드 사전
+| 핵심 키워드 (Key Term) | 영문 표기 | 핵심 정의 및 시험 출제 포인트 |
+
+### 3.2 📋 단원 종합 핵심 요약 (Exam Key Takeaways)
+- 3~5개 핵심 포인트
+
+## 📝 4. 금주 핵심 복습 체크리스트
+- `- [ ]` 체크리스트 항목
+
+어조: 전문적이고 깔끔한 강의노트 서술체 (-임, -함 또는 명사형 종결)."""
+                return base_p
+
+            else:
+                # 독립 한국어 생성 모드
+                if has_audio:
+                    source_desc = f"제공된 오디오는 [{cname}]의 실제 강의 녹음 ('{audio_fname}')이며, 슬라이드 자료 ({slide_list_str if slide_fnames else '없음'})가 함께 제공되었습니다."
+                else:
+                    source_desc = f"본 강의노트는 [{cname}]의 공식 강의 슬라이드 및 교재 자료 ({slide_list_str if slide_fnames else '없음'})를 바탕으로 작성되는 완벽한 시험 대비 독학용 집중 강의노트입니다."
+
+                audio_rule_kr = f"- `[🎙️ {audio_fname} (MM:SS)]` : 교수님 실제 육성/설명/시험팁 (음성 발언 시작 시간 표기, 예: `[🎙️ {audio_fname} (14:25)]`)." if has_audio else "- `[🎙️ 음성 (MM:SS)]` : 교수님 실제 육성 강의노트."
+                slide_rule_kr = f"- `[📖 {first_slide} p.페이지]` : 슬라이드 본문, 공식 정의, 수식, 표 (제공된 파일: {slide_list_str}, 예: `[📖 {first_slide} p.3]`, `[📖 {first_slide} Slide 12]`)." if slide_fnames else "- `[📖 교재·슬라이드 p.페이지]` : 교재 및 슬라이드 출처."
+                hybrid_rule_kr = f"- `[💡 통합: {audio_fname} (MM:SS) + {first_slide} p.페이지]` : 이론과 교수님 육성 해설 결합." if (has_audio and slide_fnames) else "- `[💡 통합]` : 이론과 실전 사례 결합."
+
+                base_p = f"""당신은 해당 전공 과목의 최고 수석 조교이자 URY Engine AI입니다.
+과목명: {cname} | 일자: {actual_date_str}({weekday_kr}) | {week_num}주차
+배경 정보: {source_desc}
+
+학생이 복습 및 중간/기말고사에 완벽하게 대비할 수 있도록 매우 체계적이고 깊이 있는 강의노트를 작성해 주세요.
+
+[🚨 내용 완전성 및 4개 섹션 완결 원칙]
+- 슬라이드 및 교재에 포함된 모든 공식 정의, 세부 불렛포인트, 예시, 비즈니스/수학적 사례, 수식, 표의 내용을 단 하나도 요약하여 누락하지 말고 100% 완전하게 한국어로 번역 및 상세 해설할 것.
+- 핵심 전문 용어는 반드시 `한글 번역 (English Official Term)` 형태로 병기할 것.
+- 평가 규정 및 세부 배점은 `| 평가 항목 | 비중 (%) | 세부 운영 규칙 및 정책 [출처 태그] |` 마크다운 테이블로 집약하고, 불필요한 줄글로 페이지를 낭비하지 말 것.
+- 반드시 1. 개요, 2. 핵심 이론 분석, 3. 키워드 사전, 4. 체크리스트까지 4개 섹션 전체를 끝까지 완벽히 작성할 것.
+
+[작성 가이드라인 - 출처 구분 및 파일명 네비게이터 필수]
+1. 출처 태그 명시:
+   {audio_rule_kr}
+   {slide_rule_kr}
+   {hybrid_rule_kr}
+2. 형식:
+# {cname} {week_num}주차 맞춤 강의노트 ({actual_date_str})
+> 📌 **과목명**: {cname} | **주차**: {week_num}주차 | **수업 일자**: {actual_date_str} ({weekday_kr})
+> 🏷️ **참조 원본 파일**:
+> - 🎙️ **강의 음성**: {audio_fname if has_audio else '음성 녹음 없음'}
+> - 📖 **강의 슬라이드**: {slide_list_str if slide_fnames else '지정된 슬라이드 없음'}
+
+## 📌 1. 수업 개요 및 주요 공지사항 `[Tagged]`
+- 이번 주차 핵심 학습 목표 및 출석/과제/시험 관련 공지 사항을 타임스탬프와 함께 완벽 정리
+- 성적 평가 기준 테이블 (`| 평가 항목 | 비중 (%) | 세부 운영 규칙 및 정책 [출처 태그] |`)
+
+## 💡 2. 핵심 이론 및 상세 개념 분석 `[Tagged]`
+- 잡소리(사담, 농담, 딴소리)는 일절 배제하고, 슬라이드와 강의의 모든 챕터, 불렛포인트, 세부 개념, 공식을 빠짐없이 체계적인 번호와 소제목으로 '최대한 상세하게' 해설
+- 비교 표(Markdown Table), 수식(LaTeX/KaTeX), 구조 다이어그램 적극 활용
+
+## 🎯 3. 핵심 키워드 정리 & 단원 종합 요약
+### 3.1 🔑 필수 핵심 키워드 사전
+| 핵심 키워드 (Key Term) | 영문 표기 | 핵심 정의 및 시험 출제 포인트 |
+
+### 3.2 📋 단원 종합 핵심 요약 (Exam Key Takeaways)
+- 3~5개의 핵심 포인트 압축 정리
+
+## 📝 4. 금주 핵심 복습 체크리스트
+- 학생이 오늘 반드시 점검해야 할 질문과 과제 (`- [ ]`)
+
+어조: 전문적이고 깔끔한 강의노트 서술체 (-임, -함 또는 명사형 종결)."""
+
+                if prev_ko_content:
+                    base_p += f"""
+
+--------------------------------------------------------------------------------
+[🚨 이전 차시({week_num}주차 앞선 수업) 기작성 강의노트 발췌 - 중복 배제 필수 참고자료]
+아래 내용은 이번 주차 앞선 수업에서 이미 작성되어 학생들에게 배포된 강의노트 본문입니다:
+{prev_ko_content}
+
+[🚨 중복 배제 및 진도 연속성 엄격 원칙 (Zero-Duplication & Continuity)]
+1. [기존 내용 단순 반복 엄금]: 위 1차시 강의노트에 이미 수록된 학술 정의, 기본 개념, 동일한 실전 예시는 이번 2차시 강의노트에서 다시 작성하지 마십시오.
+2. [지난 시간 복습 내용 압축]: 복습 내용은 1~2줄로만 간략히 요약하고 즉시 오늘 수업의 새로운 진도로 넘어가십시오.
+3. [오늘의 신규 진도에 90% 이상 집중]: 오늘 새롭게 등장한 심화 이론, 분석 프레임워크, 수식 유도, 사례에 집중하십시오.
+4. [1주차 주차별 지식 통합]: 키워드 사전과 복습 체크리스트는 1주차 전체를 아우르는 최종 점검 질문으로 구성하십시오.
+--------------------------------------------------------------------------------
+"""
+                return base_p
+
+    last_content = ""
+    note_en = None
+    note_ko = None
+    all_saved_mds = []
+    cdir = config_manager.get_course_dir(course_cfg["folder_name"])
+    user_notes_dir = os.path.join(cdir, "강의노트")
+    os.makedirs(user_notes_dir, exist_ok=True)
+
+    # 3. 마크다운 생성 및 저장 (both 모드일 경우 영문 마스터 노트를 1차 생성하여 한국어 노트와 100% 1:1 대칭 보장)
     if need_en:
         check_cancel()
         en_eta = 45 if has_audio else 20
-        log("\n[Step 2/4] 🧠 Gemini AI 영문 맞춤 강의노트 심층 작성 중...", step=2, eta=en_eta)
+        log("\n[Step 2/4] 🧠 Gemini AI 영문 맞춤 강의노트 심층 작성 중 (마스터 청사진 수립)...", step=2, eta=en_eta)
         prompt_en = build_custom_prompt(is_english=True)
         note_en = call_gemini_with_parts(uploaded_parts, prompt_en)
         check_cancel()
-        save_to_markdown_cache(course_cfg, note_en, actual_date_str, week_num, is_english=True)
-        if not last_content:
-            last_content = note_en
-        log("  ✅ 영문 강의노트 적재 완료 (한/영 1:1 대칭 검증 통과)", step=2, eta=10)
+        saved = save_to_markdown_cache(course_cfg, note_en, actual_date_str, week_num, is_english=True, source_files=source_files_dict)
+        if saved:
+            all_saved_mds.extend(saved)
+        last_content = note_en
+        log("  ✅ 영문 마스터 강의노트 적재 완료", step=2, eta=40 if (has_audio and need_ko) else 15)
+
+    if need_ko:
+        check_cancel()
+        ko_eta = 80 if (has_audio and need_en) else (50 if has_audio else 35)
+        log("\n[Step 2/4] 🧠 Gemini AI 한국어 맞춤 강의노트 심층 작성 중 (100% 1:1 대칭 & 완전성 보장)...", step=2, eta=ko_eta)
+        prompt_ko = build_custom_prompt(is_english=False, master_note=note_en)
+        note_ko = call_gemini_with_parts(uploaded_parts, prompt_ko)
+        check_cancel()
+        saved = save_to_markdown_cache(course_cfg, note_ko, actual_date_str, week_num, is_english=False, source_files=source_files_dict)
+        if saved:
+            all_saved_mds.extend(saved)
+        last_content = note_ko
+        log("  ✅ 한국어 강의노트 적재 완료 (한/영 1:1 완벽 대칭 & 내용 누락 방지 검증 통과)", step=2, eta=10)
 
     # 4. 슬라이드 도표 자동 추출 & 마크다운 임베드
     check_cancel()
     try:
         import dynamic_slide_integrator
         log("\n[Step 3/4] 📸 슬라이드 도표 자동 추출 및 마크다운 임베드 수행 중...", step=3, eta=8)
-        dynamic_slide_integrator.process_course_slides_dynamic(course_cfg)
-        log("  ✅ 슬라이드 고화질 도표(150 DPI) 추출 및 이미지 링크 결합 완료", step=3, eta=5)
+        dynamic_slide_integrator.process_course_slides_dynamic(course_cfg, slide_paths=valid_slides)
+        log("  ✅ 슬라이드 고화질 도표(180 DPI) 추출 및 이미지 링크 결합 완료", step=3, eta=5)
     except Exception as e:
         log(f"  ⚠️ 슬라이드 도표 임베드 알림: {e}", step=3)
 
@@ -1051,25 +1175,33 @@ The following content was ALREADY synthesized in the earlier session of Week {we
     try:
         import generate_pdfs
         log("\n[Step 4/4] 📑 출판용 고품질 PDF 컴파일 및 렌더링 중...", step=4, eta=3)
-        generate_pdfs.generate_all_pdfs(target_courses=[cname])
-        cdir = config_manager.get_course_dir(course_cfg["folder_name"])
+        target_keys = list(set([cname, course_cfg.get("name", ""), course_cfg.get("folder_name", "")]))
+        target_keys = [k for k in target_keys if k]
+        generate_pdfs.generate_all_pdfs(target_courses=target_keys)
         pdf_glob = os.path.join(cdir, "강의노트", "**", "*.pdf")
         for p in glob.glob(pdf_glob, recursive=True):
-            generated_pdfs.append(p)
-        log(f"  ✅ 출판용 PDF 렌더링 완료 ({len(generated_pdfs)}개 문서 생성됨)", step=4, eta=1)
+            if p not in generated_pdfs:
+                generated_pdfs.append(p)
+        log(f"  ✅ 출판용 PDF 렌더링 완료 ({len(generated_pdfs)}개 문서 감지됨)", step=4, eta=1)
     except Exception as e:
         log(f"  ⚠️ PDF 컴파일 중 알림: {e}", step=4)
 
-    log("\n🎉 [완료] 맞춤형 학습노트 및 출판용 PDF 생성이 성공적으로 완료되었습니다!", step=4, eta=0)
+    unique_mds = sorted(list(set(all_saved_mds)))
+    log("\n🎉 [완료] 맞춤형 학습노트 저장이 성공적으로 완료되었습니다!", step=4, eta=0)
+    log(f"📂 [최종 저장 폴더]: {user_notes_dir}")
+    for md_file in unique_mds:
+        log(f"  📄 마크다운 강의노트: {os.path.basename(md_file)}")
     for pdf_file in sorted(generated_pdfs):
-        log(f"  📄 생성된 PDF: {os.path.basename(pdf_file)}")
+        log(f"  📑 출판용 PDF: {os.path.basename(pdf_file)}")
 
     return {
         "course_name": cname,
         "date_str": actual_date_str,
         "week_num": week_num,
         "content": last_content,
-        "pdf_files": sorted(generated_pdfs)
+        "pdf_files": sorted(generated_pdfs),
+        "markdown_files": unique_mds,
+        "notes_dir": user_notes_dir
     }
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-🎓 대학 전공 학업 관리 시스템 — URY Engine v0.2.1 (AI Academic Studio)
+🎓 대학 전공 학업 관리 시스템 — URY Engine v0.2.2 (AI Academic Studio)
 - 미니멀 & 직관적인 모던 UI/UX
 - 3단계 사용자 주도형 맞춤 학습노트 생성 스튜디오 (음성 부재 대비 슬라이드 전용 모드 지원)
 - 선택적 실전 모의시험 & D-Day 맞춤 학습 로드맵 (주차별 자료 다중 선택 지원)
@@ -531,7 +531,7 @@ class CinematicSplashScreen:
 class UnifiedDashboardApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("URY Engine — Academic Studio v0.2.1")
+        self.root.title("URY Engine — Academic Studio v0.2.2")
 
         config_manager.fix_mac_quarantine()
         self.setup_icon()
@@ -1244,7 +1244,7 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
             except Exception:
                 pass
         tk.Label(title_row, text="URY Engine", font=("Pretendard", 12, "bold"), bg="#ffffff", fg="#1c4732").pack(side=tk.LEFT)
-        tk.Label(title_row, text=" v0.2.1", font=("Pretendard", 9), bg="#ffffff", fg="#64748b").pack(side=tk.LEFT)
+        tk.Label(title_row, text=" v0.2.2", font=("Pretendard", 9), bg="#ffffff", fg="#64748b").pack(side=tk.LEFT)
         tk.Label(left, text="Academic Studio", font=("Pretendard", 8), bg="#ffffff", fg="#94a3b8").pack(anchor=tk.W)
 
         # 우측: 해상도 선택기 / 학기 / API 연결 상태 배지 (오른쪽에 영구 고정되도록 center보다 먼저 pack)
@@ -2214,28 +2214,47 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         self.studio_stop_btn.config(state=tk.DISABLED)
         elapsed = int(time.time() - self.studio_start_time)
         self.studio_eta_var.set(f"⏱️ 총 소요 시간: {elapsed // 60:02d}:{elapsed % 60:02d} (완료)")
-        self.studio_status_var.set("✅ 학습노트 및 출판용 PDF 생성이 성공적으로 완료되었습니다!")
+        self.studio_status_var.set("✅ 학습노트 생성이 성공적으로 완료되었습니다!")
 
         self.append_studio_log("=" * 55, "step")
-        self.append_studio_log(f"🎉 [{result.get('course_name')}] 학습노트 및 PDF 제작이 완벽하게 완료되었습니다! (총 {elapsed}초)", "success")
+        self.append_studio_log(f"🎉 [{result.get('course_name')}] 학습노트 생성이 완벽하게 완료되었습니다! (총 {elapsed}초)", "success")
 
         pdfs = result.get("pdf_files", [])
+        mds = result.get("markdown_files", [])
+        notes_dir = result.get("notes_dir", "")
+
         if pdfs:
             self.last_generated_pdf = pdfs[-1]
             self.studio_open_pdf_btn.config(state=tk.NORMAL)
             for pdf_path in pdfs:
-                self.append_studio_log(f"  📄 최종 출판 문서: {os.path.basename(pdf_path)}", "highlight")
+                self.append_studio_log(f"  📑 출판용 PDF 문서: {os.path.basename(pdf_path)}", "highlight")
+        elif mds:
+            self.last_generated_pdf = mds[0]
+            self.studio_open_pdf_btn.config(state=tk.NORMAL)
+
+        if mds:
+            for md_path in mds:
+                self.append_studio_log(f"  📄 마크다운 강의노트: {os.path.basename(md_path)}", "highlight")
+
+        if notes_dir:
+            self.append_studio_log(f"  📂 저장 폴더: {notes_dir}", "step")
 
         view_now = messagebox.askyesno(
             "🎉 학습노트 완성",
-            f"[{result.get('course_name')}] 학습노트 및 출판용 PDF 생성이 성공적으로 완료되었습니다!\n\n• 총 소요 시간: {elapsed}초\n\n지금 바로 앱 내 라이브 뷰어로 문서를 확인하시겠습니까?",
+            f"[{result.get('course_name')}] 학습노트 생성이 성공적으로 완료되었습니다!\n\n• 저장 위치: {notes_dir or '강의노트 폴더'}\n• 총 소요 시간: {elapsed}초\n\n생성된 파일이 있는 폴더를 지금 바로 여시겠습니까?",
             parent=self.root
         )
-        if view_now and hasattr(self, "last_generated_pdf") and self.last_generated_pdf:
-            self.open_last_generated_pdf()
+        if view_now:
+            if notes_dir and os.path.exists(notes_dir):
+                if sys.platform == "darwin":
+                    subprocess.call(["open", notes_dir])
+                elif sys.platform == "win32":
+                    os.startfile(notes_dir)
+            elif hasattr(self, "last_generated_pdf") and self.last_generated_pdf:
+                self.open_last_generated_pdf()
         config_manager.send_system_notification(
             title="🎙️ 맞춤 강의노트 완성",
-            message=f"[{result.get('course_name')}] 출판용 PDF 제작 완료! (총 {elapsed}초)"
+            message=f"[{result.get('course_name')}] 학습노트 제작 완료! (총 {elapsed}초)"
         )
 
     def on_studio_generation_error(self, err_msg):
@@ -2250,9 +2269,15 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
 
     def open_last_generated_pdf(self):
         if hasattr(self, "last_generated_pdf") and self.last_generated_pdf and os.path.exists(self.last_generated_pdf):
-            self.open_pdf_viewer(self.last_generated_pdf, title=f"학습노트 — {os.path.basename(self.last_generated_pdf)}")
+            if self.last_generated_pdf.endswith(".pdf"):
+                self.open_pdf_viewer(self.last_generated_pdf, title=f"학습노트 — {os.path.basename(self.last_generated_pdf)}")
+            else:
+                if sys.platform == "darwin":
+                    subprocess.call(["open", self.last_generated_pdf])
+                else:
+                    self.open_studio_notes_folder()
         else:
-            messagebox.showinfo("안내", "생성된 PDF 파일을 찾을 수 없습니다.")
+            self.open_studio_notes_folder()
 
     def open_studio_notes_folder(self):
         cname = self.studio_course_combo.get().strip()

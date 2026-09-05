@@ -13,11 +13,11 @@ import sys
 def main():
     root_dir = os.path.dirname(os.path.abspath(__file__))
     staging_dir = os.path.join(root_dir, 'scratch', 'dmg_staging')
-    dmg_out = os.path.join(root_dir, '배포', 'URY_Engine_v0.2.1.dmg')
-    app_src = os.path.join(root_dir, '배포', 'URY_Engine_v0.2.1_macOS', 'URY Engine.app')
+    dmg_out = os.path.join(root_dir, '배포', 'URY_Engine_v0.2.2.dmg')
+    app_src = os.path.join(root_dir, 'URY_macOS', 'URY Engine.app')
 
     if not os.path.exists(app_src):
-        app_src = os.path.join(root_dir, 'URY_macOS', 'URY Engine.app')
+        app_src = os.path.join(root_dir, '배포', 'URY_Engine_v0.2.1_macOS', 'URY Engine.app')
 
     if not os.path.exists(app_src):
         print(f"❌ 오류: '{app_src}'를 찾을 수 없습니다.")
@@ -55,7 +55,7 @@ def main():
 
     cmd = [
         'hdiutil', 'create',
-        '-volname', 'URY Engine v0.2.1',
+        '-volname', 'URY Engine v0.2.2',
         '-srcfolder', staging_dir,
         '-ov',
         '-format', 'UDZO',

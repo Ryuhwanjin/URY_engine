@@ -136,6 +136,15 @@ def load_settings():
         if not c.get("tutor_name"):
             c["tutor_name"] = f"{cname} 수석 조교" if cname else "수석 조교"
 
+    try:
+        ensure_all_course_folders(data)
+        rec_box = os.path.join(WORKSPACE_DIR, "00_녹음_수신함")
+        os.makedirs(rec_box, exist_ok=True)
+        if not os.path.exists(SETTINGS_PATH):
+            save_settings(data)
+    except Exception:
+        pass
+
     return data
 
 def get_course_syllabi(course_name_or_folder):
