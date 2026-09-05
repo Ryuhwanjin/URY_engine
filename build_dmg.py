@@ -20,7 +20,7 @@ def main():
         app_src = os.path.join(root_dir, 'URY_macOS', 'URY Engine.app')
 
     if not os.path.exists(app_src):
-        print(f'❌ 오류: '{app_src}'를 찾을 수 없습니다.')
+        print(f"❌ 오류: '{app_src}'를 찾을 수 없습니다.")
         sys.exit(1)
 
     print('📦 [1/4] 스테이징 폴더 초기화 중...')

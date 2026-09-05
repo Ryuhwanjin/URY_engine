@@ -26,6 +26,17 @@ try:
 except Exception:
     colorchooser = None
 
+try:
+    from pdf_viewer import PDFViewerDialog
+except Exception:
+    try:
+        _cur_dir = os.path.dirname(os.path.abspath(__file__))
+        if _cur_dir not in sys.path:
+            sys.path.insert(0, _cur_dir)
+        from pdf_viewer import PDFViewerDialog
+    except Exception:
+        PDFViewerDialog = None
+
 # =========================================================================
 # 🛡️ macOS Cocoa Tkinter SIGABRT 크래시 방지용 네이티브 안전 파일 다이얼로그
 # =========================================================================
@@ -838,6 +849,28 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         root_map_id = self.root.bind("<Map>", on_root_map, add="+")
 
         dialog.focus_force()
+
+    def open_pdf_viewer(self, pdf_path, title=None, initial_page=0):
+        """인라인 PDF 라이브 뷰어 창 띄우기 (실패 시 시스템 외장 뷰어 fallback)"""
+        if not pdf_path or not os.path.exists(pdf_path):
+            messagebox.showinfo("안내", "열람할 PDF 파일이 존재하지 않습니다.", parent=self.root)
+            return
+        if PDFViewerDialog is not None:
+            try:
+                PDFViewerDialog(self.root, pdf_path, title=title, initial_page=initial_page)
+                return
+            except Exception as err:
+                print(f"⚠️ [인라인 PDF 뷰어 예외]: {err}")
+        # Fallback to system default viewer
+        try:
+            if sys.platform == "darwin":
+                subprocess.call(["open", pdf_path])
+            elif sys.platform == "win32":
+                os.startfile(pdf_path)
+            else:
+                subprocess.call(["xdg-open", pdf_path])
+        except Exception as sub_err:
+            messagebox.showerror("오류", f"PDF를 여는 중 오류가 발생했습니다:\n{sub_err}", parent=self.root)
 
     def set_theme_accent(self, color_hex):
         if not color_hex or not color_hex.startswith("#"):
@@ -2143,7 +2176,13 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
             for pdf_path in pdfs:
                 self.append_studio_log(f"  📄 최종 출판 문서: {os.path.basename(pdf_path)}", "highlight")
 
-        messagebox.showinfo("완료", f"🎉 [{result.get('course_name')}] 학습노트 및 출판용 PDF 생성이 완료되었습니다!\n\n총 소요 시간: {elapsed}초\n'📄 생성된 PDF 열기' 버튼을 눌러 바로 확인하실 수 있습니다.")
+        view_now = messagebox.askyesno(
+            "🎉 학습노트 완성",
+            f"[{result.get('course_name')}] 학습노트 및 출판용 PDF 생성이 성공적으로 완료되었습니다!\n\n• 총 소요 시간: {elapsed}초\n\n지금 바로 앱 내 라이브 뷰어로 문서를 확인하시겠습니까?",
+            parent=self.root
+        )
+        if view_now and hasattr(self, "last_generated_pdf") and self.last_generated_pdf:
+            self.open_last_generated_pdf()
         config_manager.send_system_notification(
             title="🎙️ 맞춤 강의노트 완성",
             message=f"[{result.get('course_name')}] 출판용 PDF 제작 완료! (총 {elapsed}초)"
@@ -2160,13 +2199,8 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         messagebox.showerror("오류", f"학습노트 생성 중 문제가 발생했습니다:\n\n{err_msg}")
 
     def open_last_generated_pdf(self):
-        if self.last_generated_pdf and os.path.exists(self.last_generated_pdf):
-            if sys.platform == "darwin":
-                subprocess.call(["open", self.last_generated_pdf])
-            elif sys.platform == "win32":
-                os.startfile(self.last_generated_pdf)
-            else:
-                subprocess.call(["xdg-open", self.last_generated_pdf])
+        if hasattr(self, "last_generated_pdf") and self.last_generated_pdf and os.path.exists(self.last_generated_pdf):
+            self.open_pdf_viewer(self.last_generated_pdf, title=f"학습노트 — {os.path.basename(self.last_generated_pdf)}")
         else:
             messagebox.showinfo("안내", "생성된 PDF 파일을 찾을 수 없습니다.")
 
@@ -2284,7 +2318,9 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         SquareRoundButton(btn_bar, text="📝 모의시험 PDF", bg="#205c3b", hover_bg="#2a774d", radius=8, height=34, font=("Pretendard", 9, "bold"), command=self.generate_mock_exam_now_action).pack(side=tk.LEFT, padx=(0, 6))
         SquareRoundButton(btn_bar, text="✍️ 답안 채점", bg="#285943", hover_bg="#357357", radius=8, height=34, font=("Pretendard", 9, "bold"), command=self.open_grading_dialog_action).pack(side=tk.LEFT, padx=(0, 6))
         SquareRoundButton(btn_bar, text="⚡ 치트시트 생성", bg="#3a6652", hover_bg="#4a8067", radius=8, height=34, font=("Pretendard", 9, "bold"), command=self.generate_cheatsheet_action).pack(side=tk.LEFT, padx=(0, 6))
-        SquareRoundButton(btn_bar, text="📂 문제 폴더", bg="#e2e8f0", hover_bg="#cbd5e1", fg="#14281e", radius=8, height=34, font=("Pretendard", 9, "bold"), command=self.open_exam_folder_action).pack(side=tk.LEFT)
+        SquareRoundButton(btn_bar, text="📂 문제 폴더", bg="#e2e8f0", hover_bg="#cbd5e1", fg="#14281e", radius=8, height=34, font=("Pretendard", 9, "bold"), command=self.open_exam_folder_action).pack(side=tk.LEFT, padx=(0, 6))
+        self.exam_open_pdf_btn = SquareRoundButton(btn_bar, text="📄 시험지 열기", bg="#e2e8f0", hover_bg="#cbd5e1", fg="#14281e", radius=8, height=34, state="disabled", font=("Pretendard", 9, "bold"), command=self.open_last_exam_pdf)
+        self.exam_open_pdf_btn.pack(side=tk.LEFT)
 
         # 실시간 진행 상황 및 로그 콘솔 프레임 (ETA & Progress Bar)
         exam_log_frame = ttk.LabelFrame(frame, text=" 💻 모의시험 & 로드맵 실시간 진행 로그 및 소요 시간 (Live Logs & ETA) ", padding="6")
@@ -2744,7 +2780,16 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
                         title="📝 실전 모의시험 출제 완료",
                         message=f"[{cname}] {exam_type} {q_count}문항 모의시험 & 해설 PDF 출제 완료!"
                     )
-                    messagebox.showinfo("모의시험 생성 완료", f"🎉 [{cname}] {exam_type} AI 커스텀 모의시험 및 해설지 PDF가 성공적으로 생성되었습니다!\n\n• 문항 수: {q_count}문항 ({q_fmt})\n• 시험지 위치: {pdf_path}")
+                    self.last_exam_pdf = pdf_path
+                    if hasattr(self, "exam_open_pdf_btn"):
+                        self.exam_open_pdf_btn.config(state="normal")
+                    view_now = messagebox.askyesno(
+                        "모의시험 생성 완료",
+                        f"🎉 [{cname}] {exam_type} AI 커스텀 모의시험 및 해설지 PDF가 성공적으로 생성되었습니다!\n\n• 문항 수: {q_count}문항 ({q_fmt})\n• 시험지: {os.path.basename(pdf_path)}\n\n지금 바로 앱 내 라이브 뷰어로 시험지를 확인하시겠습니까?",
+                        parent=self.root
+                    )
+                    if view_now:
+                        self.open_last_exam_pdf()
 
                 self.root.after(0, on_success)
             except Exception as e:
@@ -2758,6 +2803,12 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
                 self.root.after(0, on_error)
 
         threading.Thread(target=worker, daemon=True).start()
+
+    def open_last_exam_pdf(self):
+        if hasattr(self, "last_exam_pdf") and self.last_exam_pdf and os.path.exists(self.last_exam_pdf):
+            self.open_pdf_viewer(self.last_exam_pdf, title=f"시험지 — {os.path.basename(self.last_exam_pdf)}")
+        else:
+            messagebox.showinfo("안내", "출제된 시험지/해설지 PDF 파일을 찾을 수 없습니다.")
 
     def open_exam_folder_action(self):
         cname = self.exam_course_combo.get().strip()
@@ -2838,17 +2889,16 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
                         title="⚡ 3분 치트시트 제작 완료",
                         message=f"[{cname}] {exam_type} A4 1페이지 초고밀도 치트시트 제작 완료!"
                     )
-                    messagebox.showinfo(
+                    self.last_exam_pdf = pdf_file
+                    if hasattr(self, "exam_open_pdf_btn"):
+                        self.exam_open_pdf_btn.config(state="normal")
+                    view_now = messagebox.askyesno(
                         "치트시트 PDF 생성 완료",
-                        f"🎉 [{cname}] {exam_type} 3분 핵심 치트시트(A4 1-Page)가 성공적으로 제작되었습니다!\n\n• 파일명: {os.path.basename(pdf_file)}\n• 저장 위치: {pdf_file}\n\n(마크다운 임시 파일은 자동 정리되었습니다.)"
+                        f"🎉 [{cname}] {exam_type} 3분 핵심 치트시트(A4 1-Page)가 성공적으로 제작되었습니다!\n\n• 파일명: {os.path.basename(pdf_file)}\n\n지금 바로 앱 내 라이브 뷰어로 확인하시겠습니까?",
+                        parent=self.root
                     )
-                    if pdf_file.endswith(".pdf") and os.path.exists(pdf_file):
-                        if sys.platform == "darwin":
-                            subprocess.call(["open", pdf_file])
-                        elif sys.platform == "win32":
-                            os.startfile(pdf_file)
-                        else:
-                            subprocess.call(["xdg-open", pdf_file])
+                    if view_now:
+                        self.open_pdf_viewer(pdf_file, title=f"치트시트 — {os.path.basename(pdf_file)}")
 
                 self.root.after(0, on_success)
             except Exception as e:
@@ -3527,9 +3577,14 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
                 if idx < len(existing_paths):
                     p = existing_paths[idx]
                     if os.path.exists(p):
-                        if sys.platform == "darwin": subprocess.call(["open", p])
-                        elif sys.platform == "win32": os.startfile(p)
-                        else: subprocess.call(["xdg-open", p])
+                        if p.lower().endswith(".pdf"):
+                            self.open_pdf_viewer(p, title=f"강의계획서 — {os.path.basename(p)}")
+                        elif sys.platform == "darwin":
+                            subprocess.call(["open", p])
+                        elif sys.platform == "win32":
+                            os.startfile(p)
+                        else:
+                            subprocess.call(["xdg-open", p])
 
             btn_row = tk.Frame(body_f, bg="#f8fafc")
             btn_row.pack(fill=tk.X)
@@ -3900,12 +3955,7 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
 
         if pdf_candidates:
             target_pdf = pdf_candidates[0]
-            if sys.platform == "darwin":
-                subprocess.call(["open", target_pdf])
-            elif sys.platform == "win32":
-                os.startfile(target_pdf)
-            else:
-                subprocess.call(["xdg-open", target_pdf])
+            self.open_pdf_viewer(target_pdf, title=f"[{cname}] {week_str} 강의노트")
         else:
             messagebox.showwarning("파일 없음", f"[{cname}] {week_str}에 생성된 강의노트 PDF 파일이 아직 없습니다.\n'학습노트 생성 스튜디오' 탭에서 노트를 먼저 생성해주세요.")
 
@@ -3948,13 +3998,13 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
                 target_grade="A+"
             )
             self.refresh_dashboard()
-            messagebox.showinfo(
+            view_now = messagebox.askyesno(
                 "치트시트 PDF 생성 완료",
-                f"🎉 [{cname}] 3분 치트시트(A4 1-Page)가 생성되었습니다!\n\n• 파일: {os.path.basename(pdf_file)}\n\n(마크다운 임시 파일은 자동 정리되었습니다.)"
+                f"🎉 [{cname}] 3분 치트시트(A4 1-Page)가 생성되었습니다!\n\n• 파일: {os.path.basename(pdf_file)}\n\n지금 바로 앱 내 라이브 뷰어로 확인하시겠습니까?",
+                parent=self.root
             )
-            if pdf_file.endswith(".pdf") and os.path.exists(pdf_file):
-                if sys.platform == "darwin":
-                    subprocess.call(["open", pdf_file])
+            if view_now and pdf_file.endswith(".pdf") and os.path.exists(pdf_file):
+                self.open_pdf_viewer(pdf_file, title=f"치트시트 — {os.path.basename(pdf_file)}")
         except Exception as e:
             messagebox.showerror("생성 오류", f"치트시트 생성 실패: {e}")
 
