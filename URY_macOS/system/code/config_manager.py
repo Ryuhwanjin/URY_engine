@@ -24,22 +24,24 @@ except Exception:
     pass
 
 def get_root_workspace():
-    if os.environ.get("WORKSPACE_DIR") and os.path.exists(os.environ["WORKSPACE_DIR"]):
-        ws = os.path.abspath(os.environ["WORKSPACE_DIR"])
-        if ws.rstrip("/") not in ("/Applications", "/System/Applications", "/Library") and not ws.startswith("/Volumes/") and os.access(ws, os.W_OK):
-            return ws
+    # 1. 번들 앱(.app)으로 실행 시: 무조건 사용자의 바탕화면(~/Desktop/URY_Engine)을 워크스페이스로 강제 확정!
+    # (맥미니, 맥북 등 어떤 Mac 환경에서든 앱 실행 즉시 바탕화면에 URY_Engine 폴더 자동 생성 보장)
+    if getattr(sys, "frozen", False) or "URY Engine.app" in os.path.abspath(sys.executable):
         user_ws = os.path.expanduser("~/Desktop/URY_Engine")
-        os.makedirs(user_ws, exist_ok=True)
-        return user_ws
-    if getattr(sys, "frozen", False):
-        # Inside macOS .app bundle: .../URY Engine.app/Contents/MacOS/URY Engine
-        app_dir = os.path.dirname(os.path.abspath(sys.executable))
-        parent_dir = os.path.abspath(os.path.join(app_dir, "../../.."))
-        if parent_dir.rstrip("/") in ("/Applications", "/System/Applications", "/Library") or parent_dir.startswith("/Volumes/") or not os.access(parent_dir, os.W_OK):
-            user_ws = os.path.expanduser("~/Desktop/URY_Engine")
+        try:
             os.makedirs(user_ws, exist_ok=True)
-            return user_ws
-        return parent_dir
+        except Exception:
+            pass
+        os.environ["WORKSPACE_DIR"] = user_ws
+        return user_ws
+
+    # 2. 환경변수 WORKSPACE_DIR이 설정되어 있고 Documents/읽기전용이 아닌 유효 경로인 경우
+    if os.environ.get("WORKSPACE_DIR"):
+        env_ws = os.path.abspath(os.environ["WORKSPACE_DIR"])
+        if "Documents" not in env_ws and env_ws.rstrip("/") not in ("/Applications", "/System/Applications", "/Library") and not env_ws.startswith("/Volumes/") and os.access(env_ws, os.W_OK):
+            return env_ws
+
+    # 3. 로컬 소스코드 개발 환경 (개발 중인 프로젝트 루트 폴더 탐색)
     curr = os.path.dirname(os.path.abspath(__file__))
     for _ in range(5):
         if os.path.basename(curr) in ("system", "code"):
@@ -51,7 +53,15 @@ def get_root_workspace():
             if p == curr:
                 break
             curr = p
-    return curr
+
+    # 4. 기본 안전 폴백: 바탕화면 URY_Engine
+    user_ws = os.path.expanduser("~/Desktop/URY_Engine")
+    try:
+        os.makedirs(user_ws, exist_ok=True)
+    except Exception:
+        pass
+    os.environ["WORKSPACE_DIR"] = user_ws
+    return user_ws
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 WORKSPACE_DIR = get_root_workspace()

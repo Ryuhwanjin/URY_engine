@@ -533,6 +533,24 @@ class UnifiedDashboardApp:
         self.root = root
         self.root.title("URY Engine — Academic Studio v0.2.2")
 
+        # [배포 기기 보장] 앱 실행 즉시 바탕화면(~/Desktop/URY_Engine) 폴더 트리 구축 및 system 폴더 숨김 처리
+        try:
+            ws = config_manager.WORKSPACE_DIR
+            os.makedirs(ws, exist_ok=True)
+            os.makedirs(os.path.join(ws, "00_녹음_수신함"), exist_ok=True)
+            sem_dir = os.path.join(ws, "2026년 2학기")
+            for c in ["마케팅원론", "DB 기초 및 응용", "빅데이터수학"]:
+                cdir = os.path.join(sem_dir, c)
+                for sub in ["음성녹음", "강의자료", "강의노트", "예상문제", "과제", "강의계획서"]:
+                    os.makedirs(os.path.join(cdir, sub), exist_ok=True)
+            sys_p = os.path.join(ws, "system")
+            os.makedirs(sys_p, exist_ok=True)
+            if sys.platform == "darwin":
+                import subprocess
+                subprocess.run(["chflags", "hidden", sys_p], check=False)
+        except Exception as e:
+            print(f"Workspace auto-init notice: {e}")
+
         config_manager.fix_mac_quarantine()
         self.setup_icon()
         self.bind_mac_shortcuts()

@@ -13,21 +13,17 @@ if getattr(sys, "frozen", False):
     app_dir = os.path.dirname(os.path.abspath(sys.executable))
     ROOT_DIR = os.path.abspath(os.path.join(app_dir, "../../.."))
 
-    # Determine writable workspace directory
-    if ROOT_DIR.rstrip("/") in ("/Applications", "/System/Applications", "/Library") or ROOT_DIR.startswith("/Volumes/") or not os.access(ROOT_DIR, os.W_OK):
-        user_ws = os.path.expanduser("~/Desktop/URY_Engine")
-        os.makedirs(user_ws, exist_ok=True)
-        os.makedirs(os.path.join(user_ws, "00_녹음_수신함"), exist_ok=True)
-        sys_p = os.path.join(user_ws, "system")
-        os.makedirs(sys_p, exist_ok=True)
-        if sys.platform == "darwin":
-            import subprocess
-            subprocess.run(["chflags", "hidden", sys_p], check=False)
-        os.chdir(user_ws)
-        os.environ["WORKSPACE_DIR"] = user_ws
-    else:
-        os.chdir(ROOT_DIR)
-        os.environ["WORKSPACE_DIR"] = ROOT_DIR
+    # Determine writable workspace directory (무조건 바탕화면 ~/Desktop/URY_Engine으로 확정)
+    user_ws = os.path.expanduser("~/Desktop/URY_Engine")
+    os.makedirs(user_ws, exist_ok=True)
+    os.makedirs(os.path.join(user_ws, "00_녹음_수신함"), exist_ok=True)
+    sys_p = os.path.join(user_ws, "system")
+    os.makedirs(sys_p, exist_ok=True)
+    if sys.platform == "darwin":
+        import subprocess
+        subprocess.run(["chflags", "hidden", sys_p], check=False)
+    os.chdir(user_ws)
+    os.environ["WORKSPACE_DIR"] = user_ws
 
     # Load latest settings_gui.py dynamically
     # Priority:
