@@ -1706,8 +1706,13 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
 
         def on_paper_canvas_configure(e):
             paper_scroll_canvas.itemconfig(r_canvas_win, width=e.width)
-        paper_scroll_canvas.bind("<Configure>", on_paper_canvas_configure)
-        bind_wheel(paper_scroll_canvas)
+        def _on_paper_wheel(e):
+            if sys.platform == "darwin":
+                paper_scroll_canvas.yview_scroll(int(-1 * e.delta), "units")
+            else:
+                paper_scroll_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
+        right_card.bind("<Enter>", lambda e: paper_scroll_canvas.bind_all("<MouseWheel>", _on_paper_wheel))
+        right_card.bind("<Leave>", lambda e: paper_scroll_canvas.unbind_all("<MouseWheel>"))
 
         paper_sb.pack(side=tk.RIGHT, fill=tk.Y)
         paper_scroll_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
