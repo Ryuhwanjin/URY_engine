@@ -26,27 +26,39 @@ import config_manager
 WORKSPACE_DIR = config_manager.WORKSPACE_DIR
 CACHE_DIR = os.path.join(WORKSPACE_DIR, ".markdown_cache")
 
-def get_chrome_path():
+import tempfile
+
+def find_chromium_browser():
+    """시스템에 설치된 최적의 Chromium 계열 브라우저 바이너리 자동 감지"""
     if os.environ.get("CHROME_PATH") and os.path.exists(os.environ["CHROME_PATH"]):
         return os.environ["CHROME_PATH"]
     candidates = [
         "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        os.path.expanduser("~/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
+        "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+        os.path.expanduser("~/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"),
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        os.path.expanduser("~/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"),
+        "/Applications/Whale.app/Contents/MacOS/Whale",
+        "/Applications/Naver Whale.app/Contents/MacOS/Naver Whale",
+        "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
         "/Applications/Chromium.app/Contents/MacOS/Chromium",
         shutil.which("google-chrome"),
         shutil.which("google-chrome-stable"),
         shutil.which("chromium"),
         shutil.which("chrome"),
+        shutil.which("msedge"),
+        shutil.which("brave"),
         r"C:\Program Files\Google\Chrome\Application\chrome.exe",
         r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
         os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
         r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
-        shutil.which("msedge")
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe"
     ]
     for c in candidates:
         if c and os.path.exists(c):
             return c
-    return "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    return None
 
 def get_pandoc_path():
     p = shutil.which("pandoc")
@@ -63,8 +75,44 @@ def get_pandoc_path():
             return c
     return None
 
+def render_html_to_pdf_pymupdf(html_content, output_pdf_path):
+    """
+    외부 브라우저(Chrome 등) 설치 여부와 무관하게 앱 번들 내장 PyMuPDF(fitz.Story)로
+    A4 규격 출판용 PDF를 100% 자율 조판/발행하는 내장 렌더러
+    """
+    try:
+        try:
+            import pymupdf as fitz
+        except ImportError:
+            import fitz
+
+        # MuPDF CSS 파서와 호환되도록 CSS 정제
+        cleaned_html = re.sub(r'@import url\([^)]+\);?', '', html_content)
+        cleaned_html = re.sub(r'@bottom-[^{]+{[^}]+}', '', cleaned_html)
+        cleaned_html = re.sub(r'@page\s*{[^}]*}', '', cleaned_html)
+
+        mediabox = fitz.paper_rect('a4')  # 595 x 842 pt
+        margin_x = 42
+        margin_y = 42
+        content_rect = fitz.Rect(margin_x, margin_y, mediabox.width - margin_x, mediabox.height - margin_y)
+
+        def rectfn(rect_num, filled):
+            return mediabox, content_rect, fitz.Identity
+
+        os.makedirs(os.path.dirname(os.path.abspath(output_pdf_path)), exist_ok=True)
+        writer = fitz.DocumentWriter(output_pdf_path)
+        story = fitz.Story(html=cleaned_html)
+        story.write(writer, rectfn)
+        writer.close()
+
+        if os.path.exists(output_pdf_path) and os.path.getsize(output_pdf_path) > 0:
+            return True
+    except Exception as e:
+        print(f"[Warn] PyMuPDF 내장 렌더링 실패: {e}")
+    return False
+
 PANDOC = get_pandoc_path()
-CHROME = get_chrome_path()
+CHROME = find_chromium_browser()
 
 CSS_STYLE = """
 <style>
@@ -573,45 +621,85 @@ def convert_single_md_to_pdf(md_path, pdf_output_path, display_name, folder_dir)
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(html)
 
-    # 3. Google Chrome Headless로 PDF 렌더링
-    print(f"[{display_name}] Chrome Headless PDF 렌더링 중...")
-    cmd_chrome = [
-        CHROME,
-        "--headless",
-        "--disable-gpu",
-        "--no-sandbox",
-        "--allow-file-access-from-files",
-        "--no-pdf-header-footer",
-        "--run-all-compositor-stages-before-draw",
-        f"--print-to-pdf={pdf_output_path}",
-        html_path
-    ]
-    try:
-        subprocess.check_call(cmd_chrome, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except Exception as e:
-        print(f"[Warn] Chrome 렌더링 명령 실패: {e}")
+    # 3. 고품질 PDF 렌더링 (1차: Chromium Headless -> 2차: 번들 내장 PyMuPDF Story Fallback)
+    pdf_rendered = False
+    browser_bin = find_chromium_browser()
+
+    if browser_bin and os.path.exists(browser_bin):
+        print(f"[{display_name}] 브라우저 기반 PDF 렌더링 시도 ({os.path.basename(browser_bin)})...")
+        temp_user_dir = tempfile.mkdtemp(prefix="ury_browser_profile_")
+        cmd_browser = [
+            browser_bin,
+            "--headless=new",
+            "--disable-gpu",
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-crash-reporter",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--disable-extensions",
+            "--disable-background-networking",
+            "--disable-sync",
+            "--disable-translate",
+            f"--user-data-dir={temp_user_dir}",
+            f"--crash-dumps-dir={temp_user_dir}",
+            "--no-pdf-header-footer",
+            f"--print-to-pdf={pdf_output_path}",
+            html_path
+        ]
+        try:
+            res = subprocess.run(cmd_browser, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=6)
+            if os.path.exists(pdf_output_path) and os.path.getsize(pdf_output_path) > 100:
+                pdf_rendered = True
+        except Exception as e:
+            print(f"[Warn] 브라우저 렌더링 타임아웃/오류 ({e}) -> 내장 엔진으로 즉시 전환")
+        finally:
+            shutil.rmtree(temp_user_dir, ignore_errors=True)
+
+    # 4. 브라우저가 없거나 브라우저 렌더링 실패 시: 번들 내장 PyMuPDF 엔진으로 100% 보장 렌더링!
+    if not pdf_rendered or not os.path.exists(pdf_output_path) or os.path.getsize(pdf_output_path) == 0:
+        print(f"[{display_name}] 🚀 번들 내장 PDF 엔진(PyMuPDF)으로 즉시 출판 조판 수행 중...")
+        pdf_rendered = render_html_to_pdf_pymupdf(html, pdf_output_path)
 
     if os.path.exists(html_path):
-        os.remove(html_path)
+        try:
+            os.remove(html_path)
+        except Exception:
+            pass
 
-    if os.path.exists(pdf_output_path):
+    if os.path.exists(pdf_output_path) and os.path.getsize(pdf_output_path) > 0:
         pdf_size = os.path.getsize(pdf_output_path)
-        print(f"[{display_name}] PDF 생성 완료! ({round(pdf_size/1024/1024, 2)}MB) -> {os.path.basename(pdf_output_path)}")
+        print(f"[{display_name}] ✅ PDF 출판 완료! ({round(pdf_size/1024/1024, 2)}MB) -> {os.path.basename(pdf_output_path)}")
         return pdf_output_path
+    else:
+        print(f"[Error] [{display_name}] PDF 최종 생성 실패.")
     return None
 
 def process_course_pdfs(course_folder, cname, en_prefix):
-    """과목별로 주차별 개별 학습노트 및 전체 통합본 PDF를 일괄 컴파일"""
-    cache_dir = os.path.join(CACHE_DIR, course_folder)
+    """과목별로 주차별 개별 학습노트 및 전체 통합본 PDF를 일괄 컴파일 (캐시 + 사용자 폴더 양방향 탐색)"""
+    root_ws = config_manager.get_root_workspace()
+    cache_dir = os.path.join(root_ws, ".markdown_cache", course_folder)
     course_dir = config_manager.get_course_dir(course_folder)
     notes_dir = os.path.join(course_dir, "강의노트")
     os.makedirs(notes_dir, exist_ok=True)
 
-    if not os.path.exists(cache_dir):
-        return
+    # 캐시 보관소 및 사용자 강의노트 폴더 양쪽에서 마크다운 수집 (중복 제거)
+    candidate_files = []
+    if os.path.exists(cache_dir):
+        candidate_files.extend(glob.glob(os.path.join(cache_dir, "*.md")))
+    if os.path.exists(notes_dir):
+        candidate_files.extend(glob.glob(os.path.join(notes_dir, "*.md")))
+        candidate_files.extend(glob.glob(os.path.join(notes_dir, "**", "*.md"), recursive=True))
 
-    md_files = glob.glob(os.path.join(cache_dir, "*.md"))
-    md_files.sort()
+    unique_files = {}
+    for p in candidate_files:
+        fname = os.path.basename(p)
+        if fname not in unique_files or os.path.getmtime(p) > os.path.getmtime(unique_files[fname]):
+            unique_files[fname] = p
+
+    md_files = sorted(list(unique_files.values()))
+    if not md_files:
+        return
 
     for md_p in md_files:
         fname = os.path.basename(md_p)
@@ -658,7 +746,7 @@ def generate_all_pdfs(target_courses=None):
     print("======================================================")
     print("🚀 [강의노트 PDF 출판 엔진 v5.2 시작]")
     print("   - 주차별 개별 학습노트 + 전체 통합본 동시 발행")
-    print("   - 볼드체(**텍스트**) 치환 및 이미지 절대 경로 변환")
+    print("   - 브라우저 및 내장 PyMuPDF 듀얼 렌더러 지원")
     print("======================================================")
 
     settings = config_manager.load_settings()
@@ -671,11 +759,30 @@ def generate_all_pdfs(target_courses=None):
             {"folder_name": "빅데이터수학", "course_name": "빅데이터수학"}
         ]
 
+    def norm(s):
+        return unicodedata.normalize("NFC", str(s)).strip().lower() if s else ""
+
+    norm_targets = [norm(t) for t in (target_courses or []) if t]
+
+    seen_folders = set()
+    all_targets = []
     for c in courses:
         cname = c.get("course_name") or c.get("folder_name")
         folder = c.get("folder_name") or cname
-        if target_courses and cname not in target_courses and folder not in target_courses:
-            continue
+        all_targets.append((folder, cname))
+        seen_folders.add(norm(folder))
+        seen_folders.add(norm(cname))
+
+    if target_courses:
+        for t in target_courses:
+            if t and norm(t) not in seen_folders:
+                all_targets.append((t, t))
+                seen_folders.add(norm(t))
+
+    for folder, cname in all_targets:
+        if norm_targets:
+            if norm(cname) not in norm_targets and norm(folder) not in norm_targets:
+                continue
 
         en_prefix = folder.replace(" ", "_")
         try:

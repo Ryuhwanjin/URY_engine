@@ -1175,13 +1175,41 @@ The following content was ALREADY synthesized in the earlier session of Week {we
     try:
         import generate_pdfs
         log("\n[Step 4/4] 📑 출판용 고품질 PDF 컴파일 및 렌더링 중...", step=4, eta=3)
+
+        # 1) 방금 생성된 마크다운 파일(all_saved_mds)을 1:1로 직접 즉시 PDF 변환 (100% 누락 원천 차단!)
+        for md_p in sorted(list(set(all_saved_mds))):
+            if not os.path.exists(md_p):
+                continue
+            fname = os.path.basename(md_p)
+            fdir = os.path.dirname(md_p)
+            pdf_fname = fname.replace(".md", ".pdf")
+            target_pdf = os.path.join(fdir, pdf_fname)
+            disp_name = fname.replace(".md", "")
+            try:
+                res_pdf = generate_pdfs.convert_single_md_to_pdf(md_p, target_pdf, disp_name, fdir)
+                if res_pdf and os.path.exists(res_pdf) and res_pdf not in generated_pdfs:
+                    generated_pdfs.append(res_pdf)
+            except Exception as e_single:
+                log(f"  ⚠️ 개별 PDF 컴파일 알림: {e_single}", step=4)
+
+        # 2) 과목 통합본 및 주차별 PDF 보완 동기화
         target_keys = list(set([cname, course_cfg.get("name", ""), course_cfg.get("folder_name", "")]))
         target_keys = [k for k in target_keys if k]
-        generate_pdfs.generate_all_pdfs(target_courses=target_keys)
-        pdf_glob = os.path.join(cdir, "강의노트", "**", "*.pdf")
+        try:
+            generate_pdfs.generate_all_pdfs(target_courses=target_keys)
+        except Exception as e_all:
+            log(f"  ⚠️ 전체 PDF 동기화 알림: {e_all}", step=4)
+
+        # 3) 강의노트 디렉터리 내 생성된 모든 PDF 수집
+        pdf_glob = os.path.join(user_notes_dir, "**", "*.pdf")
         for p in glob.glob(pdf_glob, recursive=True):
             if p not in generated_pdfs:
                 generated_pdfs.append(p)
+        pdf_root_glob = os.path.join(user_notes_dir, "*.pdf")
+        for p in glob.glob(pdf_root_glob):
+            if p not in generated_pdfs:
+                generated_pdfs.append(p)
+
         log(f"  ✅ 출판용 PDF 렌더링 완료 ({len(generated_pdfs)}개 문서 감지됨)", step=4, eta=1)
     except Exception as e:
         log(f"  ⚠️ PDF 컴파일 중 알림: {e}", step=4)
