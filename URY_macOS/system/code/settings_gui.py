@@ -2110,6 +2110,56 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
 
         threading.Thread(target=worker, daemon=True).start()
 
+    def on_studio_log_event(self, msg, step=None, eta=None):
+        if step is not None:
+            step_progress = {1: 20, 2: 55, 3: 80, 4: 95, 5: 100}
+            self.studio_progress["value"] = step_progress.get(step, self.studio_progress["value"])
+        else:
+            # 키워드 기반 프로그레스 바 자동 전진
+            if any(k in msg for k in ["시작", "준비", "가동", "업로드"]):
+                self.studio_progress["value"] = max(self.studio_progress["value"], 15)
+            elif any(k in msg for k in ["전송", "클라우드", "음성", "슬라이드"]):
+                self.studio_progress["value"] = max(self.studio_progress["value"], 30)
+            elif any(k in msg for k in ["Gemini", "AI", "작성 중", "분석", "생성 시작"]):
+                self.studio_progress["value"] = max(self.studio_progress["value"], 60)
+            elif any(k in msg for k in ["도표", "추출", "임베드", "마크다운"]):
+                self.studio_progress["value"] = max(self.studio_progress["value"], 80)
+            elif any(k in msg for k in ["PDF", "컴파일", "렌더링"]):
+                self.studio_progress["value"] = max(self.studio_progress["value"], 90)
+            elif any(k in msg for k in ["완료", "성공", "축하"]):
+                self.studio_progress["value"] = 100
+
+        if eta is not None:
+            self.studio_current_eta = eta
+
+        self.append_studio_log(msg)
+
+        clean_msg = msg.strip().replace("\n", " ")
+        if len(clean_msg) > 55:
+            clean_msg = clean_msg[:52] + "..."
+        self.studio_status_var.set(clean_msg)
+
+    def update_studio_timer(self):
+        if not getattr(self, "studio_is_running", False):
+            return
+
+        elapsed = int(time.time() - getattr(self, "studio_start_time", time.time()))
+        el_min = elapsed // 60
+        el_sec = elapsed % 60
+
+        if hasattr(self, "studio_current_eta") and self.studio_current_eta > 0:
+            self.studio_current_eta = max(1, self.studio_current_eta - 1)
+            eta_str = f"약 {self.studio_current_eta}초"
+        elif hasattr(self, "studio_current_eta") and self.studio_current_eta == 0:
+            eta_str = "마무리 조판 중..."
+        else:
+            eta_str = "진행 중..."
+
+        self.studio_eta_var.set(f"⏱️ 경과: {el_min:02d}:{el_sec:02d} | 남은 시간: {eta_str}")
+
+        if getattr(self, "studio_is_running", False):
+            self.root.after(1000, self.update_studio_timer)
+
     def abort_studio_generation(self):
         """진행 중인 백그라운드 AI 생성 작업을 즉시 강제 종료(Kill)하고 UI를 복원"""
         if not self.studio_is_running:

@@ -175,7 +175,7 @@ def get_audio_mime_type(file_path):
         return "audio/aac"
     return "audio/mp4"
 
-def upload_file_to_gemini(file_path, mime_type=None):
+def upload_file_to_gemini(file_path, mime_type=None, log_fn=None):
     api_key = config_manager.get_api_key() or os.environ.get("GEMINI_API_KEY", "")
     if not api_key or len(api_key) < 10:
         raise Exception("Gemini API Key가 설정되지 않았습니다. '설정관리자'에서 [Google Gemini API Key]를 등록해 주세요.")
@@ -191,10 +191,12 @@ def upload_file_to_gemini(file_path, mime_type=None):
         else:
             mime_type = get_audio_mime_type(file_path)
 
-
     file_size = os.path.getsize(file_path)
     file_name = os.path.basename(file_path)
-    print(f"[{file_name}] 구글 Gemini File API로 업로드 중 ({round(file_size/1024/1024, 1)}MB, {mime_type})...")
+    msg_up = f"[{file_name}] 구글 Gemini File API로 업로드 중 ({round(file_size/1024/1024, 1)}MB, {mime_type})..."
+    print(msg_up)
+    if log_fn:
+        log_fn(f"  📤 {msg_up}")
 
     start_url = f"https://generativelanguage.googleapis.com/upload/v1beta/files?key={api_key}"
     cmd1 = [
@@ -227,9 +229,15 @@ def upload_file_to_gemini(file_path, mime_type=None):
     file_uri = res2["file"]["uri"]
     file_state = res2["file"]["state"]
 
+    if log_fn:
+        log_fn(f"  ⏳ [{file_name}] 파일 전송 완료! Google AI 클라우드 인덱싱 대기 중...")
     print(f"[{file_name}] 업로드 완료! 상태 확인 중...")
+    poll_count = 0
     while file_state == "PROCESSING":
-        time.sleep(5)
+        time.sleep(4)
+        poll_count += 1
+        if log_fn and poll_count % 2 == 0:
+            log_fn(f"  ⏳ [{file_name}] 오디오 음향 신호 처리 및 텍스트 인덱싱 진행 중... ({poll_count * 4}초 대기)")
         check_url = f"https://generativelanguage.googleapis.com/v1beta/files/{res2['file']['name']}?key={api_key}"
         req = urllib.request.Request(check_url)
         with urllib.request.urlopen(req) as resp:
@@ -241,6 +249,8 @@ def upload_file_to_gemini(file_path, mime_type=None):
                 raise Exception(f"파일 처리 실패! ({file_name})")
 
     print(f"[{file_name}] Gemini 준비 완료: {file_uri}")
+    if log_fn:
+        log_fn(f"  ✅ [{file_name}] 클라우드 인덱싱 완료! AI 분석 준비 완료")
     return file_uri, mime_type
 
 def upload_audio_to_gemini(file_path):
@@ -736,7 +746,7 @@ def generate_custom_lecture_note(cname, audio_path=None, slide_paths=None, date_
     if has_audio:
         check_cancel()
         log(f"\n[Step 1/4] 📤 음성 녹음 파일 클라우드 전송 중 ({os.path.basename(audio_path)})...", step=1, eta=35)
-        audio_uri, audio_mime = upload_file_to_gemini(audio_path)
+        audio_uri, audio_mime = upload_file_to_gemini(audio_path, log_fn=log)
         uploaded_parts.append({"file_data": {"mime_type": audio_mime, "file_uri": audio_uri}})
 
     if valid_slides:
@@ -744,7 +754,7 @@ def generate_custom_lecture_note(cname, audio_path=None, slide_paths=None, date_
         log(f"\n[Step 1/4] 📤 슬라이드 PDF 자료 전송 중 ({len(valid_slides)}건)...", step=1, eta=30)
         for sp in valid_slides[:2]: # 과부하 방지 최대 2개 업로드
             check_cancel()
-            s_uri, s_mime = upload_file_to_gemini(sp, "application/pdf")
+            s_uri, s_mime = upload_file_to_gemini(sp, "application/pdf", log_fn=log)
             uploaded_parts.append({"file_data": {"mime_type": s_mime, "file_uri": s_uri}})
 
     # 2. Gemini API 호출 함수 (커스텀 프롬프트)
@@ -771,16 +781,38 @@ def generate_custom_lecture_note(cname, audio_path=None, slide_paths=None, date_
             for attempt in range(len(backoff_delays)):
                 check_cancel()
                 try:
-                    log(f"  🚀 [{model}] 연결 및 강의노트 생성 중...", step=2)
-                    with urllib.request.urlopen(req, timeout=60) as resp:
+                    log(f"  🚀 [{model}] 연결 및 강의노트 생성 시작...", step=2)
+                    req_resp = [None, None]
+
+                    def do_call():
+                        try:
+                            with urllib.request.urlopen(req, timeout=90) as resp:
+                                req_resp[0] = resp.read()
+                        except Exception as ex:
+                            req_resp[1] = ex
+
+                    call_th = threading.Thread(target=do_call, daemon=True)
+                    call_th.start()
+
+                    elapsed_wait = 0
+                    while call_th.is_alive():
                         check_cancel()
-                        res = json.loads(resp.read().decode("utf-8"))
-                        candidates = res.get("candidates", [])
-                        if candidates and "content" in candidates[0]:
-                            parts = candidates[0]["content"].get("parts", [])
-                            if parts and "text" in parts[0]:
-                                return parts[0]["text"].strip()
-                        raise RuntimeError(f"응답 데이터 형식 불일치 ({res.get('promptFeedback', '알 수 없는 응답')})")
+                        time.sleep(1)
+                        elapsed_wait += 1
+                        if elapsed_wait % 5 == 0:
+                            dots = "." * ((elapsed_wait // 5) % 4 + 1)
+                            log(f"  ⏳ [{model}] AI 강의 심층 분석 및 강의노트 실시간 조판 중{dots} ({elapsed_wait}초 경과)", step=2)
+
+                    if req_resp[1] is not None:
+                        raise req_resp[1]
+
+                    res = json.loads(req_resp[0].decode("utf-8"))
+                    candidates = res.get("candidates", [])
+                    if candidates and "content" in candidates[0]:
+                        parts = candidates[0]["content"].get("parts", [])
+                        if parts and "text" in parts[0]:
+                            return parts[0]["text"].strip()
+                    raise RuntimeError(f"응답 데이터 형식 불일치 ({res.get('promptFeedback', '알 수 없는 응답')})")
                 except urllib.error.HTTPError as e:
                     check_cancel()
                     err_body = ""
