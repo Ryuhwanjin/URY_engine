@@ -28,7 +28,7 @@ def get_root_workspace():
         ws = os.path.abspath(os.environ["WORKSPACE_DIR"])
         if ws.rstrip("/") not in ("/Applications", "/System/Applications", "/Library") and not ws.startswith("/Volumes/") and os.access(ws, os.W_OK):
             return ws
-        user_ws = os.path.expanduser("~/Documents/URY_Engine")
+        user_ws = os.path.expanduser("~/Desktop/URY_Engine")
         os.makedirs(user_ws, exist_ok=True)
         return user_ws
     if getattr(sys, "frozen", False):
@@ -36,7 +36,7 @@ def get_root_workspace():
         app_dir = os.path.dirname(os.path.abspath(sys.executable))
         parent_dir = os.path.abspath(os.path.join(app_dir, "../../.."))
         if parent_dir.rstrip("/") in ("/Applications", "/System/Applications", "/Library") or parent_dir.startswith("/Volumes/") or not os.access(parent_dir, os.W_OK):
-            user_ws = os.path.expanduser("~/Documents/URY_Engine")
+            user_ws = os.path.expanduser("~/Desktop/URY_Engine")
             os.makedirs(user_ws, exist_ok=True)
             return user_ws
         return parent_dir
@@ -140,6 +140,13 @@ def load_settings():
         ensure_all_course_folders(data)
         rec_box = os.path.join(WORKSPACE_DIR, "00_녹음_수신함")
         os.makedirs(rec_box, exist_ok=True)
+        # system 폴더가 존재할 경우 Finder 숨김 속성(chflags hidden) 적용하여 바탕화면 깔끔 유지
+        sys_dir = os.path.join(WORKSPACE_DIR, "system")
+        if os.path.exists(sys_dir) and sys.platform == "darwin":
+            try:
+                subprocess.run(["chflags", "hidden", sys_dir], check=False)
+            except Exception:
+                pass
         if not os.path.exists(SETTINGS_PATH):
             save_settings(data)
     except Exception:
@@ -241,8 +248,8 @@ def save_settings(data):
         with open(target_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
     except (PermissionError, OSError):
-        # Read-only location (e.g. /Applications or mounted DMG): fallback to ~/Documents/URY_Engine
-        user_ws = os.path.expanduser("~/Documents/URY_Engine")
+        # Read-only location (e.g. /Applications or mounted DMG): fallback to ~/Desktop/URY_Engine
+        user_ws = os.path.expanduser("~/Desktop/URY_Engine")
         os.makedirs(user_ws, exist_ok=True)
         WORKSPACE_DIR = user_ws
         target_path = os.path.join(user_ws, "settings.json")

@@ -15,10 +15,14 @@ if getattr(sys, "frozen", False):
 
     # Determine writable workspace directory
     if ROOT_DIR.rstrip("/") in ("/Applications", "/System/Applications", "/Library") or ROOT_DIR.startswith("/Volumes/") or not os.access(ROOT_DIR, os.W_OK):
-        user_ws = os.path.expanduser("~/Documents/URY_Engine")
+        user_ws = os.path.expanduser("~/Desktop/URY_Engine")
         os.makedirs(user_ws, exist_ok=True)
         os.makedirs(os.path.join(user_ws, "00_녹음_수신함"), exist_ok=True)
-        os.makedirs(os.path.join(user_ws, "system"), exist_ok=True)
+        sys_p = os.path.join(user_ws, "system")
+        os.makedirs(sys_p, exist_ok=True)
+        if sys.platform == "darwin":
+            import subprocess
+            subprocess.run(["chflags", "hidden", sys_p], check=False)
         os.chdir(user_ws)
         os.environ["WORKSPACE_DIR"] = user_ws
     else:
