@@ -69,7 +69,9 @@ def build_universal_exam_prompt(cname, scope="전범위", question_count=10, que
     모든 대학 전공 과목에 100% 범용적으로 적용되는 고품질 시험 출제 프롬프트 생성기.
     특정 과목 내용이 하드코딩되지 않고, 오직 제공된 실제 수업 자료 본문만을 바탕으로 정교하게 출제.
     """
-    prompts_dir = os.path.join(WORKSPACE_DIR, "prompts")
+    prompts_dir = os.path.join(WORKSPACE_DIR, "system", "prompts")
+    if not os.path.exists(prompts_dir):
+        prompts_dir = os.path.join(WORKSPACE_DIR, "prompts")
     custom_template = None
     t_name = "모의시험_표준_영문_프롬프트.txt" if is_english else "모의시험_표준_국문_프롬프트.txt"
     custom_path = os.path.join(prompts_dir, t_name)

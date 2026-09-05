@@ -79,7 +79,9 @@ def parse_document(file_path: str) -> Dict[str, Any]:
             _parse_ipynb(file_path, result)
         elif ext in [".docx", ".doc"]:
             _parse_docx(file_path, result)
-        elif ext in [".py", ".sql", ".sh", ".c", ".cpp", ".java", ".js", ".html", ".css"]:
+        elif ext in [".html", ".htm"]:
+            _parse_html(file_path, result)
+        elif ext in [".py", ".sql", ".sh", ".c", ".cpp", ".java", ".js", ".css"]:
             _parse_code(file_path, result)
         elif ext in [".txt", ".md", ".csv", ".json"]:
             _parse_text(file_path, result)
@@ -291,6 +293,48 @@ def _parse_docx(file_path: str, res: Dict[str, Any]):
                 res["full_text"] = "\n".join(texts)
         else:
             _parse_text(file_path, res)
+
+
+def _parse_html(file_path: str, res: Dict[str, Any]):
+    """HTML 웹/문서 파일 (.html, .htm) 파싱 (태그 제거 및 구조적 텍스트 추출)"""
+    import html.parser
+    raw = _read_file_text_with_encodings(file_path)
+
+    class _HTMLTextExtractor(html.parser.HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.pieces = []
+            self.skip = False
+
+        def handle_starttag(self, tag, attrs):
+            if tag in ("script", "style", "head", "meta", "noscript"):
+                self.skip = True
+            elif tag in ("p", "div", "h1", "h2", "h3", "h4", "h5", "h6", "tr", "li", "br"):
+                self.pieces.append("\n")
+
+        def handle_endtag(self, tag):
+            if tag in ("script", "style", "head", "meta", "noscript"):
+                self.skip = False
+            elif tag in ("p", "div", "h1", "h2", "h3", "h4", "h5", "h6", "tr", "table"):
+                self.pieces.append("\n")
+
+        def handle_data(self, data):
+            if not self.skip:
+                clean = data.strip()
+                if clean:
+                    self.pieces.append(clean + " ")
+
+    extractor = _HTMLTextExtractor()
+    try:
+        extractor.feed(raw)
+        lines = [line.strip() for line in "".join(extractor.pieces).splitlines() if line.strip()]
+        res["full_text"] = "\n".join(lines)
+    except Exception:
+        import re
+        clean = re.sub(r"<(script|style).*?>.*?</\1>", "", raw, flags=re.DOTALL | re.IGNORECASE)
+        clean = re.sub(r"<[^>]+>", " ", clean)
+        lines = [line.strip() for line in clean.splitlines() if line.strip()]
+        res["full_text"] = "\n".join(lines)
 
 
 def _parse_code(file_path: str, res: Dict[str, Any]):

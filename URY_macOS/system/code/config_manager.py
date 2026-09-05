@@ -123,11 +123,12 @@ def load_settings():
 
     return data
 
-def get_course_syllabus(course_name_or_folder):
+def get_course_syllabi(course_name_or_folder):
     """
-    과목의 강의계획서 파일 경로 반환 (없을 경우 None)
-    1. settings.json 내 syllabus_path 확인
-    2. 과목 폴더 내 강의계획서 / syllabus 파일 자동 스캔
+    과목의 강의계획서 파일 경로 목록 반환 (복수 지원, 없을 경우 [])
+    - settings.json 내 syllabus_paths (list) 우선 확인
+    - 구버전 syllabus_path (str) 하위 호환
+    - 자동 스캔 (PDF/DOCX/TXT/MD/HTML)
     """
     settings = load_settings()
     target_course = None
@@ -138,20 +139,34 @@ def get_course_syllabus(course_name_or_folder):
 
     folder_name = target_course.get("folder_name", course_name_or_folder) if target_course else course_name_or_folder
     cdir = get_course_dir(folder_name)
+    VALID_EXT = (".pdf", ".txt", ".md", ".docx", ".html", ".htm")
 
-    if target_course and target_course.get("syllabus_path"):
-        s_path = target_course["syllabus_path"]
-        if os.path.isabs(s_path) and os.path.exists(s_path):
-            return s_path
-        rel_p = os.path.join(cdir, s_path)
-        if os.path.exists(rel_p):
-            return rel_p
-        rel_ws = os.path.join(WORKSPACE_DIR, s_path)
-        if os.path.exists(rel_ws):
-            return rel_ws
+    result = []
 
-    # 자동 스캔
-    if os.path.exists(cdir):
+    if target_course:
+        # 신규: syllabus_paths (list)
+        paths = target_course.get("syllabus_paths", [])
+        # 구버전 하위 호환: syllabus_path (str)
+        legacy = target_course.get("syllabus_path", "")
+        if not paths and legacy:
+            paths = [legacy]
+
+        for s_path in paths:
+            if not s_path:
+                continue
+            if os.path.isabs(s_path) and os.path.exists(s_path):
+                result.append(s_path)
+                continue
+            rel_p = os.path.join(cdir, s_path)
+            if os.path.exists(rel_p):
+                result.append(rel_p)
+                continue
+            rel_ws = os.path.join(WORKSPACE_DIR, s_path)
+            if os.path.exists(rel_ws):
+                result.append(rel_ws)
+
+    # 등록된 경로가 없으면 자동 스캔
+    if not result and os.path.exists(cdir):
         search_patterns = [
             os.path.join(cdir, "강의계획서", "*.*"),
             os.path.join(cdir, "강의자료", "*강의계획서*.*"),
@@ -161,10 +176,25 @@ def get_course_syllabus(course_name_or_folder):
         ]
         for pat in search_patterns:
             for f in glob.glob(pat):
-                ext = os.path.splitext(f)[1].lower()
-                if ext in (".pdf", ".txt", ".md", ".docx"):
-                    return f
-    return None
+                if os.path.splitext(f)[1].lower() in VALID_EXT:
+                    result.append(f)
+
+    # 중복 제거, 존재하는 파일만
+    seen = set()
+    final = []
+    for p in result:
+        if p not in seen and os.path.exists(p):
+            seen.add(p)
+            final.append(p)
+    return final
+
+
+def get_course_syllabus(course_name_or_folder):
+    """하위 호환: 첫 번째 강의계획서만 반환 (없으면 None)"""
+    files = get_course_syllabi(course_name_or_folder)
+    return files[0] if files else None
+
+
 
 def ensure_all_course_folders(data):
     """설정된 모든 과목의 수강학기 디렉터리 및 서브폴더를 즉시 디스크에 자동 생성"""

@@ -59,107 +59,123 @@ def _normalize_filetypes_win(filetypes):
 _orig_askopenfilename = filedialog.askopenfilename
 _orig_askopenfilenames = filedialog.askopenfilenames
 
-def safe_askopenfilename(title="파일 선택", filetypes=None, parent=None, initialdir=None, **kwargs):
-    if sys.platform == "darwin":
-        type_list = _extract_apple_types(filetypes)
-        type_clause = f'of type {{{", ".join(chr(34) + t + chr(34) for t in type_list)}}}' if type_list else ""
-        
-        loc_clause = ""
-        if initialdir and os.path.exists(initialdir):
-            clean_dir = os.path.abspath(initialdir).replace('"', '\"')
-            loc_clause = f'default location POSIX file "{clean_dir}"'
+_dialog_busy = False
 
-        clean_title = (title or "파일 선택").replace('"', '\"')
-        script = f"""
-        tell current application
-            activate
-            try
-                set f to choose file with prompt "{clean_title}" {loc_clause} {type_clause}
-                return POSIX path of f
-            on error
+def safe_askopenfilename(title="파일 선택", filetypes=None, parent=None, initialdir=None, **kwargs):
+    global _dialog_busy
+    if _dialog_busy:
+        return ""
+    _dialog_busy = True
+    try:
+        if sys.platform == "darwin":
+            type_list = _extract_apple_types(filetypes)
+            type_clause = f'of type {{{", ".join(chr(34) + t + chr(34) for t in type_list)}}}' if type_list else ""
+            
+            loc_clause = ""
+            if initialdir and os.path.exists(initialdir):
+                clean_dir = os.path.abspath(initialdir).replace('"', '\"')
+                loc_clause = f'default location POSIX file "{clean_dir}"'
+
+            clean_title = (title or "파일 선택").replace('"', '\"')
+            script = f"""
+            tell current application
+                activate
                 try
-                    set f to choose file with prompt "{clean_title}" {type_clause}
+                    set f to choose file with prompt "{clean_title}" {loc_clause} {type_clause}
                     return POSIX path of f
                 on error
-                    return ""
+                    try
+                        set f to choose file with prompt "{clean_title}" {type_clause}
+                        return POSIX path of f
+                    on error
+                        return ""
+                    end try
                 end try
-            end try
-        end tell
-        """
+            end tell
+            """
+            try:
+                res = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=300)
+                chosen = res.stdout.strip()
+                if chosen and os.path.exists(chosen):
+                    return chosen
+                return ""
+            except Exception:
+                return ""
+        
+        # Windows/Linux
         try:
-            res = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=300)
-            chosen = res.stdout.strip()
-            if chosen and os.path.exists(chosen):
-                return chosen
-            return ""
+            kw = {"title": title}
+            if parent: kw["parent"] = parent
+            if filetypes: kw["filetypes"] = _normalize_filetypes_win(filetypes)
+            if initialdir: kw["initialdir"] = initialdir
+            kw.update(kwargs)
+            return _orig_askopenfilename(**kw)
         except Exception:
             return ""
-    
-    # Windows/Linux
-    try:
-        kw = {"title": title}
-        if parent: kw["parent"] = parent
-        if filetypes: kw["filetypes"] = _normalize_filetypes_win(filetypes)
-        if initialdir: kw["initialdir"] = initialdir
-        kw.update(kwargs)
-        return _orig_askopenfilename(**kw)
-    except Exception:
-        return ""
+    finally:
+        _dialog_busy = False
 
 def safe_askopenfilenames(title="파일 다중 선택", filetypes=None, parent=None, initialdir=None, **kwargs):
-    if sys.platform == "darwin":
-        type_list = _extract_apple_types(filetypes)
-        type_clause = f'of type {{{", ".join(chr(34) + t + chr(34) for t in type_list)}}}' if type_list else ""
-        
-        loc_clause = ""
-        if initialdir and os.path.exists(initialdir):
-            clean_dir = os.path.abspath(initialdir).replace('"', '\"')
-            loc_clause = f'default location POSIX file "{clean_dir}"'
+    global _dialog_busy
+    if _dialog_busy:
+        return ()
+    _dialog_busy = True
+    try:
+        if sys.platform == "darwin":
+            type_list = _extract_apple_types(filetypes)
+            type_clause = f'of type {{{", ".join(chr(34) + t + chr(34) for t in type_list)}}}' if type_list else ""
+            
+            loc_clause = ""
+            if initialdir and os.path.exists(initialdir):
+                clean_dir = os.path.abspath(initialdir).replace('"', '\"')
+                loc_clause = f'default location POSIX file "{clean_dir}"'
 
-        clean_title = (title or "파일 다중 선택").replace('"', '\"')
-        script = f"""
-        tell current application
-            activate
-            try
-                set f_list to choose file with prompt "{clean_title}" {loc_clause} {type_clause} with multiple selections allowed
-                set res to ""
-                repeat with f in f_list
-                    set res to res & (POSIX path of f) & linefeed
-                end repeat
-                return res
-            on error
+            clean_title = (title or "파일 다중 선택").replace('"', '\"')
+            script = f"""
+            tell current application
+                activate
                 try
-                    set f_list to choose file with prompt "{clean_title}" {type_clause} with multiple selections allowed
+                    set f_list to choose file with prompt "{clean_title}" {loc_clause} {type_clause} with multiple selections allowed
                     set res to ""
                     repeat with f in f_list
                         set res to res & (POSIX path of f) & linefeed
                     end repeat
                     return res
                 on error
-                    return ""
+                    try
+                        set f_list to choose file with prompt "{clean_title}" {type_clause} with multiple selections allowed
+                        set res to ""
+                        repeat with f in f_list
+                            set res to res & (POSIX path of f) & linefeed
+                        end repeat
+                        return res
+                    on error
+                        return ""
+                    end try
                 end try
-            end try
-        end tell
-        """
+            end tell
+            """
+            try:
+                res = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=300)
+                lines = [p.strip() for p in res.stdout.splitlines() if p.strip() and os.path.exists(p.strip())]
+                if lines:
+                    return tuple(lines)
+                return ()
+            except Exception:
+                return ()
+
+        # Windows/Linux
         try:
-            res = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=300)
-            lines = [p.strip() for p in res.stdout.splitlines() if p.strip() and os.path.exists(p.strip())]
-            if lines:
-                return tuple(lines)
-            return ()
+            kw = {"title": title}
+            if parent: kw["parent"] = parent
+            if filetypes: kw["filetypes"] = _normalize_filetypes_win(filetypes)
+            if initialdir: kw["initialdir"] = initialdir
+            kw.update(kwargs)
+            return _orig_askopenfilenames(**kw)
         except Exception:
             return ()
-
-    # Windows/Linux
-    try:
-        kw = {"title": title}
-        if parent: kw["parent"] = parent
-        if filetypes: kw["filetypes"] = _normalize_filetypes_win(filetypes)
-        if initialdir: kw["initialdir"] = initialdir
-        kw.update(kwargs)
-        return _orig_askopenfilenames(**kw)
-    except Exception:
-        return ()
+    finally:
+        _dialog_busy = False
 
 # monkey-patch filedialog methods everywhere
 if sys.platform == "darwin":
@@ -294,10 +310,7 @@ class SquareRoundButton(tk.Canvas):
         b_color = "#e2e8f0" if is_dis else fill_color
         self.rect_id = self.create_polygon(points, fill=b_color, outline="", smooth=True)
         self.text_id = self.create_text(self.w // 2, self.h // 2, text=self.btn_text, fill=t_color, font=self.font)
-        if not is_dis:
-            for item in (self.rect_id, self.text_id):
-                self.tag_bind(item, "<Button-1>", self.on_press)
-                self.tag_bind(item, "<ButtonRelease-1>", self.on_release)
+        # Canvas 위젯 레벨의 self.bind로 이벤트가 일괄 처리되므로 태그 중복 바인딩 불필요 (더블 클릭 방지)
 
     def on_enter(self, e=None):
         if self.btn_state != "disabled" and self.rect_id:
@@ -327,6 +340,11 @@ class SquareRoundButton(tk.Canvas):
                     self.itemconfig(self.rect_id, fill=self.hover_bg)
                 except Exception:
                     pass
+            import time
+            now = time.time()
+            if getattr(self, "_last_click_time", 0) and (now - self._last_click_time < 0.35):
+                return
+            self._last_click_time = now
             if self.cmd:
                 self.cmd()
 
@@ -502,7 +520,7 @@ class CinematicSplashScreen:
 class UnifiedDashboardApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("URY Engine — Academic Studio v0.2")
+        self.root.title("URY Engine — Academic Studio v0.2.1")
 
         config_manager.fix_mac_quarantine()
         self.setup_icon()
@@ -512,17 +530,32 @@ class UnifiedDashboardApp:
         self.theme_mode = self.settings.get("theme_mode", "light")
         self.theme_accent = self.settings.get("theme_accent", "#1c4732")
 
-        # 창모드 해상도 자유 조절 및 이전 크기/위치 복원
+        # 창모드 해상도 자동 감지 및 스마트 반응형 창 크기/위치 설정
         self.root.resizable(True, True)
         self.root.minsize(820, 560)
+        
+        sw = self.root.winfo_screenwidth()
+        sh = self.root.winfo_screenheight()
+        default_w = min(1180, max(820, int(sw * 0.82)))
+        default_h = min(780, max(560, int(sh * 0.80)))
+        x = max(0, (sw - default_w) // 2)
+        y = max(30, (sh - default_h) // 2 - 20)
+
         saved_geo = self.settings.get("window_geometry", "")
+        applied_geo = False
         if saved_geo and self.settings.get("remember_window_size", True):
             try:
-                self.root.geometry(saved_geo)
+                import re
+                m = re.match(r"(\d+)x(\d+)(?:([+-]\d+)([+-]\d+))?", saved_geo)
+                if m:
+                    gw, gh = int(m.group(1)), int(m.group(2))
+                    if gw <= sw and gh <= (sh - 50):
+                        self.root.geometry(saved_geo)
+                        applied_geo = True
             except Exception:
-                self.root.geometry("1180x820")
-        else:
-            self.root.geometry("1180x820")
+                pass
+        if not applied_geo:
+            self.root.geometry(f"{default_w}x{default_h}+{x}+{y}")
 
         self.root.protocol("WM_DELETE_WINDOW", self.on_app_close)
         self.root.bind("<Configure>", self.on_window_configure)
@@ -550,7 +583,7 @@ class UnifiedDashboardApp:
             self.root.deiconify()
             self.root.lift()
             self.root.focus_force()
-            self.check_compliance_agreement()
+            self.root.after(120, lambda: self.check_compliance_agreement(force=False))
         except Exception:
             pass
 
@@ -895,10 +928,101 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
             self.root.bind_class("Entry", "<Command-a>", lambda e: (e.widget.select_range(0, tk.END), "break")[1])
             self.root.bind_class("Text", "<Command-a>", lambda e: (e.widget.tag_add("sel", "1.0", "end"), "break")[1])
 
+            # ── 한글 IME 오타 수정 (macOS tkinter Hangul 자모 분리 버그) ──────────
+            # 증상: '마' 입력 시 'ㅁㅏ'로 분리되어 삽입되는 현상 (맨 처음 입력 시)
+            # 원인: macOS Cocoa IME가 첫 키 이벤트를 raw Jamo로 전달하는 Tk 버그
+            # 해결: KeyRelease 후 NFC 정규화(Jamo 결합)로 즉시 교정
+            # ── 한글 IME 오타 수정 (macOS tkinter Hangul 자모 분리 버그) ──────────
+            # 증상: '마' 입력 시 'ㅁㅏ'로 분리되어 삽입되는 현상 (맨 처음 입력 시)
+            # 원인: macOS Cocoa IME가 첫 키 이벤트를 호환 자모(Compatibility Jamo)로 삽입하는 Tk 버그
+            # 해결: 호환 자모(초성+중성+종성) 및 NFD 자모를 완성형 한글 음절로 합성
+            import unicodedata as _ud
+
+            _CHOS = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ']
+            _JUNGS = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ']
+            _JONGS = ['', 'ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ']
+
+            def _compose_hangul(text):
+                text = _ud.normalize('NFC', text)
+                result = []
+                i = 0
+                n = len(text)
+                while i < n:
+                    c1 = text[i]
+                    if c1 in _CHOS and i + 1 < n and text[i+1] in _JUNGS:
+                        c2 = text[i+1]
+                        cho_idx = _CHOS.index(c1)
+                        jung_idx = _JUNGS.index(c2)
+                        jong_idx = 0
+                        if i + 2 < n and text[i+2] in _JONGS:
+                            if i + 3 < n and text[i+3] in _JUNGS:
+                                jong_idx = 0
+                                result.append(chr(0xAC00 + (cho_idx * 21 + jung_idx) * 28 + jong_idx))
+                                i += 2
+                                continue
+                            else:
+                                jong_idx = _JONGS.index(text[i+2])
+                                result.append(chr(0xAC00 + (cho_idx * 21 + jung_idx) * 28 + jong_idx))
+                                i += 3
+                                continue
+                        result.append(chr(0xAC00 + (cho_idx * 21 + jung_idx) * 28 + jong_idx))
+                        i += 2
+                    else:
+                        result.append(c1)
+                        i += 1
+                return ''.join(result)
+
+            def _nfc_entry(event):
+                w = event.widget
+                try:
+                    cur = w.get()
+                    nfc = _compose_hangul(cur)
+                    if nfc != cur:
+                        try:
+                            pos = w.index(tk.INSERT)
+                        except Exception:
+                            pos = len(nfc)
+                        w.delete(0, tk.END)
+                        w.insert(0, nfc)
+                        try:
+                            w.icursor(min(pos, len(nfc)))
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+
+            def _nfc_text(event):
+                w = event.widget
+                try:
+                    cur = w.get("1.0", tk.END)
+                    nfc = _compose_hangul(cur)
+                    if nfc != cur:
+                        try:
+                            pos = w.index(tk.INSERT)
+                        except Exception:
+                            pos = "1.0"
+                        w.delete("1.0", tk.END)
+                        w.insert("1.0", nfc.rstrip("\n"))
+                        try:
+                            w.mark_set(tk.INSERT, pos)
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+
+            if sys.platform == "darwin":
+                self.root.bind_class("Entry", "<KeyRelease>", _nfc_entry, add=True)
+                self.root.bind_class("Entry", "<FocusOut>", _nfc_entry, add=True)
+                self.root.bind_class("TEntry", "<KeyRelease>", _nfc_entry, add=True)
+                self.root.bind_class("TEntry", "<FocusOut>", _nfc_entry, add=True)
+                self.root.bind_class("Text", "<FocusOut>", _nfc_text, add=True)
+            # ────────────────────────────────────────────────────────────────────────
+
             self.root.bind("<Command-f>", self.toggle_fullscreen)
             self.root.bind("<F11>", self.toggle_fullscreen)
         except Exception:
             pass
+
 
     def add_context_menu(self, widget):
         menu = tk.Menu(widget, tearoff=0)
@@ -1087,7 +1211,7 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
             except Exception:
                 pass
         tk.Label(title_row, text="URY Engine", font=("Pretendard", 13, "bold"), bg="#ffffff", fg="#1c4732").pack(side=tk.LEFT)
-        tk.Label(title_row, text=" v0.2", font=("Pretendard", 10), bg="#ffffff", fg="#64748b").pack(side=tk.LEFT)
+        tk.Label(title_row, text=" v0.2.1", font=("Pretendard", 10), bg="#ffffff", fg="#64748b").pack(side=tk.LEFT)
 
         tk.Label(left, text="Academic Studio · Ultimate Result for You", font=("Pretendard", 8), bg="#ffffff", fg="#94a3b8").pack(anchor=tk.W)
 
@@ -1269,14 +1393,13 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
             left_scroll_canvas.itemconfig(canvas_win, width=e.width)
         left_scroll_canvas.bind("<Configure>", on_canvas_configure)
 
-        def bind_wheel(canvas):
-            def _on_wheel(e):
-                if sys.platform == "darwin":
-                    canvas.yview_scroll(int(-1 * e.delta), "units")
-                else:
-                    canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
-            canvas.bind("<MouseWheel>", _on_wheel)
-        bind_wheel(left_scroll_canvas)
+        def _on_left_wheel(e):
+            if sys.platform == "darwin":
+                left_scroll_canvas.yview_scroll(int(-1 * e.delta), "units")
+            else:
+                left_scroll_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
+        left_card.bind("<Enter>", lambda e: left_scroll_canvas.bind_all("<MouseWheel>", _on_left_wheel))
+        left_card.bind("<Leave>", lambda e: left_scroll_canvas.unbind_all("<MouseWheel>"))
 
         left_scroll_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         left_sb.pack(side=tk.RIGHT, fill=tk.Y)
@@ -1330,7 +1453,7 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         col_wk = tk.Frame(row_dt, bg="#ffffff")
         col_wk.pack(side=tk.LEFT, fill=tk.X, padx=(0, 8))
         tk.Label(col_wk, text="Week (주차):", font=("Pretendard", 9, "bold"), bg="#ffffff", fg="#475569").pack(anchor=tk.W, pady=(0, 2))
-        self.studio_week_combo = ttk.Combobox(col_wk, values=[f"{w}주차" for w in range(1, 17)], state="readonly", font=("Pretendard", 9, "bold"), width=7)
+        self.studio_week_combo = ttk.Combobox(col_wk, values=[f"{w}주차" for w in range(1, 17)], state="normal", font=("Pretendard", 9, "bold"), width=7)
         self.studio_week_combo.set("1주차")
         self.studio_week_combo.pack(fill=tk.X)
         self.studio_week_combo.bind("<<ComboboxSelected>>", lambda e: self.update_preview_paper_header())
@@ -1446,6 +1569,15 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         self.slide_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         slide_sb.pack(side=tk.RIGHT, fill=tk.Y)
         self.slide_check_vars = {}
+
+        def _on_slide_wheel(e):
+            if sys.platform == "darwin":
+                self.slide_canvas.yview_scroll(int(-1 * e.delta), "units")
+            else:
+                self.slide_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
+            return "break"
+        slide_canvas_frame.bind("<Enter>", lambda e: self.slide_canvas.bind_all("<MouseWheel>", _on_slide_wheel))
+        slide_canvas_frame.bind("<Leave>", lambda e: (self.slide_canvas.unbind_all("<MouseWheel>"), left_scroll_canvas.bind_all("<MouseWheel>", _on_left_wheel)))
 
         # 부드러운 구분선
         tk.Frame(left_content, bg="#f1f5f9", height=1).pack(fill=tk.X, pady=(0, 16))
@@ -1807,6 +1939,15 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
                         self.audio_listbox.insert(tk.END, f"[과목보관] {os.path.basename(p)}")
 
         # 콤보박스 및 오디오 칩 UI 업데이트
+        if hasattr(self, "studio_week_combo"):
+            cdata = self.get_course_data(cname)
+            tot_w = cdata.get("total_weeks", 16)
+            w_vals = [f"{w}주차" for w in range(1, tot_w + 1)]
+            cur_w = self.studio_week_combo.get()
+            self.studio_week_combo["values"] = w_vals
+            if not cur_w or (cur_w not in w_vals and not any(k in cur_w for k in ("주차", "Ch", "강", "회차"))):
+                self.studio_week_combo.set(w_vals[0] if w_vals else "1주차")
+
         if hasattr(self, "detected_audio_combo"):
             combo_vals = []
             for p in self.detected_audio_paths:
@@ -2066,7 +2207,28 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
     # 탭 2: 📝 실전 모의시험 & 공부 기간 로드맵 (사용자 선택형)
     # =========================================================================
     def build_exam_tab(self):
-        frame = ttk.LabelFrame(self.tab_exam, text=" 📝 실전 모의시험 생성 & D-Day 맞춤 로드맵 ", padding="12")
+        # ── 전체 탭 스크롤 컨테이너 구성 ──────────────────────────────
+        exam_canvas = tk.Canvas(self.tab_exam, bg="#f5f6f8", highlightthickness=0)
+        exam_sb = ttk.Scrollbar(self.tab_exam, orient=tk.VERTICAL, command=exam_canvas.yview)
+        scroll_content = ttk.Frame(exam_canvas, padding="8")
+        scroll_content.bind("<Configure>", lambda e: exam_canvas.configure(scrollregion=exam_canvas.bbox("all")))
+        c_win = exam_canvas.create_window((0, 0), window=scroll_content, anchor="nw")
+        exam_canvas.configure(yscrollcommand=exam_sb.set)
+        exam_canvas.bind("<Configure>", lambda e: exam_canvas.itemconfig(c_win, width=e.width))
+
+        def _on_exam_wheel(e):
+            if sys.platform == "darwin":
+                exam_canvas.yview_scroll(int(-1 * e.delta), "units")
+            else:
+                exam_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
+        scroll_content.bind("<Enter>", lambda e: exam_canvas.bind_all("<MouseWheel>", _on_exam_wheel))
+        scroll_content.bind("<Leave>", lambda e: exam_canvas.unbind_all("<MouseWheel>"))
+
+        exam_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        exam_sb.pack(side=tk.RIGHT, fill=tk.Y)
+        # ─────────────────────────────────────────────────────────────
+
+        frame = ttk.LabelFrame(scroll_content, text=" 📝 실전 모의시험 생성 & D-Day 맞춤 로드맵 ", padding="12")
         frame.pack(fill=tk.BOTH, expand=True)
 
         form = ttk.Frame(frame)
@@ -2089,47 +2251,26 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         self.exam_type_combo.set("중간고사")
         self.exam_type_combo.pack(side=tk.LEFT)
 
-        # Row 2
+        # Row 2 (모호한 출제범위 텍스트창 제거 -> 문항 수 직접 입력 + 문제유형 + 공부시간 배치)
+        self.exam_scope_var = tk.StringVar(value="선택한 학습자료 기반")
+
         r2 = ttk.Frame(form)
         r2.pack(fill=tk.X, pady=4)
-        ttk.Label(r2, text="출제 범위:", width=11, font=("Pretendard", 10, "bold")).pack(side=tk.LEFT)
-        self.exam_scope_var = tk.StringVar(value="전범위 (Ch.1 ~ Ch.6)")
-        self.exam_scope_entry = tk.Entry(
-            r2,
-            textvariable=self.exam_scope_var,
-            width=19,
-            font=("Pretendard", 10),
-            bg="#ffffff",
-            fg="#0f172a",
-            insertbackground="#1c4732",
-            selectbackground="#d8f3dc",
-            selectforeground="#14281e",
-            relief=tk.FLAT,
-            highlightthickness=1,
-            highlightbackground="#cbd5e1",
-            takefocus=True
-        )
-        self.exam_scope_entry.pack(side=tk.LEFT, padx=(0, 14))
-        self.exam_scope_entry.bind("<Button-1>", lambda e: self.exam_scope_entry.focus_set())
-        self.add_context_menu(self.exam_scope_entry)
 
-        ttk.Label(r2, text="문항 수:", width=14, font=("Pretendard", 10, "bold")).pack(side=tk.LEFT)
-        self.q_count_combo = ttk.Combobox(r2, values=["5문항", "10문항", "15문항", "20문항"], state="readonly", width=10)
-        self.q_count_combo.set("10문항")
+        ttk.Label(r2, text="문항 수:", width=11, font=("Pretendard", 10, "bold")).pack(side=tk.LEFT)
+        self.q_count_combo = ttk.Combobox(r2, values=["5", "10", "15", "20", "25", "30"], state="normal", width=8)
+        self.q_count_combo.set("10")
         self.q_count_combo.pack(side=tk.LEFT, padx=(0, 14))
 
-        ttk.Label(r2, text="문제 유형:", width=9, font=("Pretendard", 10, "bold")).pack(side=tk.LEFT)
-        self.q_format_combo = ttk.Combobox(r2, values=["객관식 (4지선다)", "서술형/손풀이", "객관식 + 서술형 혼합"], state="readonly", width=18)
+        ttk.Label(r2, text="문제 유형:", width=14, font=("Pretendard", 10, "bold")).pack(side=tk.LEFT)
+        self.q_format_combo = ttk.Combobox(r2, values=["객관식 (4지선다)", "서술형/손풀이", "객관식 + 서술형 혼합"], state="readonly", width=20)
         self.q_format_combo.set("객관식 (4지선다)")
-        self.q_format_combo.pack(side=tk.LEFT)
+        self.q_format_combo.pack(side=tk.LEFT, padx=(0, 14))
 
-        # Row 3
-        r3 = ttk.Frame(form)
-        r3.pack(fill=tk.X, pady=4)
-        ttk.Label(r3, text="일일 공부 시간:", width=11, font=("Pretendard", 10, "bold")).pack(side=tk.LEFT)
+        ttk.Label(r2, text="일일 공부 시간:", width=11, font=("Pretendard", 10, "bold")).pack(side=tk.LEFT)
         self.exam_hours_var = tk.StringVar(value="3시간")
         self.exam_hours_entry = tk.Entry(
-            r3,
+            r2,
             textvariable=self.exam_hours_var,
             width=10,
             font=("Pretendard", 10),
@@ -2526,16 +2667,19 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
             messagebox.showwarning("선택 오류", "대상 과목을 선택해주세요.")
             return
 
-        scope = self.exam_scope_var.get().strip()
+        selected_files = [p for p, v in self.exam_material_vars.items() if v.get()]
+        scope = f"선택한 학습 자료 {len(selected_files)}건 기반" if selected_files else "과목 전체 학습 자료 기반"
+        self.exam_scope_var.set(scope)
         exam_type = self.exam_type_combo.get()
-        q_count_str = self.q_count_combo.get().replace("문항", "").strip()
+        
+        import re
+        raw_qc = self.q_count_combo.get().strip()
+        m = re.search(r'\d+', raw_qc)
         try:
-            q_count = int(q_count_str)
+            q_count = max(1, min(100, int(m.group()))) if m else 10
         except Exception:
             q_count = 10
         q_fmt = self.q_format_combo.get()
-
-        selected_files = [p for p, v in self.exam_material_vars.items() if v.get()]
 
         self.exam_is_running = True
         self.exam_start_time = time.time()
@@ -3236,61 +3380,156 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
             if not cname:
                 return
 
-            s_file = config_manager.get_course_syllabus(cname)
-            if s_file and os.path.exists(s_file):
-                resp = messagebox.askyesnocancel(
-                    "강의계획서 관리",
-                    f"[{cname}] 과목에 이미 강의계획서가 등록되어 있습니다:\n• {os.path.basename(s_file)}\n\n[예]를 누르면 현재 강의계획서를 열람합니다.\n[아니오]를 누르면 새 파일로 교체 등록합니다.",
-                    parent=self.root
-                )
-                if resp is True:
-                    if sys.platform == "darwin": subprocess.call(["open", s_file])
-                    elif sys.platform == "win32": os.startfile(s_file)
-                    else: subprocess.call(["xdg-open", s_file])
-                    return
-                elif resp is False:
-                    pass  # 진행하여 새 파일 선택
-                else:
-                    return
+            folder = self.get_course_folder(cname)
+            cdir = config_manager.get_course_dir(folder)
+            s_dir = os.path.join(cdir, "강의계획서")
+            os.makedirs(s_dir, exist_ok=True)
 
-            fpath = self.ask_open_file_safe(
-                title=f"[{cname}] 강의계획서 (Syllabus) 파일 선택 (PDF 권장)",
-                filetypes=[("PDF 문서 (*.pdf)", "*.pdf"), ("학습 문서", "*.pdf *.txt *.md *.docx"), ("모든 파일", "*.*")],
-                parent=self.root
+            dlg = tk.Toplevel(self.root)
+            dlg.title(f"[{cname}] 강의계획서 (Syllabus) 관리")
+            dlg.transient(self.root)
+            dlg.configure(bg="#f8fafc")
+            dlg.geometry("520x360")
+            dlg.minsize(440, 300)
+            dlg.grab_set()
+
+            top_f = tk.Frame(dlg, bg="#ffffff", padx=16, pady=12, highlightthickness=1, highlightbackground="#e2e8f0")
+            top_f.pack(fill=tk.X)
+            tk.Label(top_f, text=f"📑 [{cname}] 공식 강의계획서 관리", font=("Pretendard", 11, "bold"), bg="#ffffff", fg="#1c4732").pack(anchor=tk.W)
+            tk.Label(top_f, text="PDF, HTML(웹 강의계획서), DOCX, MD 등 복수 등록이 가능합니다.", font=("Pretendard", 8), bg="#ffffff", fg="#64748b").pack(anchor=tk.W, pady=(2, 0))
+
+            body_f = tk.Frame(dlg, bg="#f8fafc", padx=16, pady=12)
+            body_f.pack(fill=tk.BOTH, expand=True)
+
+            # 현재 등록된 목록 불러오기
+            existing_paths = list(config_manager.get_course_syllabi(folder))
+
+            lb_frame = tk.Frame(body_f, bg="#f8fafc")
+            lb_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+
+            sb = ttk.Scrollbar(lb_frame, orient=tk.VERTICAL)
+            lb = tk.Listbox(
+                lb_frame,
+                font=("Pretendard", 9),
+                selectmode=tk.SINGLE,
+                yscrollcommand=sb.set,
+                bg="#ffffff", fg="#1e293b",
+                selectbackground="#d8f3dc", selectforeground="#14281e",
+                relief=tk.SOLID, bd=1
             )
-            if fpath and os.path.exists(fpath):
-                folder = self.get_course_folder(cname)
-                cdir = config_manager.get_course_dir(folder)
-                s_dir = os.path.join(cdir, "강의계획서")
-                os.makedirs(s_dir, exist_ok=True)
-                ext = os.path.splitext(fpath)[1]
-                safe_cname = cname.replace(" ", "_")
-                dest_name = f"{safe_cname}_강의계획서{ext}"
-                dest_path = os.path.join(s_dir, dest_name)
-                try:
-                    import shutil
-                    shutil.copy2(fpath, dest_path)
-                    cdata = self.get_course_data(cname)
-                    cdata["syllabus_path"] = os.path.join("강의계획서", dest_name)
-                    config_manager.save_settings(self.settings)
+            sb.config(command=lb.yview)
+            lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            sb.pack(side=tk.RIGHT, fill=tk.Y)
 
-                    short_s = (dest_name[:12] + "...") if len(dest_name) > 14 else dest_name
-                    self.tutor_syllabus_btn.config(text=f"🟢 계획서 연동됨 ({short_s})", style="Secondary.TButton")
+            def _refresh():
+                lb.delete(0, tk.END)
+                for p in existing_paths:
+                    lb.insert(tk.END, f"  📄 {os.path.basename(p)}")
+                if not existing_paths:
+                    lb.insert(tk.END, "  (등록된 강의계획서가 없습니다 — 자율 학습 모드)")
+
+            _refresh()
+
+            def _save_changes():
+                cdata = self.get_course_data(cname)
+                # 상대경로 목록으로 정돈
+                rel_paths = []
+                for p in existing_paths:
+                    try:
+                        rel = os.path.relpath(p, cdir)
+                        if not rel.startswith(".."):
+                            rel_paths.append(rel)
+                        else:
+                            rel_paths.append(p)
+                    except Exception:
+                        rel_paths.append(p)
+                cdata["syllabus_paths"] = rel_paths
+                cdata["syllabus_path"] = rel_paths[0] if rel_paths else ""
+                config_manager.save_settings(self.settings)
+
+                # UI 갱신
+                if hasattr(self, "tutor_syllabus_btn"):
+                    if rel_paths:
+                        self.tutor_syllabus_btn.config(text=f"🟢 계획서 {len(rel_paths)}개 연동됨", style="Secondary.TButton")
+                    else:
+                        self.tutor_syllabus_btn.config(text="➕ 강의계획서 연동", style="Secondary.TButton")
+                if hasattr(self, "populate_course_table"):
+                    self.populate_course_table()
+
+            def _add():
+                f = self.ask_open_file_safe(
+                    title=f"[{cname}] 강의계획서(Syllabus) 파일 선택",
+                    filetypes=[
+                        ("지원 형식", "*.pdf *.html *.htm *.docx *.txt *.md"),
+                        ("PDF 문서", "*.pdf"),
+                        ("HTML 문서", "*.html *.htm"),
+                        ("Word 문서", "*.docx"),
+                        ("텍스트/마크다운", "*.txt *.md"),
+                        ("모든 파일", "*.*")
+                    ],
+                    parent=dlg
+                )
+                if f and os.path.exists(f):
+                    import shutil
+                    ext = os.path.splitext(f)[1]
+                    safe_cname = cname.replace(" ", "_")
+                    idx = len(existing_paths) + 1
+                    dest_name = f"{safe_cname}_강의계획서_{idx}{ext}"
+                    dest_path = os.path.join(s_dir, dest_name)
+                    try:
+                        shutil.copy2(f, dest_path)
+                        existing_paths.append(dest_path)
+                        _save_changes()
+                        _refresh()
+                        self.tutor_chat_text.insert(
+                            tk.END,
+                            f"\n🎉 [{dest_name}] 강의계획서가 성공적으로 추가 연동되었습니다!\n",
+                            "system_info"
+                        )
+                        self.tutor_chat_text.see(tk.END)
+                    except Exception as e:
+                        messagebox.showerror("추가 오류", f"강의계획서 저장 중 오류: {e}", parent=dlg)
+
+            def _remove():
+                sel = lb.curselection()
+                if not sel:
+                    return
+                idx = sel[0]
+                if idx < len(existing_paths):
+                    removed = existing_paths.pop(idx)
+                    _save_changes()
+                    _refresh()
                     self.tutor_chat_text.insert(
                         tk.END,
-                        f"\n🎉 [{dest_name}] 강의계획서가 성공적으로 연동되었습니다!\n• 이제 주차별 공식 진도, 중간/기말 시험 범위, 과제 및 출석 평가 배점이 마스터 기준으로 자동 적용됩니다.\n\n",
+                        f"\n🗑 [{os.path.basename(removed)}] 강의계획서가 연동 해제되었습니다.\n",
                         "system_info"
                     )
                     self.tutor_chat_text.see(tk.END)
-                    if hasattr(self, "populate_course_table"):
-                        self.populate_course_table()
-                    messagebox.showinfo("강의계획서 연동 완료", f"[{cname}] 강의계획서가 성공적으로 등록되었습니다!\n파일: {dest_name}", parent=self.root)
-                except Exception as e:
-                    messagebox.showerror("업로드 오류", f"강의계획서 저장 중 오류가 발생했습니다: {e}", parent=self.root)
+
+            def _open():
+                sel = lb.curselection()
+                if not sel:
+                    return
+                idx = sel[0]
+                if idx < len(existing_paths):
+                    p = existing_paths[idx]
+                    if os.path.exists(p):
+                        if sys.platform == "darwin": subprocess.call(["open", p])
+                        elif sys.platform == "win32": os.startfile(p)
+                        else: subprocess.call(["xdg-open", p])
+
+            btn_row = tk.Frame(body_f, bg="#f8fafc")
+            btn_row.pack(fill=tk.X)
+
+            ttk.Button(btn_row, text="➕ 파일 추가...", style="Secondary.TButton", command=_add).pack(side=tk.LEFT, padx=(0, 6))
+            ttk.Button(btn_row, text="🗑 선택 삭제", style="Secondary.TButton", command=_remove).pack(side=tk.LEFT, padx=(0, 6))
+            ttk.Button(btn_row, text="📂 열기", style="Secondary.TButton", command=_open).pack(side=tk.LEFT)
+            ttk.Button(btn_row, text="완료", style="Primary.TButton", command=dlg.destroy).pack(side=tk.RIGHT)
+
         except Exception as err:
             import traceback
             traceback.print_exc()
-            messagebox.showerror("오류", f"강의계획서 선택 창을 여는 도중 문제가 발생했습니다: {err}", parent=self.root)
+            messagebox.showerror("오류", f"강의계획서 창을 여는 도중 문제가 발생했습니다: {err}", parent=self.root)
 
     def on_tutor_input_return(self, event):
         if event.state & 0x0001:  # Shift pressed -> allow newline
@@ -3503,9 +3742,12 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         all_sessions = timetable.get("calendar_sessions", [])
         course_sessions = [s for s in all_sessions if s.get("course_name") == cname or s.get("folder_name") == folder_name]
 
+        cdata = self.get_course_data(cname)
+        tot_w = cdata.get("total_weeks", 16) if cdata else 16
+
         if not course_sessions:
             course_sessions = []
-            for w in range(1, 17):
+            for w in range(1, tot_w + 1):
                 course_sessions.append({"week": w, "session_number": 1, "date": f"Week {w}-1", "day_name": ""})
                 course_sessions.append({"week": w, "session_number": 2, "date": f"Week {w}-2", "day_name": ""})
 
@@ -4073,30 +4315,97 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         tutor_entry.bind("<Button-1>", lambda e: tutor_entry.focus_set())
         self.add_context_menu(tutor_entry)
 
-        # 강의계획서 파일 선택 (권장)
-        ttk.Label(form, text="강의계획서 (Syllabus, 권장 — 미등록 시 슬라이드 기반 자율 학습):").pack(anchor=tk.W, pady=(0, 2))
-        s_row = ttk.Frame(form)
-        s_row.pack(fill=tk.X, pady=(0, 6))
+        # 강의계획서 파일 선택 (복수 등록 가능, HTML 포함)
+        ttk.Label(form, text="강의계획서 (Syllabus) — PDF/HTML/DOCX/MD 복수 등록 가능:").pack(anchor=tk.W, pady=(0, 2))
 
-        cur_syllabus = config_manager.get_course_syllabus(course_data.get("folder_name") or course_data.get("course_name", ""))
-        syllabus_status_var = tk.StringVar(value=os.path.basename(cur_syllabus) if cur_syllabus else "미등록 (자율 학습 모드)")
-        syllabus_to_copy = [None]
+        syl_outer = ttk.Frame(form)
+        syl_outer.pack(fill=tk.X, pady=(0, 6))
 
-        s_lbl = ttk.Label(s_row, textvariable=syllabus_status_var, font=("Pretendard", 9), foreground="#059669" if cur_syllabus else "#64748b", width=28)
-        s_lbl.pack(side=tk.LEFT, padx=(0, 6))
+        # 현재 등록된 목록 불러오기 (신규 list + 구버전 str 하위 호환)
+        _folder_for_syl = course_data.get("folder_name") or course_data.get("course_name", "")
+        _existing = config_manager.get_course_syllabi(_folder_for_syl)
+        syllabi_list = list(_existing)          # 기존 경로들
+        syllabi_to_add = []                     # 이번에 새로 추가할 원본 파일 경로들
 
-        def pick_syllabus():
+        # 목록 표시 Listbox
+        syl_lb_frame = ttk.Frame(syl_outer)
+        syl_lb_frame.pack(fill=tk.X, pady=(0, 4))
+        syl_scrollbar = tk.Scrollbar(syl_lb_frame, orient=tk.VERTICAL)
+        syl_listbox = tk.Listbox(
+            syl_lb_frame,
+            font=("Pretendard", 9),
+            height=4,
+            selectmode=tk.SINGLE,
+            yscrollcommand=syl_scrollbar.set,
+            bg="#f8fafc", fg="#1e293b",
+            selectbackground="#d8f3dc", selectforeground="#14281e",
+            relief=tk.SOLID, bd=1,
+        )
+        syl_scrollbar.config(command=syl_listbox.yview)
+        syl_listbox.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        syl_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        def _refresh_syl_lb():
+            syl_listbox.delete(0, tk.END)
+            for p in syllabi_list:
+                syl_listbox.insert(tk.END, f"  {os.path.basename(p)}")
+            if not syllabi_list:
+                syl_listbox.insert(tk.END, "  (미등록 — 자율 학습 모드)")
+
+        _refresh_syl_lb()
+
+        syl_btn_row = ttk.Frame(syl_outer)
+        syl_btn_row.pack(fill=tk.X)
+
+        def add_syllabus():
             f = self.ask_open_file_safe(
-                title="강의계획서(Syllabus) 파일 선택 (권장)",
-                filetypes=[("PDF 문서 (*.pdf)", "*.pdf"), ("학습 문서", "*.pdf *.txt *.md *.docx"), ("모든 파일", "*.*")],
+                title="강의계획서(Syllabus) 파일 선택",
+                filetypes=[
+                    ("지원 형식", "*.pdf *.html *.htm *.docx *.txt *.md"),
+                    ("PDF 문서", "*.pdf"),
+                    ("HTML 문서", "*.html *.htm"),
+                    ("Word 문서", "*.docx"),
+                    ("텍스트/마크다운", "*.txt *.md"),
+                    ("모든 파일", "*.*"),
+                ],
                 parent=dlg
             )
             if f and os.path.exists(f):
-                syllabus_to_copy[0] = f
-                syllabus_status_var.set("선택됨: " + os.path.basename(f))
-                s_lbl.config(foreground="#059669")
+                syllabi_to_add.append(f)
+                syllabi_list.append(f)          # 미리보기용 (임시 전체경로)
+                _refresh_syl_lb()
 
-        ttk.Button(s_row, text="➕ PDF 선택", style="Secondary.TButton", command=pick_syllabus).pack(side=tk.LEFT)
+        def remove_syllabus():
+            sel = syl_listbox.curselection()
+            if not sel:
+                return
+            idx = sel[0]
+            if idx < len(syllabi_list):
+                syllabi_list.pop(idx)
+                # syllabi_to_add에서도 제거 (있을 경우)
+                if idx < len(syllabi_to_add):
+                    syllabi_to_add.pop(idx)
+                _refresh_syl_lb()
+
+        def open_syllabus():
+            sel = syl_listbox.curselection()
+            if not sel:
+                return
+            idx = sel[0]
+            if idx < len(syllabi_list):
+                p = syllabi_list[idx]
+                if os.path.exists(p):
+                    if sys.platform == "darwin":
+                        subprocess.call(["open", p])
+                    elif sys.platform == "win32":
+                        os.startfile(p)
+                    else:
+                        subprocess.call(["xdg-open", p])
+
+        ttk.Button(syl_btn_row, text="➕ 파일 추가", style="Secondary.TButton", command=add_syllabus).pack(side=tk.LEFT, padx=(0, 4))
+        ttk.Button(syl_btn_row, text="🗑 선택 삭제", style="Secondary.TButton", command=remove_syllabus).pack(side=tk.LEFT, padx=(0, 4))
+        ttk.Button(syl_btn_row, text="📂 열기", style="Secondary.TButton", command=open_syllabus).pack(side=tk.LEFT)
+
 
         ttk.Label(form, text="폴더명:").pack(anchor=tk.W, pady=(0, 2))
         folder_var = tk.StringVar(value=course_data.get("folder_name", ""))
@@ -4111,6 +4420,13 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         days_entry.pack(fill=tk.X, pady=(0, 6))
         days_entry.bind("<Button-1>", lambda e: days_entry.focus_set())
         self.add_context_menu(days_entry)
+
+        ttk.Label(form, text="총 강의/학습 차시 수 (기본 16차시, 개인공부/자격증 시 자유 변경):").pack(anchor=tk.W, pady=(0, 2))
+        weeks_var = tk.StringVar(value=str(course_data.get("total_weeks", 16)))
+        weeks_entry = tk.Entry(form, textvariable=weeks_var, font=("Pretendard", 10), bg="#ffffff", fg="#0f172a", insertbackground="#1c4732", selectbackground="#d8f3dc", selectforeground="#14281e", relief=tk.SOLID, bd=1, takefocus=True)
+        weeks_entry.pack(fill=tk.X, pady=(0, 6))
+        weeks_entry.bind("<Button-1>", lambda e: weeks_entry.focus_set())
+        self.add_context_menu(weeks_entry)
 
         ttk.Label(form, text="수업 언어 모드:").pack(anchor=tk.W, pady=(0, 2))
         lang_combo = ttk.Combobox(form, values=LANG_OPTIONS, state="readonly")
@@ -4129,28 +4445,59 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
             t_name = tutor_var.get().strip() or f"{cname} 수석 조교"
             days_list = [d.strip() for d in days_var.get().split(",") if d.strip()]
             lcode = LANG_LABEL_TO_CODE.get(lang_combo.get(), "both")
-            s_path = course_data.get("syllabus_path", "")
 
-            if syllabus_to_copy[0]:
+            # ── 복수 강의계획서 파일 복사 후 상대경로 목록 구성 ──────────────
+            import shutil
+            cdir = config_manager.get_course_dir(fname)
+            s_dir = os.path.join(cdir, "강의계획서")
+            os.makedirs(s_dir, exist_ok=True)
+
+            saved_paths = []   # settings.json에 저장할 상대경로들
+            safe_cname = cname.replace(" ", "_")
+
+            for i, src in enumerate(syllabi_to_add):
                 try:
-                    import shutil
-                    cdir = config_manager.get_course_dir(fname)
-                    s_dir = os.path.join(cdir, "강의계획서")
-                    os.makedirs(s_dir, exist_ok=True)
-                    ext = os.path.splitext(syllabus_to_copy[0])[1]
-                    safe_cname = cname.replace(" ", "_")
-                    dest_name = f"{safe_cname}_강의계획서{ext}"
+                    ext = os.path.splitext(src)[1]
+                    suffix = f"_{i+1}" if i > 0 else ""
+                    dest_name = f"{safe_cname}_강의계획서{suffix}{ext}"
                     dest_path = os.path.join(s_dir, dest_name)
-                    shutil.copy2(syllabus_to_copy[0], dest_path)
-                    s_path = os.path.join("강의계획서", dest_name)
+                    shutil.copy2(src, dest_path)
+                    saved_paths.append(os.path.join("강의계획서", dest_name))
                 except Exception as ex:
-                    print(f"Error copying syllabus: {ex}")
+                    print(f"Error copying syllabus [{src}]: {ex}")
+
+            # 기존에 이미 저장된 경로들 (새로 추가하지 않은 것들) 보존
+            # syllabi_list에서 syllabi_to_add에 없는 항목 = 기존 보존 경로
+            existing_kept = []
+            for p in syllabi_list:
+                if p not in syllabi_to_add:
+                    # 절대경로를 상대경로로 변환 (가능하면)
+                    for base in (cdir, config_manager.WORKSPACE_DIR):
+                        try:
+                            rel = os.path.relpath(p, base)
+                            if not rel.startswith(".."):
+                                existing_kept.append(rel)
+                                break
+                        except Exception:
+                            pass
+                    else:
+                        existing_kept.append(p)  # 절대경로 그대로
+
+            final_paths = existing_kept + saved_paths
+            # ─────────────────────────────────────────────────────────────────
+
+            try:
+                tot_w = max(1, min(52, int(weeks_var.get().strip())))
+            except Exception:
+                tot_w = 16
 
             new_c = {
                 "course_name": cname,
                 "folder_name": fname,
                 "tutor_name": t_name,
-                "syllabus_path": s_path,
+                "syllabus_paths": final_paths,       # 복수 지원 (신규 키)
+                "syllabus_path": final_paths[0] if final_paths else "",  # 하위 호환
+                "total_weeks": tot_w,
                 "days": days_list,
                 "start_time": course_data.get("start_time", "09:00"),
                 "end_time": course_data.get("end_time", "10:15"),
@@ -4158,6 +4505,7 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
                 "language_mode": lcode,
                 "generate_mock_exam": True
             }
+
 
             if is_edit:
                 for i, c in enumerate(self.courses):
