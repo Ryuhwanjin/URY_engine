@@ -30,6 +30,10 @@ def get_root_workspace():
         # Inside macOS .app bundle: .../URY Engine.app/Contents/MacOS/URY Engine
         app_dir = os.path.dirname(os.path.abspath(sys.executable))
         parent_dir = os.path.abspath(os.path.join(app_dir, "../../.."))
+        if parent_dir.rstrip("/") in ("/Applications", "/System/Applications", "/Library") or not os.access(parent_dir, os.W_OK):
+            user_ws = os.path.expanduser("~/Documents/URY_Engine")
+            os.makedirs(user_ws, exist_ok=True)
+            return user_ws
         return parent_dir
     curr = os.path.dirname(os.path.abspath(__file__))
     for _ in range(5):
@@ -54,6 +58,12 @@ def find_config_file(filename):
     p2 = os.path.join(WORKSPACE_DIR, filename)
     if os.path.exists(p2):
         return p2
+    if getattr(sys, "frozen", False):
+        app_dir = os.path.dirname(os.path.abspath(sys.executable))
+        for sub in ("../Resources/system", "../Frameworks/system", "../Resources", "../Frameworks"):
+            res_p = os.path.abspath(os.path.join(app_dir, sub, filename))
+            if os.path.exists(res_p):
+                return res_p
     return p1
 
 SETTINGS_PATH = find_config_file("settings.json")
@@ -209,6 +219,8 @@ def ensure_all_course_folders(data):
 
 def save_settings(data):
     """settings.json 저장 및 .env, 시간표.json, 과목별 폴더트리 동기화"""
+    if os.path.dirname(SETTINGS_PATH):
+        os.makedirs(os.path.dirname(SETTINGS_PATH), exist_ok=True)
     with open(SETTINGS_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
