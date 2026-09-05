@@ -1215,6 +1215,37 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
 
         tk.Label(left, text="Academic Studio · Ultimate Result for You", font=("Pretendard", 8), bg="#ffffff", fg="#94a3b8").pack(anchor=tk.W)
 
+        # 우측: 해상도 선택기 / 학기 / API 연결 상태 배지 (오른쪽에 영구 고정되도록 center보다 먼저 pack)
+        right = tk.Frame(self.header_frame, bg="#ffffff")
+        right.pack(side=tk.RIGHT, padx=(10, 18), fill=tk.Y)
+
+        self.res_quick_btn = SquareRoundButton(
+            right,
+            text="🖥️ 창 크기 ▾",
+            bg="#f1f5f9",
+            fg="#1e293b",
+            hover_bg="#e2e8f0",
+            radius=8,
+            height=30,
+            font=("Pretendard", 9, "bold"),
+            command=self.show_resolution_quick_menu,
+            parent_bg="#ffffff"
+        )
+        self.res_quick_btn.pack(side=tk.LEFT, pady=13, padx=(0, 8))
+
+        sem_text = self.settings.get("semester", "2026년 2학기")
+        self.sem_badge_label = tk.Label(right, text=f" 📅 {sem_text} ", font=("Pretendard", 9, "bold"), bg="#f1f5f9", fg="#1e293b", relief=tk.FLAT, padx=10, pady=5)
+        self.sem_badge_label.pack(side=tk.LEFT, pady=13, padx=(0, 8))
+
+        api_key = self.settings.get("gemini_api_key", "").strip()
+        has_key = len(api_key) >= 10
+        api_text = " 🟢 API 연결됨 " if has_key else " 🔴 API 등록 필요 "
+        api_fg = "#15803d" if has_key else "#b91c1c"
+        api_bg = "#f0fdf4" if has_key else "#fef2f2"
+        self.api_badge_label = tk.Label(right, text=api_text, font=("Pretendard", 9, "bold"), bg=api_bg, fg=api_fg, relief=tk.FLAT, padx=10, pady=5, cursor="hand2")
+        self.api_badge_label.pack(side=tk.LEFT, pady=13)
+        self.api_badge_label.bind("<Button-1>", lambda e: self.switch_to_tab(4))
+
         # 중앙: 시안 2 플로팅 알약형 세그먼트 탭바
         center = tk.Frame(self.header_frame, bg="#ffffff")
         center.pack(side=tk.LEFT, expand=True)
@@ -1249,35 +1280,17 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
             btn.pack(side=tk.LEFT, padx=1)
             self.tab_pills.append(btn)
 
-        # 우측: 해상도 선택기 / 학기 / API 연결 상태 배지
-        right = tk.Frame(self.header_frame, bg="#ffffff")
-        right.pack(side=tk.RIGHT, padx=(10, 18), fill=tk.Y)
-
-        self.res_quick_btn = SquareRoundButton(
-            right,
-            text="🖥️ 창 크기 ▾",
-            bg="#f1f5f9",
-            fg="#1e293b",
-            hover_bg="#e2e8f0",
-            radius=8,
-            height=30,
-            font=("Pretendard", 9, "bold"),
-            command=self.show_resolution_quick_menu,
-            parent_bg="#ffffff"
-        )
-        self.res_quick_btn.pack(side=tk.LEFT, pady=13, padx=(0, 8))
-
-        sem_text = self.settings.get("semester", "2026년 2학기")
-        self.sem_badge_label = tk.Label(right, text=f" 📅 {sem_text} ", font=("Pretendard", 9, "bold"), bg="#f1f5f9", fg="#1e293b", relief=tk.FLAT, padx=10, pady=5)
-        self.sem_badge_label.pack(side=tk.LEFT, pady=13, padx=(0, 8))
-
+    def update_api_status_badge(self):
+        """헤더의 API 상태 배지를 현재 설정값에 맞춰 갱신"""
+        if not hasattr(self, "api_badge_label"):
+            return
         api_key = self.settings.get("gemini_api_key", "").strip()
         has_key = len(api_key) >= 10
         api_text = " 🟢 API 연결됨 " if has_key else " 🔴 API 등록 필요 "
         api_fg = "#15803d" if has_key else "#b91c1c"
         api_bg = "#f0fdf4" if has_key else "#fef2f2"
-        self.api_badge_label = tk.Label(right, text=api_text, font=("Pretendard", 9, "bold"), bg=api_bg, fg=api_fg, relief=tk.FLAT, padx=10, pady=5)
-        self.api_badge_label.pack(side=tk.LEFT, pady=13)
+        self.api_badge_label.config(text=api_text, bg=api_bg, fg=api_fg)
+
 
     def switch_to_tab(self, idx):
         try:
@@ -1376,33 +1389,13 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         studio_container.rowconfigure(0, weight=1)
 
         # =============================================================
-        # [LEFT COLUMN] 넉넉한 여백과 둥근 모서리의 Content Setup Card
+        # [LEFT COLUMN] 넉넉하고 정갈한 Content Setup Card (한눈에 직접 확인)
         # =============================================================
         left_card = tk.Frame(studio_container, bg="#ffffff", bd=0, highlightthickness=1, highlightbackground="#edf2f7")
         left_card.grid(row=0, column=0, sticky="nsew", padx=(10, 6), pady=8)
 
-        left_scroll_canvas = tk.Canvas(left_card, bg="#ffffff", highlightthickness=0)
-        left_sb = ttk.Scrollbar(left_card, orient=tk.VERTICAL, command=left_scroll_canvas.yview)
-        left_content = tk.Frame(left_scroll_canvas, bg="#ffffff", padx=20, pady=18)
-
-        left_content.bind("<Configure>", lambda e: left_scroll_canvas.configure(scrollregion=left_scroll_canvas.bbox("all")))
-        canvas_win = left_scroll_canvas.create_window((0, 0), window=left_content, anchor="nw")
-        left_scroll_canvas.configure(yscrollcommand=left_sb.set)
-
-        def on_canvas_configure(e):
-            left_scroll_canvas.itemconfig(canvas_win, width=e.width)
-        left_scroll_canvas.bind("<Configure>", on_canvas_configure)
-
-        def _on_left_wheel(e):
-            if sys.platform == "darwin":
-                left_scroll_canvas.yview_scroll(int(-1 * e.delta), "units")
-            else:
-                left_scroll_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
-        left_card.bind("<Enter>", lambda e: left_scroll_canvas.bind_all("<MouseWheel>", _on_left_wheel))
-        left_card.bind("<Leave>", lambda e: left_scroll_canvas.unbind_all("<MouseWheel>"))
-
-        left_scroll_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        left_sb.pack(side=tk.RIGHT, fill=tk.Y)
+        left_content = tk.Frame(left_card, bg="#ffffff", padx=18, pady=14)
+        left_content.pack(fill=tk.BOTH, expand=True)
 
         # -------------------------------------------------------------
         # Step 1: 과목 및 강의 정보 설정
@@ -1424,7 +1417,7 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
 
         # 일자 선택기
         col_date = tk.Frame(row_dt, bg="#ffffff")
-        col_date.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8))
+        col_date.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
         tk.Label(col_date, text="Class Date (수업 일자):", font=("Pretendard", 9, "bold"), bg="#ffffff", fg="#475569").pack(anchor=tk.W, pady=(0, 2))
         
         d_box = tk.Frame(col_date, bg="#f8fafc", highlightthickness=1, highlightbackground="#cbd5e1", padx=4, pady=2)
@@ -1451,23 +1444,23 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
 
         # 주차 선택기
         col_wk = tk.Frame(row_dt, bg="#ffffff")
-        col_wk.pack(side=tk.LEFT, fill=tk.X, padx=(0, 8))
+        col_wk.pack(side=tk.LEFT, fill=tk.X, padx=(0, 6))
         tk.Label(col_wk, text="Week (주차):", font=("Pretendard", 9, "bold"), bg="#ffffff", fg="#475569").pack(anchor=tk.W, pady=(0, 2))
         self.studio_week_combo = ttk.Combobox(col_wk, values=[f"{w}주차" for w in range(1, 17)], state="normal", font=("Pretendard", 9, "bold"), width=7)
         self.studio_week_combo.set("1주차")
         self.studio_week_combo.pack(fill=tk.X)
         self.studio_week_combo.bind("<<ComboboxSelected>>", lambda e: self.update_preview_paper_header())
 
-        # 출력 언어
+        # 출력 언어 (너비 확장으로 텍스트 잘림 방지)
         col_lang = tk.Frame(row_dt, bg="#ffffff")
         col_lang.pack(side=tk.RIGHT, fill=tk.X)
         tk.Label(col_lang, text="Language:", font=("Pretendard", 9, "bold"), bg="#ffffff", fg="#475569").pack(anchor=tk.W, pady=(0, 2))
-        self.studio_lang_combo = ttk.Combobox(col_lang, values=LANG_OPTIONS, state="readonly", font=("Pretendard", 9), width=10)
+        self.studio_lang_combo = ttk.Combobox(col_lang, values=LANG_OPTIONS, state="readonly", font=("Pretendard", 9), width=18)
         self.studio_lang_combo.set(LANG_OPTIONS[0])
         self.studio_lang_combo.pack(fill=tk.X)
 
         # 부드러운 구분선
-        tk.Frame(left_content, bg="#f1f5f9", height=1).pack(fill=tk.X, pady=(0, 16))
+        tk.Frame(left_content, bg="#f1f5f9", height=1).pack(fill=tk.X, pady=(0, 14))
 
         # -------------------------------------------------------------
         # Step 2: Content Input (강의 음성 및 슬라이드 투입 센터)
@@ -1695,67 +1688,45 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         )
         self.generate_studio_btn.pack(side=tk.RIGHT)
 
-        # 2. 상단 및 중앙: 실물 규격 A4 감성 라이브 학습노트 페이퍼 스크롤 뷰포트
-        paper_scroll_canvas = tk.Canvas(right_card, bg="#ffffff", highlightthickness=0)
-        paper_sb = ttk.Scrollbar(right_card, orient=tk.VERTICAL, command=paper_scroll_canvas.yview)
-        paper_container = tk.Frame(paper_scroll_canvas, bg="#ffffff", padx=18, pady=16)
-
-        paper_container.bind("<Configure>", lambda e: paper_scroll_canvas.configure(scrollregion=paper_scroll_canvas.bbox("all")))
-        r_canvas_win = paper_scroll_canvas.create_window((0, 0), window=paper_container, anchor="nw")
-        paper_scroll_canvas.configure(yscrollcommand=paper_sb.set)
-
-        def on_paper_canvas_configure(e):
-            paper_scroll_canvas.itemconfig(r_canvas_win, width=e.width)
-        def _on_paper_wheel(e):
-            if sys.platform == "darwin":
-                paper_scroll_canvas.yview_scroll(int(-1 * e.delta), "units")
-            else:
-                paper_scroll_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
-        right_card.bind("<Enter>", lambda e: paper_scroll_canvas.bind_all("<MouseWheel>", _on_paper_wheel))
-        right_card.bind("<Leave>", lambda e: paper_scroll_canvas.unbind_all("<MouseWheel>"))
-
-        paper_sb.pack(side=tk.RIGHT, fill=tk.Y)
-        paper_scroll_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        # 상단 리포트 헤더 배너
-        paper_banner = tk.Frame(paper_container, bg="#ffffff")
-        paper_banner.pack(fill=tk.X, pady=(0, 12))
+        # 2. 상단: 실물 규격 라이브 프리뷰 헤더 배너
+        paper_banner = tk.Frame(right_card, bg="#ffffff")
+        paper_banner.pack(fill=tk.X, padx=16, pady=(4, 6))
 
         b_left = tk.Frame(paper_banner, bg="#ffffff")
         b_left.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         tk.Label(b_left, text="📖  LIVE STUDY NOTE PREVIEW", font=("Pretendard", 8, "bold"), bg="#dcfce7", fg="#166534", padx=6, pady=2).pack(anchor=tk.W)
         self.preview_title_label = tk.Label(b_left, text="제 1강: 핵심 강의노트 및 시험 족보 프리뷰", font=("Pretendard", 12, "bold"), bg="#ffffff", fg="#0f172a")
-        self.preview_title_label.pack(anchor=tk.W, pady=(4, 0))
+        self.preview_title_label.pack(anchor=tk.W, pady=(2, 0))
         tk.Label(b_left, text="교수님 육성 강조 포인트 & 실전 모의시험 10문항 자동 색인", font=("Pretendard", 8), bg="#ffffff", fg="#64748b").pack(anchor=tk.W)
 
         tk.Label(paper_banner, text="A4 출판 규격", font=("Pretendard", 8, "bold"), bg="#f1f5f9", fg="#475569", padx=8, pady=3).pack(side=tk.RIGHT)
 
-        # 3대 핵심 구조화 프리뷰 카드 스택
-        p_stack = tk.Frame(paper_container, bg="#ffffff")
-        p_stack.pack(fill=tk.X, pady=(0, 10))
+        # 3대 핵심 구조화 프리뷰 카드 스택 (여백 최적화)
+        p_stack = tk.Frame(right_card, bg="#ffffff")
+        p_stack.pack(fill=tk.X, padx=16, pady=(0, 6))
 
         # 1. Key Concepts 카드
-        card_kc = tk.Frame(p_stack, bg="#f8fafc", highlightthickness=1, highlightbackground="#edf2f7", padx=12, pady=8)
-        card_kc.pack(fill=tk.X, pady=(0, 6))
+        card_kc = tk.Frame(p_stack, bg="#f8fafc", highlightthickness=1, highlightbackground="#edf2f7", padx=10, pady=6)
+        card_kc.pack(fill=tk.X, pady=(0, 4))
         tk.Label(card_kc, text="📌  핵심 개념 요약 (Key Concepts)", font=("Pretendard", 9, "bold"), bg="#f8fafc", fg="#1c4732").pack(anchor=tk.W)
-        tk.Label(card_kc, text="• 데이터 독립성(Data Independence): 논리적 구조 변경 시 응용 프로그램 영향 차단\n• 3단계 스키마 구조: 외부(개별 뷰) ➔ 개념(전체 논리) ➔ 내부(물리 저장)\n• DBMS 필수 특징: 자기 기술성, 동시성 제어(ACID), 무결성 제약 조건 보장", font=("Pretendard", 8), bg="#f8fafc", fg="#334155", justify=tk.LEFT).pack(anchor=tk.W, padx=(10, 0), pady=(2, 0))
+        tk.Label(card_kc, text="• 데이터 독립성: 논리적 구조 변경 시 응용 프로그램 영향 차단\n• 3단계 스키마 구조: 외부(개별 뷰) ➔ 개념(전체 논리) ➔ 내부(물리 저장)\n• DBMS 필수 특징: 자기 기술성, 동시성 제어(ACID), 무결성 보장", font=("Pretendard", 8), bg="#f8fafc", fg="#334155", justify=tk.LEFT).pack(anchor=tk.W, padx=(10, 0), pady=(1, 0))
 
         # 2. Exam Tips 카드 (따뜻한 앰버 톤)
-        card_tip = tk.Frame(p_stack, bg="#fffbeb", highlightthickness=1, highlightbackground="#fef3c7", padx=12, pady=8)
-        card_tip.pack(fill=tk.X, pady=(0, 6))
+        card_tip = tk.Frame(p_stack, bg="#fffbeb", highlightthickness=1, highlightbackground="#fef3c7", padx=10, pady=6)
+        card_tip.pack(fill=tk.X, pady=(0, 4))
         tk.Label(card_tip, text="🎯  교수님 육성 시험 팁 (Exam Predictions)", font=("Pretendard", 9, "bold"), bg="#fffbeb", fg="#92400e").pack(anchor=tk.W)
-        tk.Label(card_tip, text='• "중간고사 1번 서술형으로 외부 스키마와 개념 스키마의 차이점 출제 예정"\n• "슬라이드 8페이지의 스키마 사상(Mapping) 다이어그램 반드시 암기할 것"', font=("Pretendard", 8, "bold"), bg="#fffbeb", fg="#78350f", justify=tk.LEFT).pack(anchor=tk.W, padx=(10, 0), pady=(2, 0))
+        tk.Label(card_tip, text='• "중간고사 1번 서술형으로 외부 스키마와 개념 스키마의 차이점 출제 예정"\n• "슬라이드 8페이지의 스키마 사상(Mapping) 다이어그램 반드시 암기할 것"', font=("Pretendard", 8, "bold"), bg="#fffbeb", fg="#78350f", justify=tk.LEFT).pack(anchor=tk.W, padx=(10, 0), pady=(1, 0))
 
         # 3. Practice Questions 카드 (차분한 인디고 톤)
-        card_q = tk.Frame(p_stack, bg="#f0f4ff", highlightthickness=1, highlightbackground="#e0e7ff", padx=12, pady=8)
-        card_q.pack(fill=tk.X, pady=(0, 6))
+        card_q = tk.Frame(p_stack, bg="#f0f4ff", highlightthickness=1, highlightbackground="#e0e7ff", padx=10, pady=6)
+        card_q.pack(fill=tk.X, pady=(0, 4))
         tk.Label(card_q, text="✍️  실전 모의 문제 (Practice Questions)", font=("Pretendard", 9, "bold"), bg="#f0f4ff", fg="#3730a3").pack(anchor=tk.W)
-        tk.Label(card_q, text="• Q1. 파일 시스템과 데이터베이스 시스템의 무결성 유지 방식 차이를 서술하시오.\n• Q2. 물리적 데이터 독립성이란 내부 스키마 변경이 (        )에 영향을 미치지 않는 특성이다.", font=("Pretendard", 8), bg="#f0f4ff", fg="#312e81", justify=tk.LEFT).pack(anchor=tk.W, padx=(10, 0), pady=(2, 0))
+        tk.Label(card_q, text="• Q1. 파일 시스템과 데이터베이스 시스템의 무결성 유지 방식 차이를 서술하시오.\n• Q2. 물리적 데이터 독립성이란 내부 스키마 변경이 (        )에 영향을 미치지 않는 특성이다.", font=("Pretendard", 8), bg="#f0f4ff", fg="#312e81", justify=tk.LEFT).pack(anchor=tk.W, padx=(10, 0), pady=(1, 0))
 
-        # 실시간 진행 상황 및 미니 콘솔 영역
-        console_box = tk.Frame(paper_container, bg="#ffffff")
-        console_box.pack(fill=tk.X, pady=(2, 6))
+        # 실시간 진행 상황 및 터미널 콘솔 로그 영역 (하단 여백을 시원하게 채움)
+        console_box = tk.Frame(right_card, bg="#ffffff")
+        console_box.pack(fill=tk.BOTH, expand=True, padx=16, pady=(4, 12))
 
         c_status_row = tk.Frame(console_box, bg="#ffffff")
         c_status_row.pack(fill=tk.X, pady=(0, 4))
@@ -1769,9 +1740,9 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         self.studio_eta_var = tk.StringVar(value="")
         tk.Label(c_status_row, textvariable=self.studio_eta_var, font=("Pretendard", 8, "bold"), bg="#ffffff", fg="#1c4732").pack(side=tk.RIGHT)
 
-        # 터미널 콘솔 로그 창
+        # 터미널 콘솔 로그 창 (fill=tk.BOTH, expand=True로 하단 빈 공간 완벽 활용)
         txt_wrap = tk.Frame(console_box, bg="#ffffff")
-        txt_wrap.pack(fill=tk.X)
+        txt_wrap.pack(fill=tk.BOTH, expand=True)
 
         term_font = ("Menlo", 9) if sys.platform == "darwin" else ("Consolas", 9)
         self.studio_log_text = tk.Text(
@@ -1783,13 +1754,12 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
             insertbackground="#ffffff",
             relief=tk.FLAT,
             padx=10,
-            pady=6,
-            height=6
+            pady=8
         )
         sb = ttk.Scrollbar(txt_wrap, orient=tk.VERTICAL, command=self.studio_log_text.yview)
         self.studio_log_text.config(yscrollcommand=sb.set)
 
-        self.studio_log_text.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.studio_log_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         sb.pack(side=tk.RIGHT, fill=tk.Y)
         self.add_context_menu(self.studio_log_text)
 
@@ -2212,28 +2182,7 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
     # 탭 2: 📝 실전 모의시험 & 공부 기간 로드맵 (사용자 선택형)
     # =========================================================================
     def build_exam_tab(self):
-        # ── 전체 탭 스크롤 컨테이너 구성 ──────────────────────────────
-        exam_canvas = tk.Canvas(self.tab_exam, bg="#f5f6f8", highlightthickness=0)
-        exam_sb = ttk.Scrollbar(self.tab_exam, orient=tk.VERTICAL, command=exam_canvas.yview)
-        scroll_content = ttk.Frame(exam_canvas, padding="8")
-        scroll_content.bind("<Configure>", lambda e: exam_canvas.configure(scrollregion=exam_canvas.bbox("all")))
-        c_win = exam_canvas.create_window((0, 0), window=scroll_content, anchor="nw")
-        exam_canvas.configure(yscrollcommand=exam_sb.set)
-        exam_canvas.bind("<Configure>", lambda e: exam_canvas.itemconfig(c_win, width=e.width))
-
-        def _on_exam_wheel(e):
-            if sys.platform == "darwin":
-                exam_canvas.yview_scroll(int(-1 * e.delta), "units")
-            else:
-                exam_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
-        scroll_content.bind("<Enter>", lambda e: exam_canvas.bind_all("<MouseWheel>", _on_exam_wheel))
-        scroll_content.bind("<Leave>", lambda e: exam_canvas.unbind_all("<MouseWheel>"))
-
-        exam_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        exam_sb.pack(side=tk.RIGHT, fill=tk.Y)
-        # ─────────────────────────────────────────────────────────────
-
-        frame = ttk.LabelFrame(scroll_content, text=" 📝 실전 모의시험 생성 & D-Day 맞춤 로드맵 ", padding="12")
+        frame = ttk.LabelFrame(self.tab_exam, text=" 📝 실전 모의시험 생성 & D-Day 맞춤 로드맵 ", padding="12")
         frame.pack(fill=tk.BOTH, expand=True)
 
         form = ttk.Frame(frame)
@@ -2581,6 +2530,58 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
             self.exam_log_text.delete("1.0", tk.END)
             self.exam_log_text.config(state=tk.DISABLED)
 
+    @staticmethod
+    def normalize_study_hours(text: str) -> str:
+        """사용자가 입력한 일일 공부 시간('1.5시간', '1시간 30분', '90분', '1.5' 등)을 지능적으로 표준화"""
+        raw = str(text).strip()
+        if not raw:
+            return "3시간"
+
+        # 1. "1시간 30분" or "1시간 30" or "1시간30분"
+        m = re.match(r"^(\d+(?:\.\d+)?)\s*시간\s*(\d+(?:\.\d+)?)\s*분?$", raw)
+        if m:
+            h = float(m.group(1))
+            m_val = float(m.group(2))
+            total_h = h + m_val / 60.0
+            if total_h.is_integer():
+                return f"{int(total_h)}시간"
+            return f"{total_h:.1f}시간 ({int(h)}시간 {int(m_val)}분)"
+
+        # 2. "90분", "45분" 등 분 단위 입력
+        m = re.match(r"^(\d+(?:\.\d+)?)\s*분$", raw)
+        if m:
+            m_val = float(m.group(1))
+            h = int(m_val // 60)
+            rem_m = int(m_val % 60)
+            total_h = m_val / 60.0
+            if h > 0 and rem_m > 0:
+                return f"{total_h:.1f}시간 ({h}시간 {rem_m}분)"
+            elif h > 0:
+                return f"{h}시간 ({int(m_val)}분)"
+            return f"{int(m_val)}분 ({total_h:.1f}시간)"
+
+        # 3. "1.5시간" or "2시간"
+        m = re.match(r"^(\d+(?:\.\d+)?)\s*시간$", raw)
+        if m:
+            val = float(m.group(1))
+            if val.is_integer():
+                return f"{int(val)}시간"
+            h = int(val)
+            rem_m = int(round((val - h) * 60))
+            return f"{val}시간 ({h}시간 {rem_m}분)"
+
+        # 4. 순수 숫자만 입력한 경우 ("1.5", "2", "0.5" -> 시간으로 간주)
+        m = re.match(r"^(\d+(?:\.\d+)?)$", raw)
+        if m:
+            val = float(m.group(1))
+            if val.is_integer():
+                return f"{int(val)}시간"
+            h = int(val)
+            rem_m = int(round((val - h) * 60))
+            return f"{val}시간 ({h}시간 {rem_m}분)"
+
+        return raw
+
     def generate_period_roadmap_action(self):
         if getattr(self, "exam_is_running", False):
             messagebox.showwarning("작업 진행 중", "이미 모의시험 또는 로드맵 생성이 진행 중입니다. 완료 후 다시 시도해주세요.")
@@ -2595,7 +2596,9 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         d_day = PERIOD_TO_DAYS.get(period_label, 7)
         exam_type = self.exam_type_combo.get()
         scope = self.exam_scope_var.get().strip()
-        daily_hours = self.exam_hours_var.get().strip()
+        daily_hours_raw = self.exam_hours_var.get().strip()
+        daily_hours = self.normalize_study_hours(daily_hours_raw)
+        self.exam_hours_var.set(daily_hours)
 
         self.exam_is_running = True
         self.exam_start_time = time.time()
@@ -3749,12 +3752,18 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
 
         cdata = self.get_course_data(cname)
         tot_w = cdata.get("total_weeks", 16) if cdata else 16
+        days = cdata.get("days", []) if cdata else []
+        if not days:
+            days = ["월"]
 
         if not course_sessions:
             course_sessions = []
             for w in range(1, tot_w + 1):
-                course_sessions.append({"week": w, "session_number": 1, "date": f"Week {w}-1", "day_name": ""})
-                course_sessions.append({"week": w, "session_number": 2, "date": f"Week {w}-2", "day_name": ""})
+                if len(days) == 1:
+                    course_sessions.append({"week": w, "session_number": 1, "date": f"{w}주차", "day_name": days[0]})
+                else:
+                    for s_idx, d_name in enumerate(days, 1):
+                        course_sessions.append({"week": w, "session_number": s_idx, "date": f"{w}주차-{s_idx}", "day_name": d_name})
 
         for item in self.dash_tree.get_children():
             self.dash_tree.delete(item)
@@ -3861,7 +3870,7 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
 
         self.dash_kpi_total.config(text=f"{total_sessions}회 정규수업")
         self.dash_kpi_audio.config(text=f"{audio_count} / {total_sessions}회 ({audio_pct}%)")
-        self.dash_kpi_notes.config(text=f"{notes_count}개 주차 완료 / 16주")
+        self.dash_kpi_notes.config(text=f"{notes_count}개 주차 완료 / {tot_w}주")
         self.dash_kpi_exam.config(text=f"총 {exam_total_count}건 제작 완료")
 
     def dash_open_note_action(self):
@@ -4256,11 +4265,7 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         config_manager.save_settings(self.settings)
 
         # 배지 갱신
-        has_key = len(self.settings["gemini_api_key"]) >= 10
-        self.api_badge_label.config(
-            text=" 🟢 Gemini API 연결됨 " if has_key else " 🔴 API Key 등록 필요 ",
-            fg="#4ade80" if has_key else "#f87171"
-        )
+        self.update_api_status_badge()
         self.sem_badge_label.config(text=f" 📅 {self.settings['semester']} ")
         messagebox.showinfo("저장 완료", "설정이 성공적으로 저장되었습니다.")
 
