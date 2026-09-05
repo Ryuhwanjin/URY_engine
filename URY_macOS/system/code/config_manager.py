@@ -25,12 +25,17 @@ except Exception:
 
 def get_root_workspace():
     if os.environ.get("WORKSPACE_DIR") and os.path.exists(os.environ["WORKSPACE_DIR"]):
-        return os.path.abspath(os.environ["WORKSPACE_DIR"])
+        ws = os.path.abspath(os.environ["WORKSPACE_DIR"])
+        if ws.rstrip("/") not in ("/Applications", "/System/Applications", "/Library") and not ws.startswith("/Volumes/") and os.access(ws, os.W_OK):
+            return ws
+        user_ws = os.path.expanduser("~/Documents/URY_Engine")
+        os.makedirs(user_ws, exist_ok=True)
+        return user_ws
     if getattr(sys, "frozen", False):
         # Inside macOS .app bundle: .../URY Engine.app/Contents/MacOS/URY Engine
         app_dir = os.path.dirname(os.path.abspath(sys.executable))
         parent_dir = os.path.abspath(os.path.join(app_dir, "../../.."))
-        if parent_dir.rstrip("/") in ("/Applications", "/System/Applications", "/Library") or not os.access(parent_dir, os.W_OK):
+        if parent_dir.rstrip("/") in ("/Applications", "/System/Applications", "/Library") or parent_dir.startswith("/Volumes/") or not os.access(parent_dir, os.W_OK):
             user_ws = os.path.expanduser("~/Documents/URY_Engine")
             os.makedirs(user_ws, exist_ok=True)
             return user_ws
@@ -219,27 +224,50 @@ def ensure_all_course_folders(data):
 
 def save_settings(data):
     """settings.json 저장 및 .env, 시간표.json, 과목별 폴더트리 동기화"""
-    if os.path.dirname(SETTINGS_PATH):
-        os.makedirs(os.path.dirname(SETTINGS_PATH), exist_ok=True)
-    with open(SETTINGS_PATH, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    global SETTINGS_PATH, ENV_PATH, TIMETABLE_PATH, WORKSPACE_DIR
+    target_path = SETTINGS_PATH
+    try:
+        if os.path.dirname(target_path):
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)
+        with open(target_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except (PermissionError, OSError):
+        # Read-only location (e.g. /Applications or mounted DMG): fallback to ~/Documents/URY_Engine
+        user_ws = os.path.expanduser("~/Documents/URY_Engine")
+        os.makedirs(user_ws, exist_ok=True)
+        WORKSPACE_DIR = user_ws
+        target_path = os.path.join(user_ws, "settings.json")
+        SETTINGS_PATH = target_path
+        ENV_PATH = os.path.join(user_ws, ".env")
+        TIMETABLE_PATH = os.path.join(user_ws, "시간표.json")
+        with open(target_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
 
     # API Key가 있으면 .env 파일에도 반영
     api_key = data.get("gemini_api_key", "").strip()
     if api_key:
         lines = []
         if os.path.exists(ENV_PATH):
-            with open(ENV_PATH, "r", encoding="utf-8") as f:
-                for line in f:
-                    if not line.strip().startswith("GEMINI_API_KEY="):
-                        lines.append(line)
+            try:
+                with open(ENV_PATH, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if not line.strip().startswith("GEMINI_API_KEY="):
+                            lines.append(line)
+            except Exception:
+                pass
         lines.append(f"GEMINI_API_KEY={api_key}\n")
-        with open(ENV_PATH, "w", encoding="utf-8") as f:
-            f.writelines(lines)
+        try:
+            with open(ENV_PATH, "w", encoding="utf-8") as f:
+                f.writelines(lines)
+        except Exception:
+            pass
 
     # 시간표.json 및 폴더트리 자동 동기화
-    sync_timetable_from_settings(data)
-    ensure_all_course_folders(data)
+    try:
+        sync_timetable_from_settings(data)
+        ensure_all_course_folders(data)
+    except Exception:
+        pass
     return True
 
 import sys

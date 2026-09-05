@@ -12,21 +12,48 @@ if getattr(sys, "frozen", False):
     # Standalone macOS .app bundle
     app_dir = os.path.dirname(os.path.abspath(sys.executable))
     ROOT_DIR = os.path.abspath(os.path.join(app_dir, "../../.."))
-    os.chdir(ROOT_DIR)
-    os.environ["WORKSPACE_DIR"] = ROOT_DIR
 
-    # If system/code/settings_gui.py exists, load it dynamically to support live updates
-    override_gui = os.path.join(ROOT_DIR, "system", "code", "settings_gui.py")
-    if os.path.isfile(override_gui):
-        try:
-            sys.path.insert(0, os.path.join(ROOT_DIR, "system", "code"))
-            spec = importlib.util.spec_from_file_location("main_settings_gui_mod", override_gui)
-            mod = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(mod)
-        except Exception:
-            import settings_gui
-            mod = settings_gui
+    # Determine writable workspace directory
+    if ROOT_DIR.rstrip("/") in ("/Applications", "/System/Applications", "/Library") or ROOT_DIR.startswith("/Volumes/") or not os.access(ROOT_DIR, os.W_OK):
+        user_ws = os.path.expanduser("~/Documents/URY_Engine")
+        os.makedirs(user_ws, exist_ok=True)
+        os.makedirs(os.path.join(user_ws, "00_녹음_수신함"), exist_ok=True)
+        os.makedirs(os.path.join(user_ws, "system"), exist_ok=True)
+        os.chdir(user_ws)
+        os.environ["WORKSPACE_DIR"] = user_ws
     else:
+        os.chdir(ROOT_DIR)
+        os.environ["WORKSPACE_DIR"] = ROOT_DIR
+
+    # Load latest settings_gui.py dynamically
+    # Priority:
+    # 1. Inside bundle: Contents/Resources/code/settings_gui.py
+    # 2. Inside bundle: Contents/Frameworks/code/settings_gui.py
+    # 3. External dev dir: system/code/settings_gui.py
+    # 4. External dev dir: code/settings_gui.py
+    candidates = [
+        os.path.abspath(os.path.join(app_dir, "..", "Resources", "code", "settings_gui.py")),
+        os.path.abspath(os.path.join(app_dir, "..", "Frameworks", "code", "settings_gui.py")),
+        os.path.abspath(os.path.join(ROOT_DIR, "system", "code", "settings_gui.py")),
+        os.path.abspath(os.path.join(ROOT_DIR, "code", "settings_gui.py")),
+    ]
+
+    mod = None
+    for cand in candidates:
+        if os.path.isfile(cand):
+            try:
+                cdir = os.path.dirname(cand)
+                if cdir not in sys.path:
+                    sys.path.insert(0, cdir)
+                spec = importlib.util.spec_from_file_location("main_settings_gui_mod", cand)
+                m = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(m)
+                mod = m
+                break
+            except Exception as e:
+                print(f"Warning: Failed to load {cand}: {e}")
+
+    if not mod:
         import settings_gui
         mod = settings_gui
 else:

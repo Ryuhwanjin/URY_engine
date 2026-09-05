@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-🎓 대학 전공 학업 관리 시스템 — URY Engine v5.4 (AI Academic Studio)
+🎓 대학 전공 학업 관리 시스템 — URY Engine v0.2.1 (AI Academic Studio)
 - 미니멀 & 직관적인 모던 UI/UX
 - 3단계 사용자 주도형 맞춤 학습노트 생성 스튜디오 (음성 부재 대비 슬라이드 전용 모드 지원)
 - 선택적 실전 모의시험 & D-Day 맞춤 학습 로드맵 (주차별 자료 다중 선택 지원)
