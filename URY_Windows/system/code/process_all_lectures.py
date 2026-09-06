@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-모든 과목의 음성 녹음을 감지하여 Gemini AI로 주차별 학습노트 및 전체 통합본을 .markdown_cache에 자동 적재하는 스크립트 v0.7.6
+모든 과목의 음성 녹음을 감지하여 Gemini AI로 주차별 학습노트 및 전체 통합본을 .markdown_cache에 자동 적재하는 스크립트 v0.7.7
 - .m4a 및 .mp3 (.wav, .aac) 파일 완전 지원
 - 주차별 개별 마크다운([과목]_[N]주차_강의노트.md) + 전체 누적 통합본([과목]_통합강의노트.md) 동시 생성
 - 마크다운 파일은 .markdown_cache/ 격리 보관소에 저장하여 사용자 폴더에는 오직 PDF만 노출
@@ -659,22 +659,11 @@ def save_lecture_note_files(new_note_content: str, date_str: str, week_num: int,
     user_week_dir = os.path.join(user_notes_dir, f"{week_num}주차")
     user_comb_dir = os.path.join(user_notes_dir, "통합")
     cache_c = os.path.join(CACHE_DIR, config["folder_name"])
-    cache_img = os.path.join(cache_c, "images")
 
     os.makedirs(user_notes_dir, exist_ok=True)
     os.makedirs(user_week_dir, exist_ok=True)
     os.makedirs(user_comb_dir, exist_ok=True)
     os.makedirs(cache_c, exist_ok=True)
-    os.makedirs(cache_img, exist_ok=True)
-
-    # 주차별 폴더 내부 이미지 심볼릭 링크/복사
-    images_dst = os.path.join(user_week_dir, "images")
-    images_src = cache_img
-    if os.path.exists(images_src) and not os.path.exists(images_dst):
-        try:
-            os.symlink(images_src, images_dst)
-        except Exception:
-            pass
 
     if not is_english:
         c_name = f"{config['cname_prefix']}_통합강의노트.md"
@@ -1287,15 +1276,7 @@ The following content was ALREADY synthesized in the earlier session of Week {we
         last_content = note_ko
         log("  ✅ 한국어 강의노트 적재 완료 (한/영 1:1 완벽 대칭 & 내용 누락 방지 검증 통과)", step=2, eta=10)
 
-    # 4. 슬라이드 도표 자동 추출 & 마크다운 임베드
-    check_cancel()
-    try:
-        import dynamic_slide_integrator
-        log("\n[Step 3/4] 📸 슬라이드 도표 자동 추출 및 마크다운 임베드 수행 중...", step=3, eta=8)
-        dynamic_slide_integrator.process_course_slides_dynamic(course_cfg, slide_paths=valid_slides)
-        log("  ✅ 슬라이드 고화질 도표(180 DPI) 추출 및 이미지 링크 결합 완료", step=3, eta=5)
-    except Exception as e:
-        log(f"  ⚠️ 슬라이드 도표 임베드 알림: {e}", step=3)
+
 
     # 5. 출판용 PDF 렌더링
     check_cancel()

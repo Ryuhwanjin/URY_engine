@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-강의노트 Markdown을 고품질 출판용 PDF로 일괄 변환하는 스크립트 v0.7.6
+강의노트 Markdown을 고품질 출판용 PDF로 일괄 변환하는 스크립트 v0.7.7
 - .markdown_cache/ 격리 보관소의 마크다운을 읽어와 사용자 폴더(강의노트/)에 PDF만 출력
 - 각 주차별 개별 학습노트 PDF + 전체 누적 통합본 PDF를 동시 발행
 - 각주([^1]) 100% 완전 소멸 3중 방어막 및 문장/표 잘림 방지 (page-break-inside: avoid)
