@@ -379,25 +379,22 @@ def generate_lecture_note(course_info, file_uri, target_date, week_num, is_engli
 
 이 강의 녹음을 처음부터 끝까지 정밀하게 청취하고, 학생이 복습 및 시험 대비에 완벽히 활용할 수 있도록 **매우 상세하고 충실한 강의노트**를 작성해 주세요.
 
-[작성 가이드라인 - 출처 구분 및 음성 타임스탬프 네비게이터 필수]
-* 각 대주제 및 소주제, 주요 항목마다 반드시 아래의 [출처 태그]를 명시할 것:
-  - `[🎙️ 음성 (MM:SS)]` : 교수님이 수업 중 실제 육성으로 언급한 내용 (공지사항, 출석번호, 시험/과제 팁, 질문과 답변, 칠판 판서, 일상 비유 등). 반드시 해당 발언이 시작되는 음성 녹음 구간의 타임스탬프를 분:초(MM:SS) 형태로 함께 표기할 것! (예: `[🎙️ 음성 (14:25)] 출석체크 번호 7421 안내`, `[🎙️ 음성 (45:10)] 중간고사 단답형 출제 힌트`)
-  - `[📖 교재·슬라이드]` : 주교재 본문, 공식 강의 슬라이드(Slide 번호 표기 가능 시 표기), 실라버스 정의
-  - `[💡 통합 (MM:SS)]` : 교재 이론을 바탕으로 교수님의 육성 해설과 실전 사례가 결합된 핵심 내용 (음성 발언 시간 병기)
+[작성 가이드라인 - 100% 깔끔한 학술 서술체 (대괄호/슬라이드태그/음성태그 절대 생성 금지)]
+1. 본문 문장 사이에 `[Slide 1]`, `[Slide 2~3]`, `[🎙️ 음성 (14:25)]`, `[📖 교재]` 같은 대괄호 태그나 슬라이드 번호 태그를 절대로 생성하지 마십시오.
+2. 가독성을 해치는 어떠한 대괄호 태그나 범례도 넣지 말고, 100% 매끄럽고 정돈된 학술 강의노트 서술체로 작성하십시오.
+3. 잡소리(교수님의 사적인 잡담, 농담, 신변잡기, 수업 흐름과 무관한 딴소리)는 철저하게 100% 배제하고 순수 정규 학업 이론 및 핵심 개념에 집중하십시오.
+4. 마크다운 각주 문법(`[^1]`, `[^2]`)을 절대로 생성하지 마십시오.
+5. 중요한 전문 용어는 반드시 `한국어 (English)`를 병기하십시오.
+6. 표(Markdown Table), 비교 다이어그램, 수식(LaTeX/KaTeX)을 적극 활용하십시오.
 
 1. 형식:
 ## {week_num}주차 ({date_str} {weekday_kr}) : [수업의 구체적인 핵심 주제/챕터명]
 
-### 📌 1. 수업 공지사항 및 운영 규칙 [🎙️ 음성 (MM:SS)]
-- 출석 번호, 퀴즈 관련 언급, 과제 마감일, 실습 및 교재 안내 등 교수님이 수업 중 언급한 모든 공지사항을 타임스탬프와 함께 빠짐없이 정리.
+### 📌 1. 수업 개요 및 주요 공지사항
+- 출석, 퀴즈, 과제 마감일, 실습 및 교재 안내 등 수업 중 언급된 공지사항을 체계적으로 정리.
 
-### 💡 2. 핵심 이론 및 상세 개념 분석 [출처 태그 명시]
-- 잡소리(교수님의 사적인 잡담, 농담, 신변잡기, 수업 흐름과 무관한 딴소리)는 철저하게 100% 배제할 것.
-- 오직 정규 학업과 시험에 직결되는 순수 강의 내용, 학문적 이론, 개념 정의, 논리적 전개, 실전 예시만을 추출하여 '최대한 상세하고 깊이 있게' 설명할 것.
-- 마크다운 각주 문법(`[^1]`, `[^2]`, `[^fn]`)을 절대로 생성하지 말 것! 모든 보충 설명은 본문 괄호 `(...)` 내에 작성할 것.
-- 슬라이드와 강의의 모든 챕터, 불렛포인트, 예시, 수식을 빠짐없이 체계적인 번호와 소제목으로 상세히 서술.
-- 중요한 전문 용어는 반드시 `한국어 (English)`를 병기할 것.
-- 표(Markdown Table), 비교 다이어그램, 수식(LaTeX/KaTeX)을 적극 활용할 것.
+### 💡 2. 핵심 이론 및 상세 개념 분석
+- 모든 챕터, 개념 정의, 논리적 전개, 실전 예시를 빠짐없이 상세히 설명.
 
 ### 🎯 3. 핵심 키워드 정리 & 단원 종합 요약
 #### 3.1 🔑 필수 핵심 키워드 사전
@@ -576,13 +573,9 @@ def append_to_single_note_file(note_path, new_note_content, date_str, week_num, 
         c_prof = config.get("prof", "담당 교수님")
         if not is_english:
             title_type = "통합 강의노트" if is_combined else f"{week_num}주차 강의노트"
-            header = f"# 📘 [{c_name}] {title_type} (2026-2학기)\n\n"
+            header = f"# 📘 [{c_name}] {title_type}\n\n"
             header += f"- **과목명**: {c_name} ({c_en})\n"
             header += f"- **담당 교수**: {c_prof}\n\n---\n\n"
-            header += "> 🏷️ **출처 구분 범례 (Source Legend)**:\n"
-            header += f"> - `[🎙️ 음성]` : 교수님 실제 강의 육성 (공지사항, 출석 번호, 퀴즈/시험 출제 팁, 질문과 답변, 칠판 판서, 현장 비유 등){audio_ref}\n"
-            header += f"> - `[📖 교재·슬라이드]` : 주교재(Textbook), 강의계획서(Syllabus), 공식 배포 슬라이드에 수록된 이론·정의·수식{slide_ref}\n"
-            header += "> - `[💡 통합]` : 교재의 공식 이론을 바탕으로 교수님의 육성 해설과 실전 사례가 결합된 핵심 내용\n\n---\n\n"
             if is_combined:
                 header += "## 📑 목차 (Table of Contents)\n- *(새로운 수업 내용이 이곳 아래로 순차적으로 적재됩니다)*\n\n---\n\n"
         else:
@@ -590,10 +583,6 @@ def append_to_single_note_file(note_path, new_note_content, date_str, week_num, 
             header = f"# 📘 [{c_en}] {title_type}\n\n"
             header += f"- **Course**: {c_en}\n"
             header += f"- **Instructor**: {c_prof}\n\n---\n\n"
-            header += "> 🏷️ **Source Legend**:\n"
-            header += f"> - `[🎙️ Spoken]` : In-class verbal lecture notes, attendance codes, exam tips, Q&A.{audio_ref}\n"
-            header += f"> - `[📖 Slides/Textbook]` : Official textbook definitions, syllabus, and slides.{slide_ref}\n"
-            header += "> - `[💡 Integrated]` : Synthesized concepts connecting theory and business cases.\n\n---\n\n"
             if is_combined:
                 header += "## 📑 Table of Contents\n- *(Subsequent weekly lecture notes will be appended chronologically below)*\n\n---\n\n"
         content = header

@@ -198,10 +198,8 @@ def parse_slide_pages_from_line(line):
     return sorted(list(set(pages)))
 
 def process_course_slides_dynamic(course_info, slide_paths=None):
-    cname = course_info.get("course_name") or course_info.get("name") or course_info.get("folder_name")
-    folder_name = course_info.get("folder_name") or cname
-    if not cname:
-        return
+    """슬라이드 이미지 자동 추출 100% 비활성화 (100% 순수 텍스트 강의노트 모드)"""
+    return
 
     course_dir = config_manager.get_course_dir(folder_name)
     notes_dir = os.path.join(course_dir, "강의노트")
