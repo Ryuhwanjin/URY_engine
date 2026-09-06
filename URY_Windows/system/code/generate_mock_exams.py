@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-과목별 시험 출제 경향을 100% 반영한 AI 모의고사 & 퀴즈 자동 생성 스크립트 v0.7.1 (강의계획서 자동 제외 적용)
+과목별 시험 출제 경향을 100% 반영한 AI 모의고사 & 퀴즈 자동 생성 스크립트 v0.7.2 (강의계획서 자동 제외 적용)
 - DB 기초 및 응용: 100% 영어 4지선다 객관식 10문항 + 정답 및 상세 오답 해설
 - 마케팅원론: Canvas TrustLock 스타일 영문 케이스 응용 객관식 10문항 + 슬라이드/교재 근거 해설
 - 빅데이터수학: 화요일 5분 퀴즈 대비 손풀이 유도 과정(Step-by-step) 필수 연습 5문항 + 모범 답안
@@ -277,8 +277,8 @@ def compile_pdf(md_path, pdf_path, title):
     }
     body {
         font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
-        font-size: 10pt;
-        line-height: 1.7;
+        font-size: 10.5pt !important;
+        line-height: 1.6 !important;
         color: #1e293b;
         word-break: keep-all;
         overflow-wrap: break-word;
@@ -298,7 +298,7 @@ def compile_pdf(md_path, pdf_path, title):
         font-weight: 600;
     }
     h1 {
-        font-size: 18pt;
+        font-size: 20pt !important;
         font-weight: 700;
         color: #0f172a;
         text-align: center;
@@ -322,6 +322,7 @@ def compile_pdf(md_path, pdf_path, title):
         break-inside: avoid;
     }
     h2, h3 {
+        font-size: 14.5pt !important;
         color: #1e3a8a;
         page-break-after: avoid;
         break-after: avoid-page;
@@ -334,6 +335,8 @@ def compile_pdf(md_path, pdf_path, title):
     }
     /* 문장 및 문제/선지 중간 잘림 방지 */
     p, li, blockquote {
+        font-size: 10.5pt !important;
+        line-height: 1.6 !important;
         page-break-inside: avoid;
         break-inside: avoid;
         orphans: 3;
@@ -347,17 +350,18 @@ def compile_pdf(md_path, pdf_path, title):
         break-inside: avoid !important;
     }
     table {
-        width: 100%;
-        border-collapse: collapse;
+        width: 100% !important;
+        border-collapse: collapse !important;
         margin: 16px auto;
     }
     thead {
-        display: table-header-group;
+        display: table-header-group !important;
     }
     th, td {
-        border: 1px solid #cbd5e1;
-        padding: 8px 10px;
-        font-size: 9.5pt;
+        border: 1px solid #cbd5e1 !important;
+        padding: 8px 10px !important;
+        font-size: 9.8pt !important;
+        line-height: 1.5 !important;
     }
     th {
         background-color: #f1f5f9;

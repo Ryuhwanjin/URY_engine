@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-🎓 URY Engine v0.7.1 - 프로그램 및 관련 설치 자원 클린 완전 삭제(Uninstaller) GUI
+🎓 URY Engine v0.7.2 - 프로그램 및 관련 설치 자원 클린 완전 삭제(Uninstaller) GUI
 """
 import os
 import sys
@@ -25,7 +25,7 @@ class UninstallerGUI:
                 pass
 
         self.root = tk.Tk()
-        self.root.title("URY Engine v0.7.1 — 프로그램 클린 완전 삭제 (Uninstaller)")
+        self.root.title("URY Engine v0.7.2 — 프로그램 클린 완전 삭제 (Uninstaller)")
         self.root.geometry("540x360")
         self.root.resizable(False, False)
         self.root.configure(bg="#1e1e2e")

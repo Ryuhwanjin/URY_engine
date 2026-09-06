@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 =============================================================================
-🎓 URY Engine — Ultimate Result for You Master Pipeline (v0.7.1)
+🎓 URY Engine — Ultimate Result for You Master Pipeline (v0.7.2)
 =============================================================================
 0단계: generate_roadmap.py          -> 목표 학점(A+) 맞춤형 16주 학습 로드맵 마크다운 생성
 1단계: auto_organize.py             -> 수신함 새 녹음 파일만 시간표 기반 자동 분류 및 이동
@@ -113,7 +113,7 @@ def main():
         target_slide_files = args.slide_files
 
     print("=" * 65)
-    print(f"🎓 URY Engine — Ultimate Result for You Engine v0.7.1")
+    print(f"🎓 URY Engine — Ultimate Result for You Engine v0.7.2")
     print(f"⏰ 실행 시각: {today_str}")
     print("=" * 65)
 

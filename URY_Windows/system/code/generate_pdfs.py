@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-강의노트 Markdown을 고품질 출판용 PDF로 일괄 변환하는 스크립트 v0.7.1
+강의노트 Markdown을 고품질 출판용 PDF로 일괄 변환하는 스크립트 v0.7.2
 - .markdown_cache/ 격리 보관소의 마크다운을 읽어와 사용자 폴더(강의노트/)에 PDF만 출력
 - 각 주차별 개별 학습노트 PDF + 전체 누적 통합본 PDF를 동시 발행
 - 각주([^1]) 100% 완전 소멸 3중 방어막 및 문장/표 잘림 방지 (page-break-inside: avoid)
@@ -188,72 +188,74 @@ html, body {
 
 body {
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
-    font-size: 9.2pt;
-    line-height: 1.5;
+    font-size: 10.5pt !important;
+    line-height: 1.6 !important;
     color: #1e293b;
     word-break: keep-all;
     overflow-wrap: break-word;
 }
 
 h1 {
-    font-size: 18pt;
+    font-size: 20pt !important;
     color: #0f172a;
-    border-bottom: 2px solid #2563eb;
-    padding-bottom: 4px;
+    border-bottom: 2.5px solid #2563eb;
+    padding-bottom: 6px;
     margin-top: 0;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     page-break-after: avoid;
     break-after: avoid;
 }
 
 h2 {
-    font-size: 13pt;
+    font-size: 14.5pt !important;
     color: #1e3a8a;
     border-bottom: 1px solid #cbd5e1;
-    padding-bottom: 3px;
-    margin-top: 14px;
-    margin-bottom: 6px;
+    padding-bottom: 4px;
+    margin-top: 16px;
+    margin-bottom: 8px;
     page-break-after: avoid;
     break-after: avoid;
 }
 
 h3 {
-    font-size: 10.5pt;
+    font-size: 12pt !important;
     color: #2563eb;
+    margin-top: 12px;
+    margin-bottom: 5px;
+    page-break-after: avoid;
+    break-after: avoid;
+}
+
+h4 {
+    font-size: 10.8pt !important;
+    color: #0369a1;
     margin-top: 10px;
     margin-bottom: 4px;
     page-break-after: avoid;
     break-after: avoid;
 }
 
-h4 {
-    font-size: 9.5pt;
-    color: #0369a1;
-    margin-top: 8px;
-    margin-bottom: 3px;
-    page-break-after: avoid;
-    break-after: avoid;
-}
-
 /* 🌟 하단 거대 여백 방지 (문장/단락 자연스러운 흐름) */
 p {
+    font-size: 10.5pt !important;
     margin-top: 4px;
     margin-bottom: 6px;
-    line-height: 1.5;
+    line-height: 1.6 !important;
     break-inside: auto;
     orphans: 1;
     widows: 1;
 }
 
 ul, ol {
-    margin-top: 3px;
-    margin-bottom: 6px;
-    padding-left: 18px;
+    margin-top: 4px;
+    margin-bottom: 8px;
+    padding-left: 20px;
 }
 
 li {
-    margin-bottom: 2px;
-    line-height: 1.5;
+    font-size: 10.5pt !important;
+    margin-bottom: 3px;
+    line-height: 1.6 !important;
     break-inside: auto;
     orphans: 1;
     widows: 1;
@@ -264,11 +266,12 @@ table {
     width: 100% !important;
     max-width: 100% !important;
     border-collapse: collapse !important;
-    margin: 12px 0 !important;
-    font-size: 8.5pt !important;
+    margin: 14px 0 !important;
+    font-size: 9.8pt !important;
     table-layout: auto !important;
     word-wrap: break-word !important;
     overflow-wrap: break-word !important;
+    page-break-inside: auto !important;
 }
 
 thead {
@@ -282,9 +285,11 @@ tr {
 
 th, td {
     border: 1px solid #cbd5e1 !important;
-    padding: 6px 9px !important;
+    padding: 7px 10px !important;
     text-align: left !important;
     vertical-align: top !important;
+    font-size: 9.8pt !important;
+    line-height: 1.5 !important;
     word-break: keep-all !important;
     overflow-wrap: break-word !important;
 }
@@ -300,12 +305,13 @@ tr:nth-child(even) {
 }
 
 blockquote {
-    margin: 10px 0 !important;
-    padding: 8px 14px !important;
+    margin: 12px 0 !important;
+    padding: 10px 16px !important;
     background-color: #f8fafc !important;
-    border-left: 3.5px solid #3b82f6 !important;
+    border-left: 4px solid #3b82f6 !important;
     color: #334155 !important;
-    font-size: 9pt !important;
+    font-size: 9.8pt !important;
+    line-height: 1.55 !important;
     border-radius: 0 4px 4px 0 !important;
     break-inside: auto !important;
 }
@@ -315,8 +321,8 @@ pre {
     color: #f8fafc !important;
     padding: 10px 14px !important;
     border-radius: 6px !important;
-    font-size: 8.5pt !important;
-    line-height: 1.45 !important;
+    font-size: 9.5pt !important;
+    line-height: 1.5 !important;
     white-space: pre-wrap !important;
     word-break: break-all !important;
     max-width: 100% !important;
