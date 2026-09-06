@@ -1,9 +1,9 @@
 @echo off
-title URY Engine v0.6.4 - Batch Pipeline Runner
+title URY Engine v0.6.5 - Batch Pipeline Runner
 cd /d "%~dp0"
 
 echo =========================================================
-echo  URY Engine v0.6.4 Batch Pipeline Runner
+echo  URY Engine v0.6.5 Batch Pipeline Runner
 echo =========================================================
 echo.
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-🎓 URY Engine v0.6.4 — macOS & Windows 듀얼 동시 배포 자동화 통합 빌더 (build_release_all.py)
-- macOS 패키지 (URY_macOS -> URY_Engine_v0.6.4_macOS.zip & .dmg)
-- Windows 패키지 (URY_Windows -> URY_Engine_v0.6.4_Windows.zip)
+🎓 URY Engine v0.6.5 — macOS & Windows 듀얼 동시 배포 자동화 통합 빌더 (build_release_all.py)
+- macOS 패키지 (URY_macOS -> URY_Engine_v0.6.5_macOS.zip & .dmg)
+- Windows 패키지 (URY_Windows -> URY_Engine_v0.6.5_Windows.zip)
 - 소스코드 및 문서 100% 최신 동기화 후 '배포/' 디렉터리에 배포본 일괄 출판
 """
 
@@ -19,7 +19,7 @@ MACOS_DIR = os.path.join(ROOT_DIR, "URY_macOS")
 WIN_DIR = os.path.join(ROOT_DIR, "URY_Windows")
 DIST_DIR = os.path.join(ROOT_DIR, "배포")
 
-VERSION = "v0.6.4"
+VERSION = "v0.6.5"
 
 def sync_system_files():
     """macOS 및 Windows 배포 폴더 간 system(code, prompts 등) 및 App bundle 내부 소스 1:1 동기화"""

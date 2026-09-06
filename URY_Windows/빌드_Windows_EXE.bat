@@ -1,9 +1,9 @@
 @echo off
-title URY Engine v0.6.4 - Windows Standalone EXE Builder
+title URY Engine v0.6.5 - Windows Standalone EXE Builder
 cd /d "%~dp0"
 
 echo =========================================================
-echo  URY Engine v0.6.4 Windows Standalone EXE Builder
+echo  URY Engine v0.6.5 Windows Standalone EXE Builder
 echo =========================================================
 echo.
 

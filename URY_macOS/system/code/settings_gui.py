@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-🎓 대학 전공 학업 관리 시스템 — URY Engine v0.6.4 (AI Academic Studio)
+🎓 대학 전공 학업 관리 시스템 — URY Engine v0.6.5 (AI Academic Studio)
 - 미니멀 & 직관적인 모던 UI/UX
 - 3단계 사용자 주도형 맞춤 학습노트 생성 스튜디오 (음성 부재 대비 슬라이드 전용 모드 지원)
 - 선택적 실전 모의시험 & D-Day 맞춤 학습 로드맵 (주차별 자료 다중 선택 지원)
@@ -562,7 +562,7 @@ class CinematicSplashScreen:
 class UnifiedDashboardApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("URY Engine — Academic Studio v0.6.4")
+        self.root.title("URY Engine — Academic Studio v0.6.5")
 
         # [배포 기기 보장] 앱 실행 즉시 바탕화면(~/Desktop/URY_Engine) 폴더 트리 구축 및 system 폴더 숨김 처리
         try:
@@ -1315,7 +1315,7 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
             except Exception:
                 pass
         tk.Label(title_row, text="URY Engine", font=("Pretendard", 12, "bold"), bg="#ffffff", fg="#1c4732").pack(side=tk.LEFT)
-        tk.Label(title_row, text=" v0.6.4", font=("Pretendard", 9), bg="#ffffff", fg="#64748b").pack(side=tk.LEFT)
+        tk.Label(title_row, text=" v0.6.5", font=("Pretendard", 9), bg="#ffffff", fg="#64748b").pack(side=tk.LEFT)
         tk.Label(left, text="Academic Studio", font=("Pretendard", 8), bg="#ffffff", fg="#94a3b8").pack(anchor=tk.W)
 
         # 우측: 해상도 선택기 / 학기 / API 연결 상태 배지 (오른쪽에 영구 고정되도록 center보다 먼저 pack)
@@ -1993,9 +1993,13 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
                 dest = os.path.join(slides_dir, os.path.basename(fp))
                 if os.path.abspath(fp) != os.path.abspath(dest):
                     try:
-                        shutil.copy2(fp, dest)
+                        shutil.move(fp, dest)
                     except Exception:
-                        pass
+                        try:
+                            shutil.copy2(fp, dest)
+                            os.remove(fp)
+                        except Exception:
+                            pass
             self.refresh_studio_slides()
 
     def get_course_folder(self, cname):
@@ -5076,9 +5080,17 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
             count = 0
             for f in files:
                 dest = os.path.join(photo_dir, os.path.basename(f))
-                shutil.copy2(f, dest)
+                if os.path.abspath(f) != os.path.abspath(dest):
+                    try:
+                        shutil.move(f, dest)
+                    except Exception:
+                        try:
+                            shutil.copy2(f, dest)
+                            os.remove(f)
+                        except Exception:
+                            pass
                 count += 1
-            messagebox.showinfo("사진 추가 완료", f"{count}장의 칠판/필기 판서 사진이 '{course}/칠판사진' 폴더에 보관되었습니다!")
+            messagebox.showinfo("사진 이동 완료", f"{count}장의 칠판/필기 판서 사진이 '{course}/칠판사진' 폴더로 이동 정렬되었습니다!")
 
     def run_master_bible_generation(self):
         cname = self.exam_course_combo.get()
