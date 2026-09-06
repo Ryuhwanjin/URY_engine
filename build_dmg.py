@@ -13,11 +13,16 @@ import sys
 def main():
     root_dir = os.path.dirname(os.path.abspath(__file__))
     staging_dir = os.path.join(root_dir, 'scratch', 'dmg_staging')
-    dmg_out = os.path.join(root_dir, '배포', 'URY_Engine_v0.2.2.dmg')
+    try:
+        import build_release_all
+        version = build_release_all.VERSION
+    except Exception:
+        version = "v0.6.0"
+    dmg_out = os.path.join(root_dir, '배포', f'URY_Engine_{version}.dmg')
     app_src = os.path.join(root_dir, 'URY_macOS', 'URY Engine.app')
 
     if not os.path.exists(app_src):
-        app_src = os.path.join(root_dir, '배포', 'URY_Engine_v0.2.1_macOS', 'URY Engine.app')
+        app_src = os.path.join(root_dir, '배포', 'URY_Engine_v0.6.0_macOS', 'URY Engine.app')
 
     if not os.path.exists(app_src):
         print(f"❌ 오류: '{app_src}'를 찾을 수 없습니다.")
@@ -38,16 +43,18 @@ def main():
         os.symlink('/Applications', app_link)
     print('🔗 Applications 심볼릭 링크 생성 완료.')
 
-    # 안내 및 유틸리티 파일 복사
-    dist_mac_dir = os.path.join(root_dir, '배포', 'URY_Engine_v0.2.1_macOS')
-    for extra in ['보안경고_자동해제.command', '사용설명서.pdf', '공지사항_윤리및법적고지.txt']:
-        p = os.path.join(dist_mac_dir, extra)
+    # 안내 및 유틸리티 파일 복사 (01_macOS_실행하기.command 포함)
+    mac_src_dir = os.path.join(root_dir, 'URY_macOS')
+    for extra in ['01_macOS_실행하기.command', '보안경고_자동해제.command', '설정관리자.command', '파이프라인_실행.command', '시스템_저장경로_안내.md', 'USER_GUIDE.md']:
+        p = os.path.join(mac_src_dir, extra)
         if os.path.exists(p):
             shutil.copy2(p, os.path.join(staging_dir, extra))
+            os.chmod(os.path.join(staging_dir, extra), 0o755)
             print(f'📄 부속 파일 복사: {extra}')
 
-    print('🛡️ [3/4] macOS 격리 속성(Quarantine) 제거...')
+    print('🛡️ [3/4] macOS 격리 속성(Quarantine) 제거 및 ad-hoc 코드 서명...')
     subprocess.run(['xattr', '-cr', staging_dir], check=True)
+    subprocess.run(['codesign', '--force', '--deep', '--sign', '-', app_dst], check=True)
 
     print(f'🗜️ [4/4] hdiutil 기반 압축 디스크 이미지(.dmg) 빌드 중...')
     if os.path.exists(dmg_out):
@@ -55,7 +62,7 @@ def main():
 
     cmd = [
         'hdiutil', 'create',
-        '-volname', 'URY Engine v0.2.2',
+        '-volname', f'URY Engine {version}',
         '-srcfolder', staging_dir,
         '-ov',
         '-format', 'UDZO',

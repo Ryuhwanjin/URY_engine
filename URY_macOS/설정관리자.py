@@ -45,6 +45,34 @@ if getattr(sys, "frozen", False):
                 cdir = os.path.dirname(cand)
                 if cdir not in sys.path:
                     sys.path.insert(0, cdir)
+
+                our_mods = {
+                    "config_manager", "settings_gui", "process_all_lectures",
+                    "generate_pdfs", "doc_parser", "dynamic_slide_integrator",
+                    "auto_organize", "generate_master_bible", "generate_mock_exams",
+                    "generate_cheatsheet", "generate_roadmap", "lecture_tutor",
+                    "audio_recorder", "pdf_viewer", "sync_markdown_vault"
+                }
+                for mname in list(sys.modules.keys()):
+                    if mname in our_mods:
+                        try:
+                            del sys.modules[mname]
+                        except Exception:
+                            pass
+
+                class PriorityCodeLoader:
+                    def __init__(self, code_dir):
+                        self.code_dir = code_dir
+
+                    def find_spec(self, fullname, path=None, target=None):
+                        if fullname in our_mods:
+                            target_path = os.path.join(self.code_dir, f"{fullname}.py")
+                            if os.path.exists(target_path):
+                                return importlib.util.spec_from_file_location(fullname, target_path)
+                        return None
+
+                sys.meta_path.insert(0, PriorityCodeLoader(cdir))
+
                 spec = importlib.util.spec_from_file_location("main_settings_gui_mod", cand)
                 m = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(m)

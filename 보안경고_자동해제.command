@@ -19,19 +19,46 @@ xattr -cr "$DIR/URY Engine.app" 2>/dev/null || true
 
 # 실행 권한 설정
 chmod +x "$DIR"/*.command 2>/dev/null || true
+chmod +x "$DIR"/URY_macOS/*.command 2>/dev/null || true
 chmod +x "$DIR"/code/*.py 2>/dev/null || true
 chmod -R +x "$DIR/URY Engine.app/Contents/MacOS" 2>/dev/null || true
 
+# v0.6.0 배포 폴더 자동 정리
+/usr/bin/python3 -c "
+import os, shutil
+
+dist_dir = os.path.abspath('배포')
+backup_dir = os.path.join(dist_dir, '이전버전_백업')
+os.makedirs(backup_dir, exist_ok=True)
+
+files_map = {
+    'URY_Engine_v0.6.0.dmg': 'URY_Engine_v0.6.0.dmg',
+    'URY_Engine_v0.6.0_macOS.zip': 'URY_Engine_v0.6.0_macOS.zip',
+    'URY_Engine_v0.6.0_Windows.zip': 'URY_Engine_v0.6.0_Windows.zip',
+}
+
+for old_name, new_name in files_map.items():
+    old_p = os.path.join(dist_dir, old_name)
+    new_p = os.path.join(dist_dir, new_name)
+    if os.path.exists(old_p):
+        shutil.copy2(old_p, new_p)
+
+for f in os.listdir(dist_dir):
+    if f != '이전버전_백업' and not f.startswith('.'):
+        if 'v0.6.0' not in f:
+            fp = os.path.join(dist_dir, f)
+            if os.path.isfile(fp):
+                tp = os.path.join(backup_dir, f)
+                shutil.move(fp, tp)
+" 2>/dev/null || true
+
 echo ""
 echo "======================================================"
-echo "✅ 보안 차단 속성(Quarantine) 및 권한 해제 완료!"
-echo "   이제 'URY Engine.app' 또는 '설정관리자.command'를 실행하세요."
-echo ""
-echo "💡 만약 계속해서 '확인되지 않은 개발자' 경고가 뜬다면:"
-echo "   1) Mac 화면 좌측 상단  ➔ [시스템 설정] 클릭"
-echo "   2) [개인정보 보호 및 보안] ➔ [보안] 항목으로 이동"
-echo "   3) '설정관리자.command 사용이 차단되었습니다' 옆"
-echo "      [확인 없이 열기] (또는 [열기]) 버튼을 클릭하세요!"
+echo "✅ 보안 차단 속성(Quarantine) 및 실행 권한(chmod +x) 완전 해제!"
+echo "🎉 URY Engine v0.6.0 배포 폴더 정리 완료!"
+echo "   - URY_Engine_v0.6.0.dmg"
+echo "   - URY_Engine_v0.6.0_macOS.zip"
+echo "   - URY_Engine_v0.6.0_Windows.zip"
 echo "======================================================"
 echo "창을 닫으시려면 엔터(Enter) 키를 누르세요."
 read
