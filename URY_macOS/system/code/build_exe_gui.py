@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-🎓 URY Engine v0.7.4 - Windows 독립 실행 .EXE 커스텀 경로 자동 설치/빌드 GUI 도구 (build_exe_gui.py)
+🎓 URY Engine v0.7.5 - Windows 독립 실행 .EXE 커스텀 경로 자동 설치/빌드 GUI 도구 (build_exe_gui.py)
 """
 import os
 import sys
@@ -88,7 +88,7 @@ class ExeBuilderGUI:
                 pass
 
         self.root = tk.Tk()
-        self.root.title("URY Engine v0.7.4 — Windows Standalone .EXE Installer/Builder")
+        self.root.title("URY Engine v0.7.5 — Windows Standalone .EXE Installer/Builder")
         self.root.geometry("600x350")
         self.root.minsize(580, 340)
         self.root.configure(bg="#181825")
@@ -120,7 +120,7 @@ class ExeBuilderGUI:
         header_card = tk.Frame(self.root, bg="#1e1e2e", bd=0, highlightthickness=1, highlightbackground="#313244")
         header_card.pack(fill=tk.X, padx=20, pady=(18, 10))
 
-        title_lbl = tk.Label(header_card, text="🚀 URY Engine v0.7.4 - .EXE 커스텀 자동 설치/빌더", font=("Malgun Gothic", 12, "bold"), fg="#ffffff", bg="#1e1e2e")
+        title_lbl = tk.Label(header_card, text="🚀 URY Engine v0.7.5 - .EXE 커스텀 자동 설치/빌더", font=("Malgun Gothic", 12, "bold"), fg="#ffffff", bg="#1e1e2e")
         title_lbl.pack(pady=(12, 4))
 
         sub_lbl = tk.Label(header_card, text="바탕화면 선택 시에도 _internal 폴더가 난잡하게 노출되지 않도록 전용 폴더로 자동 캡슐화됩니다.", font=("Malgun Gothic", 8), fg="#a6adc8", bg="#1e1e2e")

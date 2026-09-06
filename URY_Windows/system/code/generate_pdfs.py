@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-강의노트 Markdown을 고품질 출판용 PDF로 일괄 변환하는 스크립트 v0.7.4
+강의노트 Markdown을 고품질 출판용 PDF로 일괄 변환하는 스크립트 v0.7.5
 - .markdown_cache/ 격리 보관소의 마크다운을 읽어와 사용자 폴더(강의노트/)에 PDF만 출력
 - 각 주차별 개별 학습노트 PDF + 전체 누적 통합본 PDF를 동시 발행
 - 각주([^1]) 100% 완전 소멸 3중 방어막 및 문장/표 잘림 방지 (page-break-inside: avoid)
@@ -154,7 +154,7 @@ CSS_STYLE = """
 
 @page {
     size: A4;
-    margin: 8mm 10mm 10mm 10mm !important;
+    margin: 7mm 9mm 8mm 9mm !important;
     @bottom-center {
         content: counter(page);
         font-size: 8.5pt;
@@ -188,74 +188,74 @@ html, body {
 
 body {
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 12.0pt !important;
-    line-height: 1.65 !important;
+    font-size: 11.8pt !important;
+    line-height: 1.60 !important;
     color: #1e293b;
     word-break: keep-all;
     overflow-wrap: break-word;
 }
 
 h1 {
-    font-size: 23.0pt !important;
+    font-size: 22.5pt !important;
     color: #0f172a;
     border-bottom: 2.5px solid #2563eb;
     padding-bottom: 6px;
     margin-top: 0;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
     page-break-after: avoid;
     break-after: avoid;
 }
 
 h2 {
-    font-size: 17.0pt !important;
+    font-size: 16.5pt !important;
     color: #1e3a8a;
     border-bottom: 1px solid #cbd5e1;
     padding-bottom: 4px;
-    margin-top: 18px;
-    margin-bottom: 9px;
+    margin-top: 16px;
+    margin-bottom: 8px;
     page-break-after: avoid;
     break-after: avoid;
 }
 
 h3 {
-    font-size: 14.0pt !important;
+    font-size: 13.8pt !important;
     color: #2563eb;
-    margin-top: 14px;
-    margin-bottom: 6px;
+    margin-top: 13px;
+    margin-bottom: 5px;
     page-break-after: avoid;
     break-after: avoid;
 }
 
 h4 {
-    font-size: 12.5pt !important;
+    font-size: 12.2pt !important;
     color: #0369a1;
-    margin-top: 11px;
-    margin-bottom: 5px;
+    margin-top: 10px;
+    margin-bottom: 4px;
     page-break-after: avoid;
     break-after: avoid;
 }
 
 /* 🌟 하단 거대 여백 방지 (문장/단락 자연스러운 흐름) */
 p {
-    font-size: 12.0pt !important;
-    margin-top: 5px;
-    margin-bottom: 7px;
-    line-height: 1.65 !important;
+    font-size: 11.8pt !important;
+    margin-top: 4px;
+    margin-bottom: 6px;
+    line-height: 1.60 !important;
     break-inside: auto;
     orphans: 1;
     widows: 1;
 }
 
 ul, ol {
-    margin-top: 5px;
-    margin-bottom: 9px;
-    padding-left: 22px;
+    margin-top: 4px;
+    margin-bottom: 8px;
+    padding-left: 20px;
 }
 
 li {
-    font-size: 12.0pt !important;
-    margin-bottom: 4px;
-    line-height: 1.65 !important;
+    font-size: 11.8pt !important;
+    margin-bottom: 3.5px;
+    line-height: 1.60 !important;
     break-inside: auto;
     orphans: 1;
     widows: 1;
@@ -266,8 +266,8 @@ table {
     width: 100% !important;
     max-width: 100% !important;
     border-collapse: collapse !important;
-    margin: 14px 0 !important;
-    font-size: 11.0pt !important;
+    margin: 12px 0 !important;
+    font-size: 10.8pt !important;
     table-layout: auto !important;
     word-wrap: break-word !important;
     overflow-wrap: break-word !important;
@@ -285,11 +285,11 @@ tr {
 
 th, td {
     border: 1px solid #cbd5e1 !important;
-    padding: 8px 11px !important;
+    padding: 7px 10px !important;
     text-align: left !important;
     vertical-align: top !important;
-    font-size: 11.0pt !important;
-    line-height: 1.55 !important;
+    font-size: 10.8pt !important;
+    line-height: 1.52 !important;
     word-break: keep-all !important;
     overflow-wrap: break-word !important;
 }
@@ -304,14 +304,24 @@ tr:nth-child(even) {
     background-color: #f8fafc !important;
 }
 
+/* 🌟 4P 믹스 25% 4열 카드 균등 분배 레이아웃 조판 */
+table.table-4p, div.table-4p table {
+    width: 100% !important;
+    table-layout: fixed !important;
+}
+table.table-4p th, table.table-4p td, div.table-4p th, div.table-4p td {
+    width: 25% !important;
+    text-align: center !important;
+}
+
 blockquote {
-    margin: 14px 0 !important;
-    padding: 11px 18px !important;
+    margin: 12px 0 !important;
+    padding: 10px 16px !important;
     background-color: #f8fafc !important;
     border-left: 4px solid #3b82f6 !important;
     color: #334155 !important;
     font-size: 11.2pt !important;
-    line-height: 1.6 !important;
+    line-height: 1.58 !important;
     border-radius: 0 4px 4px 0 !important;
     break-inside: auto !important;
 }
@@ -319,10 +329,10 @@ blockquote {
 pre {
     background-color: #0f172a !important;
     color: #f8fafc !important;
-    padding: 11px 16px !important;
+    padding: 10px 15px !important;
     border-radius: 6px !important;
-    font-size: 9.8pt !important;
-    line-height: 1.55 !important;
+    font-size: 10.2pt !important;
+    line-height: 1.52 !important;
     white-space: pre-wrap !important;
     word-break: break-all !important;
     max-width: 100% !important;
@@ -548,9 +558,33 @@ def get_latest_date_from_md(md_path):
     return datetime.now().strftime("%Y-%m-%d")
 
 def clean_ascii_boxes_from_markdown(content):
-    """ASCII 박스 테두리선(+------+), 화살표(v) 등 왜곡을 유발하는 아스키 라인 100% 자동 정제"""
+    """ASCII 박스 테두리선(+------+), 회색 백틱 상자(```), 통화 기호($) 및 유령 화살표 100% 완벽 정제"""
+    # 1. 단독 달러 기호($3.99, $7.99 등) MathJax 수식 파서 튕김 현상 원천 방지 (이스케이프 \$)
+    content = re.sub(r'(?<!\\)\$(\d+(?:\.\d+)?|\d{1,3}(?:,\d{3})+(?:\.\d+)?)', r'\\$\1', content)
+    
+    # 2. 찌꺼기 백틱 코드 블록(```) 정제 및 인용구(>) 전환
+    content = re.sub(r'```[a-zA-Z]*\s*\n\s*```', '', content)
+    def code_block_to_blockquote(match):
+        inner = match.group(1).strip()
+        if not inner:
+            return ""
+        lines = inner.split('\n')
+        quoted_lines = [f"> {line}" if not line.startswith('>') else line for line in lines]
+        return "\n" + "\n".join(quoted_lines) + "\n"
+    
+    content = re.sub(r'```(?:markdown|text|ascii|math|txt)?\s*\n(.*?)\n```', code_block_to_blockquote, content, flags=re.DOTALL)
+    content = re.sub(r'(?m)^\s*```\s*$', '', content)
+    
+    # 3. 아스키 박스 테두리선(+------+), 파이프 선(|------|), 구분선(======) 정제
     content = re.sub(r'(?m)^\s*\+[-=+]+\+\s*$', '', content)
     content = re.sub(r'(?m)^\s*v(?:\s+v)*\s*$', '', content)
+    content = re.sub(r'(?m)^\s*\|\s*[-=]{3,}\s*\|\s*$', '', content)
+    content = re.sub(r'(?m)^\s*[-=_]{5,}\s*$', '', content)
+    
+    # 4. 단독 고립 유령 화살표 줄(→ → →) 정제
+    content = re.sub(r'(?m)^\s*(?:→|->|=>|\s)+\s*$', '', content)
+    
+    # 5. 연속 개행 정제
     content = re.sub(r'\n{3,}', '\n\n', content)
     return content
 

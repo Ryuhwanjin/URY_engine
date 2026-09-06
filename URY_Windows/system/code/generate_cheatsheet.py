@@ -133,7 +133,7 @@ def compile_cheatsheet_pdf(md_path, pdf_path, title):
     }
     body {
         font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        font-size: 9.2pt;
+        font-size: 9.0pt;
         line-height: 1.35;
         color: #0f172a;
         margin: 0 auto;
@@ -145,7 +145,7 @@ def compile_cheatsheet_pdf(md_path, pdf_path, title):
         text-align: center !important;
     }
     h1 {
-        font-size: 14.5pt;
+        font-size: 14.0pt;
         font-weight: 800;
         color: #1e3a8a;
         margin: 0 auto 4px auto;
@@ -153,7 +153,7 @@ def compile_cheatsheet_pdf(md_path, pdf_path, title):
         border-bottom: 2px solid #2563eb;
     }
     blockquote {
-        font-size: 8.2pt;
+        font-size: 8.0pt;
         color: #475569;
         margin: 2px auto 6px auto;
         padding: 2px 6px;
@@ -168,7 +168,7 @@ def compile_cheatsheet_pdf(md_path, pdf_path, title):
         margin: 4px auto;
     }
     h2 {
-        font-size: 9.5pt;
+        font-size: 10.0pt;
         font-weight: 700;
         color: #1e40af;
         margin: 6px auto 2px auto;
@@ -198,7 +198,7 @@ def compile_cheatsheet_pdf(md_path, pdf_path, title):
         width: 98%;
         margin: 4px auto 6px auto;
         border-collapse: collapse;
-        font-size: 7.5pt;
+        font-size: 8.0pt;
     }
     th, td {
         border: 1px solid #cbd5e1;
@@ -211,7 +211,7 @@ def compile_cheatsheet_pdf(md_path, pdf_path, title):
         font-weight: 700;
     }
     code {
-        font-size: 8pt;
+        font-size: 8.5pt;
         background: #f1f5f9;
         padding: 1px 3px;
         border-radius: 2px;
