@@ -5060,7 +5060,7 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
                     if out_f and os.path.exists(out_f):
                         self.studio_audio_var.set(out_f)
                         self.auto_detect_date_from_name(out_f)
-                    self.refresh_studio_file_listboxes()
+                    self.on_studio_course_changed()
                     messagebox.showinfo("녹음 완료", f"실시간 오디오가 해당 과목 폴더에 성공적으로 저장되었습니다.\n(경과 시간: {res.get('duration_sec', 0)}초)")
                 else:
                     messagebox.showerror("녹음 중지 오류", res.get("message", "녹음 중지 실패"))
