@@ -61,6 +61,61 @@ def sync_system_files():
                 shutil.copy2(sp, dp)
     print("  ✅ USER_GUIDE.pdf 및 시스템 안내 PDF 최신화 동기화 완료!")
 
+def sanitize_personal_configs():
+    """배포용 빌드 전 개인 설정(API Key, 개인 캐시, 히스토리, 임시 데이터) 100% 원천 삭제 및 초기화"""
+    print("🧹 [보안/개인정보 정제] 배포용 환경 초기화 진행 중...")
+    
+    # 1. 모든 .env 파일 API Key 초기화
+    for base in [MACOS_DIR, WIN_DIR, ROOT_DIR]:
+        for root, dirs, files in os.walk(base):
+            for file in files:
+                if file == ".env":
+                    env_p = os.path.join(root, file)
+                    try:
+                        with open(env_p, "w", encoding="utf-8") as f:
+                            f.write("GEMINI_API_KEY=\n")
+                    except Exception:
+                        pass
+
+    # 2. 모든 settings.json API Key 및 과목 정보 초기화
+    empty_settings = {
+        "gemini_api_key": "",
+        "semester": "2026년 2학기",
+        "semester_start_date": "20260901",
+        "semester_end_date": "20261220",
+        "global_language_mode": "both",
+        "courses": []
+    }
+    for base in [MACOS_DIR, WIN_DIR]:
+        for root, dirs, files in os.walk(base):
+            for file in files:
+                if file == "settings.json":
+                    sp = os.path.join(root, file)
+                    try:
+                        import json
+                        with open(sp, "w", encoding="utf-8") as f:
+                            json.dump(empty_settings, f, ensure_ascii=False, indent=2)
+                    except Exception:
+                        pass
+
+    # 3. 임시 캐시, 히스토리, .DS_Store, pycache 삭제
+    for base in [MACOS_DIR, WIN_DIR]:
+        for root, dirs, files in os.walk(base, topdown=False):
+            for file in files:
+                if file in [".DS_Store", "processed_history.json"] or file.endswith(".tmp.html") or file.endswith(".clean.md"):
+                    try:
+                        os.remove(os.path.join(root, file))
+                    except Exception:
+                        pass
+            for d in dirs:
+                if d in ["__pycache__", ".markdown_cache"]:
+                    try:
+                        shutil.rmtree(os.path.join(root, d))
+                    except Exception:
+                        pass
+
+    print("  ✅ 개인 API Key, 캐시, 히스토리 데이터 100% 완전 삭제 및 초기화 완료!")
+
 def make_zip_archive(source_dir, output_zip_path):
     """지정 폴더를 릴리즈 ZIP 파일로 압축"""
     print(f"📦 압축 파일 생성 중: {os.path.basename(output_zip_path)}...")
@@ -80,8 +135,9 @@ def build_all_releases():
     print(f"🚀 URY Engine {VERSION} macOS & Windows 듀얼 동시 배포 파이프라인 가동")
     print("=========================================================\n")
 
-    # 1. 소스코드 동기화
+    # 1. 소스코드 동기화 및 개인정보 초기화
     sync_system_files()
+    sanitize_personal_configs()
 
     # 2. macOS 전용 빌드 (DMG + ZIP)
     print("\n🍏 [2/4] macOS 배포 패키징 중...")
