@@ -113,9 +113,25 @@ def main():
         target_slide_files = args.slide_files
 
     print("=" * 65)
-    print(f"🎓 URY Engine — Ultimate Result for You Engine v5.1")
+    print(f"🎓 URY Engine — Ultimate Result for You Engine v0.6.6")
     print(f"⏰ 실행 시각: {today_str}")
     print("=" * 65)
+
+    # [0단계] 목표 학점 맞춤형 16주 학습 로드맵 생성/업데이트
+    print_stage(0, "[0단계] 과목별 세부 16주 학습 로드맵 생성 및 동기화", start_time)
+    try:
+        settings = config_manager.load_settings()
+        courses = settings.get("courses", [])
+        for c in courses:
+            cname = c.get("course_name") or c.get("folder_name")
+            if target_courses and cname not in target_courses and c.get("folder_name") not in target_courses:
+                continue
+            try:
+                generate_roadmap.generate_course_roadmap(c, target_grade="A+")
+            except Exception as e_rm:
+                print(f"⚠️ [{cname}] 로드맵 생성 알림: {e_rm}")
+    except Exception as e:
+        print(f"❌ [0단계 오류] 로드맵 생성 중 문제 발생: {e}")
 
     # [1단계] 새 녹음 파일만 자동 감지 및 시간표 매칭
     print_stage(1, "[1단계] 음성 녹음 파일 자동 감지 및 시간표 매칭 (신규 파일만)", start_time)

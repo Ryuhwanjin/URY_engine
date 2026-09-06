@@ -17,12 +17,12 @@ def main():
         import build_release_all
         version = build_release_all.VERSION
     except Exception:
-        version = "v0.6.5"
+        version = "v0.6.6"
     dmg_out = os.path.join(root_dir, '배포', f'URY_Engine_{version}.dmg')
     app_src = os.path.join(root_dir, 'URY_macOS', 'URY Engine.app')
 
     if not os.path.exists(app_src):
-        app_src = os.path.join(root_dir, '배포', 'URY_Engine_v0.6.5_macOS', 'URY Engine.app')
+        app_src = os.path.join(root_dir, '배포', 'URY_Engine_v0.6.6_macOS', 'URY Engine.app')
 
     if not os.path.exists(app_src):
         print(f"❌ 오류: '{app_src}'를 찾을 수 없습니다.")

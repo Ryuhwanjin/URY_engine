@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-🎓 URY Engine — 목표 학점 맞춤형 학습 로드맵 생성 엔진 v0.6.5 (generate_roadmap.py)
+🎓 URY Engine — 목표 학점 맞춤형 학습 로드맵 생성 엔진 v0.6.6 (generate_roadmap.py)
 - 과목별 강의자료 및 마크다운 파싱 기반 주차별/일자별 세부 학술 주제 산출
 - 과목별 실제 세부 단원명, 핵심 개념, 정밀 공부 지침 기반 로드맵 생성
 - 마크다운 및 출판용 PDF 학습 로드맵 생성
@@ -32,25 +32,37 @@ def extract_course_week_topics(cname):
 
     course_dir = config_manager.get_course_dir(folder)
     cache_dir = os.path.join(WORKSPACE_DIR, ".markdown_cache", folder)
+    notes_dir = os.path.join(course_dir, "강의노트")
 
-    # 1. .markdown_cache 탐색하여 실제 강의 주제 추출
+    # 1. .markdown_cache 및 사용자 강의노트 탐색하여 실제 강의 주제 추출
+    candidate_mds = []
     if os.path.exists(cache_dir):
-        for f in os.listdir(cache_dir):
-            if f.endswith(".md"):
-                w_match = re.search(r"(\d+)주차", f)
-                if w_match:
-                    wnum = int(w_match.group(1))
-                    fp = os.path.join(cache_dir, f)
-                    try:
-                        with open(fp, "r", encoding="utf-8", errors="ignore") as file:
-                            for line in file:
-                                line_s = line.strip()
-                                if line_s.startswith("## ") and ":" in line_s:
-                                    topic = line_s.split(":", 1)[1].strip()
-                                    topics_map[wnum] = topic
+        candidate_mds.extend(glob.glob(os.path.join(cache_dir, "*.md")))
+    if os.path.exists(notes_dir):
+        candidate_mds.extend(glob.glob(os.path.join(notes_dir, "**", "*.md"), recursive=True))
+
+    for fp in candidate_mds:
+        fname = os.path.basename(fp)
+        w_match = re.search(r"(\d+)주차|week\s*(\d+)", fname, re.IGNORECASE)
+        if w_match:
+            wnum = int(w_match.group(1) or w_match.group(2))
+            try:
+                with open(fp, "r", encoding="utf-8", errors="ignore") as file:
+                    for line in file:
+                        line_s = line.strip()
+                        if line_s.startswith("## "):
+                            parts = re.split(r"[:\-\—\|]", line_s.replace("## ", ""), maxsplit=1)
+                            if len(parts) > 1:
+                                sub_title = parts[1].strip()
+                                sub_title = re.sub(r"^\[?수업의[^\]]+\]?", "", sub_title).strip()
+                                if sub_title and len(sub_title) > 2:
+                                    topics_map[wnum] = sub_title
                                     break
-                    except Exception:
-                        pass
+                            elif len(parts) == 1 and len(parts[0].strip()) > 3:
+                                topics_map[wnum] = parts[0].strip()
+                                break
+            except Exception:
+                pass
 
     # 2. 강의자료 슬라이드 파일명 탐색
     mat_dir = os.path.join(course_dir, "강의자료")
@@ -84,7 +96,7 @@ def generate_course_roadmap(course, target_grade="A+"):
 
     md_lines = []
     md_lines.append(f"# 🎯 [{cname}] 목표 학점({target_grade}) 세부 16주 학습 로드맵")
-    md_lines.append(f"> **시스템**: URY Engine (Ultimate Result for You v0.6.5)")
+    md_lines.append(f"> **시스템**: URY Engine (Ultimate Result for You v0.6.6)")
     md_lines.append(f"> **수강 학기**: {sem_name} ({s_date} ~ {e_date})")
     md_lines.append(f"> **담당 교수**: {prof} | **강의 요일**: {days} ({dur}분)")
     md_lines.append("")
@@ -148,7 +160,7 @@ def generate_course_roadmap(course, target_grade="A+"):
         md_lines.append("")
 
     md_lines.append("---")
-    md_lines.append("`URY Engine v0.6.5 — Powered by Ultimate Result for You`")
+    md_lines.append("`URY Engine v0.6.6 — Powered by Ultimate Result for You`")
 
     content = "\n".join(md_lines)
 
@@ -183,7 +195,7 @@ def generate_dday_custom_roadmap(cname, d_day=14, exam_type="중간고사", scop
 
     md_lines = []
     md_lines.append(f"# 🎯 [{cname}] {exam_type} D-{d_day} 초집밀 세부 학습 로드맵")
-    md_lines.append(f"> **시스템**: URY Engine (Ultimate Result for You v0.6.5)")
+    md_lines.append(f"> **시스템**: URY Engine (Ultimate Result for You v0.6.6)")
     md_lines.append(f"> **목표 학점**: {target_grade} | **시험 예정일**: {exam_date.strftime('%Y년 %m월 %d일')} (D-{d_day})")
     md_lines.append(f"> **시험 범위**: {scope} | **일일 목표 공부 시간**: {daily_hours}")
     md_lines.append("")
@@ -241,7 +253,7 @@ def generate_dday_custom_roadmap(cname, d_day=14, exam_type="중간고사", scop
     md_lines.append("- [ ] **[시험 응시]**: 자신감 있게 최고 성적 달성!")
     md_lines.append("")
     md_lines.append("---")
-    md_lines.append("`URY Engine v0.6.5 — Powered by Ultimate Result for You`")
+    md_lines.append("`URY Engine v0.6.6 — Powered by Ultimate Result for You`")
 
     content = "\n".join(md_lines)
 

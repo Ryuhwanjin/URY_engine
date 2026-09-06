@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-강의노트 Markdown을 고품질 출판용 PDF로 일괄 변환하는 스크립트 v5.2
+강의노트 Markdown을 고품질 출판용 PDF로 일괄 변환하는 스크립트 v0.6.6
 - .markdown_cache/ 격리 보관소의 마크다운을 읽어와 사용자 폴더(강의노트/)에 PDF만 출력
 - 각 주차별 개별 학습노트 PDF + 전체 누적 통합본 PDF를 동시 발행
-- 마크다운 볼드체(**텍스트**), 이탤릭(*텍스트*), 인라인 코드(`코드`), 링크 파싱 지원으로 PDF 가독성 대폭 향상
-- 이미지 경로 절대 URL(file://) 변환으로 PDF 내 그림 엑박 100% 방지
-- MathJax 수식 완벽 렌더링 & 문장/표 잘림 방지 (page-break-inside: avoid)
+- 각주([^1]) 100% 완전 소멸 3중 방어막 및 문장/표 잘림 방지 (page-break-inside: avoid)
 """
 
 import os
@@ -132,10 +130,8 @@ def render_html_to_pdf_pymupdf(html_content, output_pdf_path):
             story.write(writer, rectfn)
             writer.close()
         except Exception:
-            # Story 실패 시 fitz.open 및 Story text page fallback
             doc = fitz.open()
             page = doc.new_page(width=595, height=842)
-            # 순수 텍스트 정제 후 인쇄
             clean_text = re.sub(r'<[^>]+>', '\n', cleaned_html)
             clean_text = re.sub(r'\n+', '\n', clean_text).strip()
             page.insert_text((40, 50), clean_text[:4000], fontsize=10)
@@ -167,13 +163,17 @@ CSS_STYLE = """
     }
 }
 
-/* 🌟 각주 원천 숨김 차단 */
-.footnotes, section.footnotes, sup.footnote-ref, a.footnote-ref, [role="doc-endnote"], [role="doc-noteref"] {
+/* 🌟 각주 100% 원천 봉쇄 3중 CSS 서술 */
+#footnotes, .footnotes, section.footnotes, div.footnotes, [id*="footnote"], [class*="footnote"], sup.footnote-ref, a.footnote-ref, sup[id*="fnref"], a[href*="#fn"], [role="doc-endnote"], [role="doc-noteref"] {
     display: none !important;
     visibility: hidden !important;
     height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
     margin: 0 !important;
     padding: 0 !important;
+    position: absolute !important;
+    left: -9999px !important;
 }
 
 body {
@@ -530,12 +530,13 @@ def convert_single_md_to_pdf(md_path, pdf_output_path, display_name, folder_dir)
 
     print(f"[{display_name}] HTML 변환 중...")
 
-    # 0. 마크다운 원문에서 각주(^1, ^fn, ^1: ...) 100% 완전 소멸 프리클리닝
+    # 0. 마크다운 원문에서 각주(^1, ^fn, [1], ^1: ...) 100% 완전 소멸 프리클리닝 (단행 & 다행/들여쓰기 정의 포함)
     try:
         with open(md_path, "r", encoding="utf-8") as f_md:
             raw_md = f_md.read()
-        cleaned_md = re.sub(r'^\s*\[\^(?:\d+|[a-zA-Z0-9_-]+)\]:\s*.*$', '', raw_md, flags=re.MULTILINE)
-        cleaned_md = re.sub(r'\[\^(?:\d+|[a-zA-Z0-9_-]+)\]', '', cleaned_md)
+        cleaned_md = re.sub(r'(?m)^\s*\[\^?[a-zA-Z0-9_-]+\]:\s*.*(?:\n(?:[ \t]+.*|\s*$))*', '', raw_md)
+        cleaned_md = re.sub(r'\[\^?[a-zA-Z0-9_-]+\]', '', cleaned_md)
+        cleaned_md = re.sub(r'\[\d+\](?!\()', '', cleaned_md)
         if cleaned_md != raw_md:
             with open(md_path, "w", encoding="utf-8") as f_md:
                 f_md.write(cleaned_md)
@@ -560,11 +561,11 @@ def convert_single_md_to_pdf(md_path, pdf_output_path, display_name, folder_dir)
     with open(html_path, "r", encoding="utf-8") as f:
         html = f.read()
 
-    # 🌟 각주 HTML 태그(footnotes section, footnote-ref, #fn 링크) 100% 원천 제거
-    html = re.sub(r'<section\s+class="footnotes[^"]*"[^>]*>.*?</section>', '', html, flags=re.DOTALL)
-    html = re.sub(r'<sup\s+id="fnref[^"]*"[^>]*>.*?</sup>', '', html, flags=re.DOTALL)
-    html = re.sub(r'<a\s+href="#fn[^"]*"[^>]*>.*?</a>', '', html, flags=re.DOTALL)
-    html = re.sub(r'\[\^\d+\]', '', html)
+    # 🌟 각주 HTML 태그(footnotes section, footnote-ref, #fn 링크, sup, id/class 포함 태그) 100% 원천 제거
+    html = re.sub(r'<(section|div|ol|ul|li|sup|sub|a|p)\s+[^>]*(?:class|id)=["\'][^"\']*(?:footnote|fnref|doc-endnote|doc-noteref)[^"\']*["\'][^>]*>.*?</\1>', '', html, flags=re.DOTALL | re.IGNORECASE)
+    html = re.sub(r'<sup[^>]*>.*?\[?\^?\d+\]?.*?</sup>', '', html, flags=re.DOTALL | re.IGNORECASE)
+    html = re.sub(r'<a[^>]*href="#fn[^"]*"[^>]*>.*?</a>', '', html, flags=re.DOTALL | re.IGNORECASE)
+    html = re.sub(r'\[\^?[a-zA-Z0-9_-]+\]', '', html)
 
     # 남아있는 파싱되지 않은 **볼드체**를 HTML <strong> 태그로 최종 구출 치환
     html = re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', html)

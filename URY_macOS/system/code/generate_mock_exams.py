@@ -445,8 +445,14 @@ def generate_all_mock_exams(target_courses=None, force=False):
             print(f"ℹ️ [{cname}] 아직 등록된 강의노트 자료가 없어 모의시험 생성을 건너뜁니다.")
             continue
 
+        def is_syllabus_file(filepath):
+            fname_lower = os.path.basename(filepath).lower()
+            return any(k in fname_lower for k in ["syllabus", "강의계획서", "실러버스", "계획서", "오피스아워"])
+
         lecture_text = ""
         for mdf in sorted(md_files):
+            if is_syllabus_file(mdf):
+                continue
             try:
                 with open(mdf, "r", encoding="utf-8", errors="ignore") as f:
                     lecture_text += f"\n--- [{os.path.basename(mdf)}] ---\n" + f.read() + "\n"
