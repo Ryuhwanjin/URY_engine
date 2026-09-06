@@ -558,7 +558,7 @@ def get_latest_date_from_md(md_path):
     return datetime.now().strftime("%Y-%m-%d")
 
 def clean_ascii_boxes_from_markdown(content):
-    """국문/영문 공통: 블록인용구(> +--+) 및 파이프(| text |) 유무 불문 ASCII 박스, TeX구문, 회색 백틱 상자(```), 통화 기호($) 및 유령 화살표 100% 완벽 소독"""
+    """국문/영문 공통: ASCII 박스 테두리선(┌─┐, +------+), TeX구문, 회색 백틱 상자(```), 통화 기호($) 및 유령 화살표 100% 완벽 소독"""
     # 0. 영문/국문 TeX \text{...} 구문 정제 (예: \text{ oz} -> oz, \text{-} -> -)
     content = re.sub(r'\\text\{([^}]+)\}', r'\1', content)
     
@@ -578,48 +578,20 @@ def clean_ascii_boxes_from_markdown(content):
     content = re.sub(r'```(?:markdown|text|ascii|math|txt)?\s*\n(.*?)\n```', code_block_to_blockquote, content, flags=re.DOTALL)
     content = re.sub(r'(?m)^\s*```\s*$', '', content)
     
-    # 3. 아스키 다이어그램 파이프/플러스/대시 박스 완전 소독 (정식 마크다운 표 제외)
-    lines = content.split('\n')
-    cleaned_lines = []
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        stripped = line.strip()
-        unquoted = re.sub(r'^(?:>\s*)+', '', stripped).strip()
-        
-        # 아스키 상자 테두리선 패턴 (+----+ , ┌────┐, +====+, |-------|)
-        if re.match(r'^(?:>\s*)*(?:\+[-=+]+\+|[┌┐└┘├┤┬┴┼]+|[\│\─\━\-]{3,}|\|\s*[-=]{3,}\s*\|)$', line.strip()):
-            i += 1
-            continue
-            
-        # 아스키 박스 내부 파이프 라인 (| text |) 정제 - 정식 표(|---| 구분선 포함)가 아닌 경우
-        if (unquoted.startswith('|') or unquoted.startswith('+')) and not re.search(r'\|?\s*:?-{2,}:?\s*\|', unquoted):
-            is_real_table = False
-            for check_idx in range(max(0, i-2), min(len(lines), i+3)):
-                check_line = lines[check_idx].strip()
-                if re.search(r'\|?\s*:?-{2,}:?\s*\|', check_line):
-                    is_real_table = True
-                    break
-            if not is_real_table:
-                inner_text = re.sub(r'[|+\-─│┌┐└┘├┤┬┴┼=<>]', ' ', unquoted)
-                inner_text = re.sub(r'\s+', ' ', inner_text).strip()
-                if inner_text and len(inner_text) > 1:
-                    prefix = "> " if stripped.startswith('>') else ""
-                    cleaned_lines.append(f"{prefix}**{inner_text}**")
-                i += 1
-                continue
-                
-        # 화살표 찌꺼기 줄 (→ → →, ▲, ▼, ──►)
-        if re.match(r'^(?:>\s*)*(?:→|->|=>|──►|◄──|▲|▼|\s)+$', line):
-            i += 1
-            continue
-            
-        cleaned_lines.append(line)
-        i += 1
-        
-    res = '\n'.join(cleaned_lines)
-    res = re.sub(r'\n{3,}', '\n\n', res)
-    return res
+    # 3. 유니코드 및 아스키 박스 테두리선(┌─┐, +------+), 파이프 선(|------|), 구분선(======), 인용구 포함 테두리선(> +----+) 정제
+    content = re.sub(r'[┌┐└┘├┤┬┴┼]', '', content)
+    content = re.sub(r'(?m)^\s*(?:>\s*)*[\│\─\━\-]{3,}\s*$', '', content)
+    content = re.sub(r'(?m)^\s*(?:>\s*)*\+[-=+]+\+\s*$', '', content)
+    content = re.sub(r'(?m)^\s*(?:>\s*)*v(?:\s+v)*\s*$', '', content)
+    content = re.sub(r'(?m)^\s*(?:>\s*)*\|\s*[-=]{3,}\s*\|\s*$', '', content)
+    content = re.sub(r'(?m)^\s*(?:>\s*)*[-=_]{5,}\s*$', '', content)
+    
+    # 4. 단독 고립 유령 화살표 줄(→ → →, ▲, ▼, ──►) 정제
+    content = re.sub(r'(?m)^\s*(?:>\s*)*(?:→|->|=>|──►|◄──|▲|▼|\s)+\s*$', '', content)
+    
+    # 5. 연속 개행 정제
+    content = re.sub(r'\n{3,}', '\n\n', content)
+    return content
 
 def convert_single_md_to_pdf(md_path, pdf_output_path, display_name, folder_dir):
     """단일 마크다운 문서를 지정된 PDF 경로로 컴파일 (마크다운 볼드체/서식 100% 치환)"""
@@ -635,7 +607,8 @@ def convert_single_md_to_pdf(md_path, pdf_output_path, display_name, folder_dir)
 
     print(f"[{display_name}] HTML 변환 중...")
 
-    # 0. 마크다운 원문에서 아스키 박스 라인 및 각주 100% 완전 소멸 프리클리닝
+    # 0. 마크다운 원문에서 아스키 박스 라인 및 각주 100% 완전 소멸 프리클리닝 (원문 파일은 보존)
+    tmp_clean_md = md_path + ".clean.md"
     try:
         with open(md_path, "r", encoding="utf-8") as f_md:
             raw_md = f_md.read()
@@ -643,25 +616,25 @@ def convert_single_md_to_pdf(md_path, pdf_output_path, display_name, folder_dir)
         cleaned_md = re.sub(r'(?m)^\s*\[\^?[a-zA-Z0-9_-]+\]:\s*.*(?:\n(?:[ \t]+.*|\s*$))*', '', cleaned_md)
         cleaned_md = re.sub(r'\[\^?[a-zA-Z0-9_-]+\]', '', cleaned_md)
         cleaned_md = re.sub(r'\[\d+\](?!\()', '', cleaned_md)
-        if cleaned_md != raw_md:
-            with open(md_path, "w", encoding="utf-8") as f_md:
-                f_md.write(cleaned_md)
+        with open(tmp_clean_md, "w", encoding="utf-8") as f_md:
+            f_md.write(cleaned_md)
+        target_md_for_pandoc = tmp_clean_md
     except Exception:
-        pass
+        target_md_for_pandoc = md_path
 
     # 1. pandoc 또는 순수 파이썬 마크다운 변환기로 HTML 생성
     pandoc_bin = get_pandoc_path()
     if pandoc_bin and os.path.exists(pandoc_bin):
         try:
             cmd_pandoc = [
-                pandoc_bin, "-s", "--mathjax", os.path.basename(md_path), "-o", os.path.basename(html_path),
+                pandoc_bin, "-s", "--mathjax", os.path.basename(target_md_for_pandoc), "-o", os.path.basename(html_path),
                 "--metadata", f"title={display_name}"
             ]
             subprocess.check_call(cmd_pandoc, cwd=cache_folder)
         except Exception:
-            fallback_md_to_html(md_path, html_path, title=display_name)
+            fallback_md_to_html(target_md_for_pandoc, html_path, title=display_name)
     else:
-        fallback_md_to_html(md_path, html_path, title=display_name)
+        fallback_md_to_html(target_md_for_pandoc, html_path, title=display_name)
 
     # 2. HTML 내용 읽기
     with open(html_path, "r", encoding="utf-8") as f:
