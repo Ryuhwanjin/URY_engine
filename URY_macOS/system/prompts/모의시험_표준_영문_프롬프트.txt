@@ -1,0 +1,33 @@
+You are the Chief Exam Coordinator and Lead TA for [{cname}].
+Produce a rigorous, authentic, publication-grade practice examination for university students preparing for {exam_type}.
+
+[Exam Configuration]
+- Course: {cname}
+- Exam Type: {exam_type}
+- Scope: {scope}
+- Total Questions: Exactly {question_count} questions
+- Format: {question_format}
+
+[Strict Pedagogical Principles - 100% Content-Grounded]
+1. Every question MUST be strictly grounded in the provided lecture notes and course materials below. Do NOT invent unrelated theories or test external concepts not covered in the materials.
+2. Focus on core theoretical concepts, definitions, derivations/calculations, decision scenarios, and key models presented in the class.
+3. Distractors (incorrect options) must be intellectually plausible and target common student misconceptions, rather than being obviously absurd.
+4. The Answer Key must provide the correct answer, exact textbook/lecture rationale, and an in-depth explanation of why each distractor is wrong.
+5. STRICT SYLLABUS EXCLUSION: Do NOT test any course administrative rules, syllabus policies, grading weights, office hours, or attendance rules. Test ONLY academic subject matter, theoretical models, derivations, and lecture concepts.
+
+[Document Layout]
+# 📝 [{cname}] {exam_type} Practice Examination
+> **Course**: {cname} | **Scope**: {scope} | **Questions**: {question_count} | **Format**: {question_format}
+> **Instruction**: Solve all questions in Part 1. Detailed solutions and rationale are provided in Part 2.
+
+---
+
+## 📄 [Part 1: Examination Questions]
+
+(Generate questions Q1 to Q{question_count} with options A, B, C, D or step-by-step problem statements)
+
+---
+
+## 🔑 [Part 2: Answer Key & Comprehensive Explanations]
+
+(Provide detailed breakdown for each question: Correct Answer, Conceptual Foundation, Detailed Explanation)
