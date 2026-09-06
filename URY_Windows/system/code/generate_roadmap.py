@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-🎓 URY Engine — 목표 학점 맞춤형 학습 로드맵 생성 엔진 v0.6.9 (generate_roadmap.py)
+🎓 URY Engine — 목표 학점 맞춤형 학습 로드맵 생성 엔진 v0.7.0 (generate_roadmap.py)
 - 과목별 강의자료 및 마크다운 파싱 기반 주차별/일자별 세부 학술 주제 산출
 - 과목별 실제 세부 단원명, 핵심 개념, 정밀 공부 지침 기반 로드맵 생성
 - 마크다운 및 출판용 PDF 학습 로드맵 생성
@@ -96,7 +96,7 @@ def generate_course_roadmap(course, target_grade="A+"):
 
     md_lines = []
     md_lines.append(f"# 🎯 [{cname}] 목표 학점({target_grade}) 세부 16주 학습 로드맵")
-    md_lines.append(f"> **시스템**: URY Engine (Ultimate Result for You v0.6.9)")
+    md_lines.append(f"> **시스템**: URY Engine (Ultimate Result for You v0.7.0)")
     md_lines.append(f"> **수강 학기**: {sem_name} ({s_date} ~ {e_date})")
     md_lines.append(f"> **담당 교수**: {prof} | **강의 요일**: {days} ({dur}분)")
     md_lines.append("")
@@ -160,7 +160,7 @@ def generate_course_roadmap(course, target_grade="A+"):
         md_lines.append("")
 
     md_lines.append("---")
-    md_lines.append("`URY Engine v0.6.9 — Powered by Ultimate Result for You`")
+    md_lines.append("`URY Engine v0.7.0 — Powered by Ultimate Result for You`")
 
     content = "\n".join(md_lines)
 
@@ -195,7 +195,7 @@ def generate_dday_custom_roadmap(cname, d_day=14, exam_type="중간고사", scop
 
     md_lines = []
     md_lines.append(f"# 🎯 [{cname}] {exam_type} D-{d_day} 초집밀 세부 학습 로드맵")
-    md_lines.append(f"> **시스템**: URY Engine (Ultimate Result for You v0.6.9)")
+    md_lines.append(f"> **시스템**: URY Engine (Ultimate Result for You v0.7.0)")
     md_lines.append(f"> **목표 학점**: {target_grade} | **시험 예정일**: {exam_date.strftime('%Y년 %m월 %d일')} (D-{d_day})")
     md_lines.append(f"> **시험 범위**: {scope} | **일일 목표 공부 시간**: {daily_hours}")
     md_lines.append("")
@@ -253,7 +253,7 @@ def generate_dday_custom_roadmap(cname, d_day=14, exam_type="중간고사", scop
     md_lines.append("- [ ] **[시험 응시]**: 자신감 있게 최고 성적 달성!")
     md_lines.append("")
     md_lines.append("---")
-    md_lines.append("`URY Engine v0.6.9 — Powered by Ultimate Result for You`")
+    md_lines.append("`URY Engine v0.7.0 — Powered by Ultimate Result for You`")
 
     content = "\n".join(md_lines)
 
