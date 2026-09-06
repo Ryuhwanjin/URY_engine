@@ -610,14 +610,30 @@ def append_to_single_note_file(note_path, new_note_content, date_str, week_num, 
             content = content.replace(toc_marker, toc_entry)
 
     if not is_combined:
-        updated_content = new_note_content.strip() + "\n"
+        if os.path.exists(note_path) and os.path.getsize(note_path) > 100 and content.strip():
+            if new_note_content.strip() in content:
+                updated_content = content
+            else:
+                is_part1_new = ("1부" in new_note_content or "1차시" in new_note_content or "1교시" in new_note_content or "Part 1" in new_note_content)
+                has_part2_in_file = ("2부" in content or "2차시" in content or "2교시" in content or "Part 2" in content)
+                if is_part1_new and has_part2_in_file:
+                    part2_match = re.search(r"(###?\s*.*(?:2부|2차시|2교시|Part\s*2).*)", content, re.IGNORECASE)
+                    if part2_match:
+                        insert_pos = part2_match.start()
+                        updated_content = content[:insert_pos].rstrip() + "\n\n---\n\n" + new_note_content.strip() + "\n\n---\n\n" + content[insert_pos:].strip() + "\n"
+                    else:
+                        updated_content = content.rstrip() + "\n\n---\n\n" + new_note_content.strip() + "\n"
+                else:
+                    updated_content = content.rstrip() + "\n\n---\n\n" + new_note_content.strip() + "\n"
+        else:
+            updated_content = content.rstrip() + "\n\n" + new_note_content.strip() + "\n" if content != header else header + new_note_content.strip() + "\n"
     else:
         # 🌟 스마트 상위/하위 정밀 삽입 (Out-of-order 1부/2부 업로드 대응)
-        is_part1_new = ("1부" in new_note_content or "1교시" in new_note_content or "Part 1" in new_note_content)
-        has_part2_in_file = ("2부" in content or "2교시" in content or "Part 2" in content)
+        is_part1_new = ("1부" in new_note_content or "1차시" in new_note_content or "1교시" in new_note_content or "Part 1" in new_note_content)
+        has_part2_in_file = ("2부" in content or "2차시" in content or "2교시" in content or "Part 2" in content)
 
         if is_part1_new and has_part2_in_file:
-            part2_match = re.search(r"(###?\s*.*(?:2부|2교시|Part\s*2).*)", content, re.IGNORECASE)
+            part2_match = re.search(r"(###?\s*.*(?:2부|2차시|2교시|Part\s*2).*)", content, re.IGNORECASE)
             if part2_match:
                 insert_pos = part2_match.start()
                 updated_content = content[:insert_pos].rstrip() + "\n\n---\n\n" + new_note_content.strip() + "\n\n---\n\n" + content[insert_pos:].strip() + "\n"

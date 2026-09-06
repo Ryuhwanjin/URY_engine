@@ -28,45 +28,10 @@ def sync_system_files():
     mac_system = os.path.join(MACOS_DIR, "system")
 
     if os.path.exists(win_system):
-        # macOS 전용 native binary(mac_audio_rec)를 먼저 보존한다.
-        mac_rec = os.path.join(mac_system, "bin", "mac_audio_rec")
-        preserved_recorder = None
-
-        if os.path.isfile(mac_rec):
-            preserved_recorder = os.path.join(
-                ROOT_DIR,
-                "scratch",
-                "preserved_mac_audio_rec"
-            )
-            os.makedirs(os.path.dirname(preserved_recorder), exist_ok=True)
-            shutil.copy2(mac_rec, preserved_recorder)
-            print("  🔒 mac_audio_rec 보호 백업 완료")
-
-        # Windows system을 기준으로 macOS 공통 소스를 동기화한다.
         if os.path.exists(mac_system):
             shutil.rmtree(mac_system)
-
         shutil.copytree(win_system, mac_system)
-
-        # macOS 전용 recorder 복원
-        if preserved_recorder and os.path.isfile(preserved_recorder):
-            restore_dir = os.path.join(mac_system, "bin")
-            os.makedirs(restore_dir, exist_ok=True)
-
-            restored_recorder = os.path.join(
-                restore_dir,
-                "mac_audio_rec"
-            )
-
-            shutil.copy2(preserved_recorder, restored_recorder)
-            os.chmod(
-                restored_recorder,
-                os.stat(restored_recorder).st_mode | 0o111
-            )
-
-            print("  ✅ macOS native mac_audio_rec 복원 완료")
-
-        print("  ✅ macOS system 공통 소스 동기화 완료!")
+        print("  ✅ macOS system (code/prompts) 소스코드 100% 동기화 완료!")
 
     # macOS URY Engine.app Bundle 내부 code 및 설정관리자.py 동기화
     src_code = os.path.join(win_system, "code")
@@ -76,58 +41,6 @@ def sync_system_files():
             shutil.rmtree(app_code)
         shutil.copytree(src_code, app_code)
         print("  ✅ macOS URY Engine.app 번들 내부 code 동기화 완료!")
-
-    # macOS native audio recorder를 앱 번들에 포함한다.
-    mac_rec_src = os.path.join(
-        mac_system,
-        "bin",
-        "mac_audio_rec"
-    )
-
-    app_bin_dir = os.path.join(
-        MACOS_DIR,
-        "URY Engine.app",
-        "Contents",
-        "Resources",
-        "bin"
-    )
-
-    app_rec_dst = os.path.join(
-        app_bin_dir,
-        "mac_audio_rec"
-    )
-
-    if not os.path.isfile(mac_rec_src):
-        raise FileNotFoundError(
-            f"❌ macOS native recorder가 없습니다: {mac_rec_src}"
-        )
-
-    os.makedirs(app_bin_dir, exist_ok=True)
-
-    shutil.copy2(
-        mac_rec_src,
-        app_rec_dst
-    )
-
-    os.chmod(
-        app_rec_dst,
-        os.stat(app_rec_dst).st_mode | 0o111
-    )
-
-    print(f"  ✅ mac_audio_rec → {app_rec_dst}")
-
-    # architecture 확인
-    result = subprocess.run(
-        ["file", app_rec_dst],
-        capture_output=True,
-        text=True,
-        check=False
-    )
-
-    print("  🔎", result.stdout.strip())
-
-    if "arm64" not in result.stdout:
-        print("  ⚠️ 경고: mac_audio_rec가 arm64가 아닙니다.")
 
     runner_src = os.path.join(ROOT_DIR, "설정관리자.py")
     if os.path.exists(runner_src):

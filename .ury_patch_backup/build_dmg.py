@@ -37,31 +37,6 @@ def main():
     app_dst = os.path.join(staging_dir, 'URY Engine.app')
     subprocess.run(['ditto', app_src, app_dst], check=True)
 
-    # DMG 생성 전에 native recorder 포함 여부 검증
-    bundled_recorder = os.path.join(
-        app_dst,
-        'Contents',
-        'Resources',
-        'bin',
-        'mac_audio_rec'
-    )
-
-    if not os.path.isfile(bundled_recorder):
-        print(
-            "❌ 오류: 앱 번들에 mac_audio_rec가 없습니다:\n"
-            f"   {bundled_recorder}"
-        )
-        sys.exit(1)
-
-    if not os.access(bundled_recorder, os.X_OK):
-        print(
-            "❌ 오류: mac_audio_rec 실행 권한이 없습니다:\n"
-            f"   {bundled_recorder}"
-        )
-        sys.exit(1)
-
-    print("  ✅ mac_audio_rec 앱 번들 포함 확인")
-
     # Applications 심볼릭 링크 생성 (드래그 앤 드롭 설치용)
     app_link = os.path.join(staging_dir, 'Applications')
     if not os.path.exists(app_link):
