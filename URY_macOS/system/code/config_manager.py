@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-학업 관리 시스템 중앙 설정 관리자 (Config Manager)
+학업 관리 시스템 중앙 설정 관리자 v0.6.7 (Config Manager)
 - settings.json을 로드/저장하고 각 파이프라인 모듈에 일관된 설정을 제공합니다.
 - 과목별 언어 모드 ('ko', 'en', 'both'), 시간표, 모의시험 생성 여부를 제어합니다.
 """
@@ -60,6 +60,56 @@ def get_root_workspace():
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 WORKSPACE_DIR = get_root_workspace()
+
+import hashlib
+
+def compute_file_fingerprint(filepath):
+    """파일 크기 + 수정시각 + 파일 헤더(64KB) SHA256으로 파일 고유 핑거프린트 생성 (에어드랍/카톡 수신 대응)"""
+    if not os.path.exists(filepath):
+        return ""
+    try:
+        f_size = os.path.getsize(filepath)
+        f_mtime = int(os.path.getmtime(filepath))
+        hasher = hashlib.sha256()
+        hasher.update(f"{f_size}_{f_mtime}".encode("utf-8"))
+        with open(filepath, "rb") as f:
+            chunk = f.read(65536)
+            hasher.update(chunk)
+        return hasher.hexdigest()[:16]
+    except Exception:
+        return os.path.basename(filepath)
+
+def get_history_ledger_path():
+    path = os.path.join(WORKSPACE_DIR, ".markdown_cache", "processed_history.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    return path
+
+def load_history_ledger():
+    p = get_history_ledger_path()
+    if os.path.exists(p):
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+def register_history_ledger(fingerprint, course_name, date_str, week_session, part_tag, filename):
+    ledger = load_history_ledger()
+    ledger[fingerprint] = {
+        "course": course_name,
+        "date": date_str,
+        "week_session": week_session,
+        "part_tag": part_tag,
+        "filename": filename,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    p = get_history_ledger_path()
+    try:
+        with open(p, "w", encoding="utf-8") as f:
+            json.dump(ledger, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
 
 def find_config_file(filename):
     p1 = os.path.join(WORKSPACE_DIR, "system", filename)

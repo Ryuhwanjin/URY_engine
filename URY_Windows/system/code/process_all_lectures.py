@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-모든 과목의 음성 녹음을 감지하여 Gemini AI로 주차별 학습노트 및 전체 통합본을 .markdown_cache에 자동 적재하는 스크립트 v4.0
+모든 과목의 음성 녹음을 감지하여 Gemini AI로 주차별 학습노트 및 전체 통합본을 .markdown_cache에 자동 적재하는 스크립트 v0.6.7
 - .m4a 및 .mp3 (.wav, .aac) 파일 완전 지원
 - 주차별 개별 마크다운([과목]_[N]주차_강의노트.md) + 전체 누적 통합본([과목]_통합강의노트.md) 동시 생성
 - 마크다운 파일은 .markdown_cache/ 격리 보관소에 저장하여 사용자 폴더에는 오직 PDF만 노출
@@ -20,7 +20,7 @@ import subprocess
 import glob
 import re
 import unicodedata
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -601,8 +601,8 @@ def append_to_single_note_file(note_path, new_note_content, date_str, week_num, 
         with open(note_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-    # 이미 존재하는 날짜인지 방어 검사 (1000자 이상 완제품 노드가 존재할 때만 스킵)
-    if date_str in content and len(content) > 1000:
+    # 이미 동일 음성 및 내용이 완제품으로 존재할 경우 스킵
+    if (source_files and source_files.get("audio") and source_files["audio"] in content) and len(content) > 1000:
         return
 
     # 목차 갱신 (통합본인 경우)
@@ -620,10 +620,23 @@ def append_to_single_note_file(note_path, new_note_content, date_str, week_num, 
             toc_entry = f"- [{header_line}](#{link_anchor})\n{toc_marker}"
             content = content.replace(toc_marker, toc_entry)
 
-    updated_content = content.rstrip() + "\n\n---\n\n" + new_note_content + "\n"
+    # 🌟 스마트 상위/하위 정밀 삽입 (Out-of-order 1부/2부 업로드 대응)
+    is_part1_new = ("1부" in new_note_content or "1교시" in new_note_content or "Part 1" in new_note_content)
+    has_part2_in_file = ("2부" in content or "2교시" in content or "Part 2" in content)
+
+    if is_part1_new and has_part2_in_file:
+        part2_match = re.search(r"(###?\s*.*(?:2부|2교시|Part\s*2).*)", content, re.IGNORECASE)
+        if part2_match:
+            insert_pos = part2_match.start()
+            updated_content = content[:insert_pos].rstrip() + "\n\n---\n\n" + new_note_content.strip() + "\n\n---\n\n" + content[insert_pos:].strip() + "\n"
+        else:
+            updated_content = content.rstrip() + "\n\n---\n\n" + new_note_content.strip() + "\n"
+    else:
+        updated_content = content.rstrip() + "\n\n---\n\n" + new_note_content.strip() + "\n"
+
     with open(note_path, "w", encoding="utf-8") as f:
         f.write(updated_content)
-    print(f"[{os.path.basename(note_path)}] {date_str} 강의노트 저장 완료!")
+    print(f"[{os.path.basename(note_path)}] {date_str} 강의노트 적재 완료 (스마트 순서 정돈)!")
 
 def save_to_markdown_cache(config, new_note_content, date_str, week_num, is_english=False, source_files=None):
     """주차별 개별 마크다운과 전체 통합본 마크다운을 .markdown_cache/ 및 사용자 강의노트/ 폴더에 동시 저장"""
