@@ -58,7 +58,7 @@ def find_slide_pdfs(course_dir, explicit_slide_paths=None):
 
     return sorted(slide_pdfs)
 
-def extract_slide_page(pdf_path, page_num, out_dirs, dpi=180):
+def extract_slide_page(pdf_path, page_num, out_dirs, dpi=180, crop_diagram_only=True):
     if isinstance(out_dirs, str):
         out_dirs = [out_dirs]
 
@@ -75,7 +75,76 @@ def extract_slide_page(pdf_path, page_num, out_dirs, dpi=180):
             doc = fitz.open(pdf_path)
             if 1 <= page_num <= len(doc):
                 page = doc[page_num - 1]
-                pix = page.get_pixmap(dpi=dpi)
+                
+                # 1. 텍스트 전용 슬라이드 100% 스킵 검사
+                img_list = page.get_images()
+                drawings = page.get_drawings() if hasattr(page, "get_drawings") else []
+                
+                if not img_list and len(drawings) < 3:
+                    print(f"  ⏭️ [{os.path.basename(pdf_path)}] Slide P.{page_num} 텍스트 전용 슬라이드 자동 스킵 (도표 없음)")
+                    return None
+
+                # 2. PPT 상단 제목 테두리 및 하단 저작권/페이지번호 제외 정밀 크롭
+                rect = page.rect
+                page_w, page_h = rect.width, rect.height
+                
+                # 기본 탐색 영역: 상단 15%, 하단 10% 제외한 중앙 영역
+                clip_rect = fitz.Rect(
+                    10,
+                    page_h * 0.15,
+                    page_w - 10,
+                    page_h * 0.90
+                )
+                
+                # 실제 개체(Drawing / Image) Bounding Box 중 중앙 본문 영역만 필터링 수집
+                candidate_rects = []
+                
+                # A. Drawing 개체 탐지 (상단/하단 띠 배너 및 전면 배경 사각형 제외)
+                for d in drawings:
+                    r = d.get("rect")
+                    if not r:
+                        continue
+                    # 전체 화면을 가리는 배경 사각형 제거
+                    if r.width > page_w * 0.85 and r.height > page_h * 0.85:
+                        continue
+                    # 상단 15% 내 헤더 제목 배너 제거
+                    if r.y1 <= page_h * 0.15:
+                        continue
+                    # 하단 10% 내 풋터 제거
+                    if r.y0 >= page_h * 0.90:
+                        continue
+                    if r.width > 20 and r.height > 20:
+                        candidate_rects.append(r)
+                
+                # B. Image 개체 탐지 (배경 통이미지 및 헤더/풋터 제외)
+                for img in img_list:
+                    try:
+                        bbox = page.get_image_bbox(img)
+                        if not bbox:
+                            continue
+                        if bbox.width > page_w * 0.85 and bbox.height > page_h * 0.85:
+                            continue
+                        if bbox.y1 <= page_h * 0.15 or bbox.y0 >= page_h * 0.90:
+                            continue
+                        if bbox.width > 20 and bbox.height > 20:
+                            candidate_rects.append(bbox)
+                    except Exception:
+                        pass
+                
+                # 후보 개체들이 존재하면 해당 개체들만 핀포인트 통합 크롭
+                if candidate_rects:
+                    diagram_box = candidate_rects[0]
+                    for r in candidate_rects[1:]:
+                        diagram_box |= r
+                    # 여백 10px 부여
+                    clip_rect = fitz.Rect(
+                        max(0, diagram_box.x0 - 10),
+                        max(0, diagram_box.y0 - 10),
+                        min(page_w, diagram_box.x1 + 10),
+                        min(page_h, diagram_box.y1 + 10)
+                    )
+                
+                pix = page.get_pixmap(clip=clip_rect, dpi=dpi)
                 pix.save(primary_path)
         except Exception as e:
             print(f"[Error] {pdf_path} P.{page_num} 이미지 추출 실패: {e}")
@@ -201,16 +270,12 @@ def process_course_slides_dynamic(course_info, slide_paths=None):
 
                             img_filename = extract_slide_page(pdf_path, p_num, out_dirs, dpi=180)
                             if img_filename:
-                                pdf_base = os.path.basename(pdf_path)
-                                if ts_found:
-                                    caption = f"Slide {p_num} 핵심 도표 ({pdf_base} | 🎙️ {ts_found} 음성 연계)"
-                                else:
-                                    caption = f"Slide {p_num} 핵심 도표 ({pdf_base})"
+                                caption = f"참고 도표 (P.{p_num})"
                                 img_tag = f"\n![{caption}](images/{img_filename})\n\n"
                                 new_lines.append(img_tag)
                                 inserted_pages_in_doc.add(p_num)
                                 modified = True
-                                print(f"  📸 [{note_filename}] Slide {p_num} 핵심 도표 자동 임베드 완료 ({img_filename}, 출처: {pdf_base})")
+                                print(f"  📸 [{note_filename}] Slide {p_num} 핵심 도표 정밀 크롭 임베드 완료 ({img_filename})")
                             break
                     except Exception as e_pdf:
                         print(f"[Warn] PDF 슬라이드 처리 중 오류: {e_pdf}")
@@ -222,26 +287,9 @@ def process_course_slides_dynamic(course_info, slide_paths=None):
 
 def sync_and_embed_all_slides_dynamically(target_courses=None):
     print("======================================================")
-    print("🚀 [슬라이드 핵심 도표/자료 완전 자동 동적 추출 & 임베드 시작]")
+    print("ℹ️ [슬라이드 이미지 자동 추출 비활성화 (100% 순수 텍스트 강의노트 모드)]")
     print("======================================================")
-    if not FITZ_AVAILABLE:
-        print("[Warn] PyMuPDF 라이브러리가 설치되어 있지 않아 슬라이드 추출을 건너뜁니다.")
-        print("       (자동 설치: pip install pymupdf)")
-        print("======================================================")
-        return
-
-    settings = config_manager.load_settings()
-    courses = settings.get("courses", [])
-
-    for c in courses:
-        cname = c.get("course_name") or c.get("folder_name")
-        if target_courses and cname not in target_courses and c.get("folder_name") not in target_courses:
-            continue
-        process_course_slides_dynamic(c)
-
-    print("======================================================")
-    print("🎉 모든 강의자료 슬라이드 시각 자료의 동적 추출 및 반영 완료!")
-    print("======================================================")
+    return
 
 if __name__ == "__main__":
     sync_and_embed_all_slides_dynamically()
