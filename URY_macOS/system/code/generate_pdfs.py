@@ -154,13 +154,23 @@ CSS_STYLE = """
 
 @page {
     size: A4;
-    margin: 12mm 14mm 14mm 14mm;
+    margin: 8mm 10mm 10mm 10mm !important;
     @bottom-center {
         content: counter(page);
         font-size: 8.5pt;
         font-family: 'Pretendard', sans-serif;
         color: #64748b;
     }
+}
+
+/* 🌟 Pandoc 좁은 중앙 컬럼 수평 여백 원천 파괴 (A4 폭 100% 전면 활용) */
+html, body {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
 }
 
 /* 🌟 각주 100% 원천 봉쇄 3중 CSS 서술 */
