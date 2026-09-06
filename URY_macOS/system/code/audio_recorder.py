@@ -22,20 +22,63 @@ import config_manager
 
 
 def find_mac_recorder_bin():
-    exe_dir = os.path.dirname(os.path.abspath(sys.executable))
-    candidates = [
-        os.path.join(exe_dir, "mac_audio_rec"),
-        os.path.abspath(os.path.join(exe_dir, "..", "Resources", "bin", "mac_audio_rec")),
-        os.path.join(SCRIPT_DIR, "..", "bin", "mac_audio_rec"),
-        os.path.join(SCRIPT_DIR, "mac_audio_rec"),
-        "/Users/ryuhwanjin/Desktop/URY project/URY_macOS/system/bin/mac_audio_rec",
-        os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "MacOS", "mac_audio_rec")),
-        os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "Resources", "bin", "mac_audio_rec")),
-        "/tmp/mac_audio_rec"
-    ]
-    for p in candidates:
-        if os.path.isfile(p) and os.access(p, os.X_OK):
-            return p
+    """macOS native recorder(mac_audio_rec)를 앱/소스 경로에서 탐색."""
+
+    candidates = []
+
+    # PyInstaller .app
+    if getattr(sys, "executable", None):
+        exe_dir = os.path.dirname(os.path.abspath(sys.executable))
+
+        candidates.extend([
+            os.path.abspath(
+                os.path.join(
+                    exe_dir,
+                    "..",
+                    "Resources",
+                    "bin",
+                    "mac_audio_rec"
+                )
+            ),
+            os.path.abspath(
+                os.path.join(
+                    exe_dir,
+                    "..",
+                    "..",
+                    "Resources",
+                    "bin",
+                    "mac_audio_rec"
+                )
+            ),
+        ])
+
+    # PyInstaller 임시 경로
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass:
+        candidates.append(
+            os.path.join(meipass, "bin", "mac_audio_rec")
+        )
+
+    # 소스 실행 환경
+    candidates.extend([
+        os.path.abspath(
+            os.path.join(
+                SCRIPT_DIR,
+                "..",
+                "bin",
+                "mac_audio_rec"
+            )
+        ),
+        os.path.join(
+            SCRIPT_DIR,
+            "mac_audio_rec"
+        ),
+    ])
+
+    for path in candidates:
+        if os.path.isfile(path) and os.access(path, os.X_OK):
+            return path
+
     return None
 
 
@@ -74,10 +117,27 @@ class AudioRecorder:
         self.output_file = os.path.join(rec_dir, filename)
 
         try:
-            if sys.platform == "darwin" and mac_bin:
+            if sys.platform == "darwin":
+                if not mac_bin:
+                    return {
+                        "status": "error",
+                        "message": (
+                            "macOS native recorder(mac_audio_rec)를 찾을 수 없습니다. "
+                            "앱 번들의 Contents/Resources/bin/mac_audio_rec를 확인해주세요."
+                        )
+                    }
+
                 cmd = [mac_bin, self.output_file]
             else:
-                cmd = ["ffmpeg", "-y", "-f", "dshow", "-i", "audio=Microphone", self.output_file]
+                cmd = [
+                    "ffmpeg",
+                    "-y",
+                    "-f",
+                    "dshow",
+                    "-i",
+                    "audio=Microphone",
+                    self.output_file
+                ]
 
             self.process = subprocess.Popen(
                 cmd,
