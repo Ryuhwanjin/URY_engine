@@ -1,28 +1,5 @@
 {
-  "semester": "개인공부",
-  "period": "2026-09-07 ~ 2026-11-10",
-  "schedule": [
-    {
-      "days": [
-        0
-      ],
-      "day_of_week": [
-        0
-      ],
-      "day_names": [
-        "월"
-      ],
-      "start_time": "09:00",
-      "end_time": "10:15",
-      "duration": 75,
-      "course_name": "ADSP",
-      "folder_name": "ADSP",
-      "classroom": "",
-      "professor": ""
-    }
-  ],
-  "start_date": "2026-09-07",
-  "end_date": "2026-11-10",
-  "creator": "URY Engine (Ultimate Result for You)",
-  "app_name": "URY Engine"
+  "semester": "2026년 2학기",
+  "period": "2026-09-01 ~ 2026-12-20",
+  "schedule": []
 }

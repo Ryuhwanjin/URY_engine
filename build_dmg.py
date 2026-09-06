@@ -60,7 +60,8 @@ def main():
                 print('📄 부속 파일 복사: 사용설명서.pdf')
 
     print('🛡️ [3/4] macOS 격리 속성(Quarantine) 제거 및 ad-hoc 코드 서명...')
-    subprocess.run(['xattr', '-cr', staging_dir], check=True)
+    subprocess.run(['xattr', '-rc', staging_dir], check=False)
+    subprocess.run(['xattr', '-rc', app_dst], check=False)
     subprocess.run(['codesign', '--force', '--deep', '--sign', '-', app_dst], check=True)
 
     print(f'🗜️ [4/4] hdiutil 기반 압축 디스크 이미지(.dmg) 빌드 중...')
