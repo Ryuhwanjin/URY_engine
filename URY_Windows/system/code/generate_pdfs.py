@@ -188,15 +188,15 @@ html, body {
 
 body {
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 12.4pt !important;
-    line-height: 1.62 !important;
+    font-size: 11.8pt !important;
+    line-height: 1.60 !important;
     color: #1e293b;
     word-break: keep-all;
     overflow-wrap: break-word;
 }
 
 h1 {
-    font-size: 23.5pt !important;
+    font-size: 22.5pt !important;
     color: #0f172a;
     border-bottom: 2.5px solid #2563eb;
     padding-bottom: 6px;
@@ -207,7 +207,7 @@ h1 {
 }
 
 h2 {
-    font-size: 17.2pt !important;
+    font-size: 16.5pt !important;
     color: #1e3a8a;
     border-bottom: 1px solid #cbd5e1;
     padding-bottom: 4px;
@@ -218,7 +218,7 @@ h2 {
 }
 
 h3 {
-    font-size: 14.2pt !important;
+    font-size: 13.8pt !important;
     color: #2563eb;
     margin-top: 13px;
     margin-bottom: 5px;
@@ -227,7 +227,7 @@ h3 {
 }
 
 h4 {
-    font-size: 12.6pt !important;
+    font-size: 12.2pt !important;
     color: #0369a1;
     margin-top: 10px;
     margin-bottom: 4px;
@@ -237,10 +237,10 @@ h4 {
 
 /* 🌟 하단 거대 여백 방지 (문장/단락 자연스러운 흐름) */
 p {
-    font-size: 12.4pt !important;
+    font-size: 11.8pt !important;
     margin-top: 4px;
     margin-bottom: 6px;
-    line-height: 1.62 !important;
+    line-height: 1.60 !important;
     break-inside: auto;
     orphans: 1;
     widows: 1;
@@ -253,9 +253,9 @@ ul, ol {
 }
 
 li {
-    font-size: 12.4pt !important;
+    font-size: 11.8pt !important;
     margin-bottom: 3.5px;
-    line-height: 1.62 !important;
+    line-height: 1.60 !important;
     break-inside: auto;
     orphans: 1;
     widows: 1;
@@ -267,7 +267,7 @@ table {
     max-width: 100% !important;
     border-collapse: collapse !important;
     margin: 12px 0 !important;
-    font-size: 11.2pt !important;
+    font-size: 10.8pt !important;
     table-layout: auto !important;
     word-wrap: break-word !important;
     overflow-wrap: break-word !important;
@@ -288,8 +288,8 @@ th, td {
     padding: 7px 11px !important;
     text-align: left !important;
     vertical-align: top !important;
-    font-size: 11.2pt !important;
-    line-height: 1.55 !important;
+    font-size: 10.8pt !important;
+    line-height: 1.52 !important;
     word-break: keep-all !important;
     overflow-wrap: break-word !important;
 }
@@ -558,7 +558,7 @@ def get_latest_date_from_md(md_path):
     return datetime.now().strftime("%Y-%m-%d")
 
 def clean_ascii_boxes_from_markdown(content):
-    """국문/영문 공통: ASCII 박스 테두리선(┌─┐, +------+), TeX구문, 회색 백틱 상자(```), 통화 기호($) 및 유령 화살표 100% 완벽 소독"""
+    """국문/영문 공통: 블록인용구(> +--+) 및 파이프(| text |) 유무 불문 ASCII 박스, TeX구문, 회색 백틱 상자(```), 통화 기호($) 및 유령 화살표 100% 완벽 소독"""
     # 0. 영문/국문 TeX \text{...} 구문 정제 (예: \text{ oz} -> oz, \text{-} -> -)
     content = re.sub(r'\\text\{([^}]+)\}', r'\1', content)
     
@@ -578,20 +578,48 @@ def clean_ascii_boxes_from_markdown(content):
     content = re.sub(r'```(?:markdown|text|ascii|math|txt)?\s*\n(.*?)\n```', code_block_to_blockquote, content, flags=re.DOTALL)
     content = re.sub(r'(?m)^\s*```\s*$', '', content)
     
-    # 3. 유니코드 및 아스키 박스 테두리선(┌─┐, +------+), 파이프 선(|------|), 구분선(======) 정제
-    content = re.sub(r'[┌┐└┘├┤┬┴┼]', '', content)
-    content = re.sub(r'(?m)^\s*[\│\─\━\-]{3,}\s*$', '', content)
-    content = re.sub(r'(?m)^\s*\+[-=+]+\+\s*$', '', content)
-    content = re.sub(r'(?m)^\s*v(?:\s+v)*\s*$', '', content)
-    content = re.sub(r'(?m)^\s*\|\s*[-=]{3,}\s*\|\s*$', '', content)
-    content = re.sub(r'(?m)^\s*[-=_]{5,}\s*$', '', content)
-    
-    # 4. 단독 고립 유령 화살표 줄(→ → →, ▲, ▼, ──►) 정제
-    content = re.sub(r'(?m)^\s*(?:→|->|=>|──►|◄──|▲|▼|\s)+\s*$', '', content)
-    
-    # 5. 연속 개행 정제
-    content = re.sub(r'\n{3,}', '\n\n', content)
-    return content
+    # 3. 아스키 다이어그램 파이프/플러스/대시 박스 완전 소독 (정식 마크다운 표 제외)
+    lines = content.split('\n')
+    cleaned_lines = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.strip()
+        unquoted = re.sub(r'^(?:>\s*)+', '', stripped).strip()
+        
+        # 아스키 상자 테두리선 패턴 (+----+ , ┌────┐, +====+, |-------|)
+        if re.match(r'^(?:>\s*)*(?:\+[-=+]+\+|[┌┐└┘├┤┬┴┼]+|[\│\─\━\-]{3,}|\|\s*[-=]{3,}\s*\|)$', line.strip()):
+            i += 1
+            continue
+            
+        # 아스키 박스 내부 파이프 라인 (| text |) 정제 - 정식 표(|---| 구분선 포함)가 아닌 경우
+        if (unquoted.startswith('|') or unquoted.startswith('+')) and not re.search(r'\|?\s*:?-{2,}:?\s*\|', unquoted):
+            is_real_table = False
+            for check_idx in range(max(0, i-2), min(len(lines), i+3)):
+                check_line = lines[check_idx].strip()
+                if re.search(r'\|?\s*:?-{2,}:?\s*\|', check_line):
+                    is_real_table = True
+                    break
+            if not is_real_table:
+                inner_text = re.sub(r'[|+\-─│┌┐└┘├┤┬┴┼=<>]', ' ', unquoted)
+                inner_text = re.sub(r'\s+', ' ', inner_text).strip()
+                if inner_text and len(inner_text) > 1:
+                    prefix = "> " if stripped.startswith('>') else ""
+                    cleaned_lines.append(f"{prefix}**{inner_text}**")
+                i += 1
+                continue
+                
+        # 화살표 찌꺼기 줄 (→ → →, ▲, ▼, ──►)
+        if re.match(r'^(?:>\s*)*(?:→|->|=>|──►|◄──|▲|▼|\s)+$', line):
+            i += 1
+            continue
+            
+        cleaned_lines.append(line)
+        i += 1
+        
+    res = '\n'.join(cleaned_lines)
+    res = re.sub(r'\n{3,}', '\n\n', res)
+    return res
 
 def convert_single_md_to_pdf(md_path, pdf_output_path, display_name, folder_dir):
     """단일 마크다운 문서를 지정된 PDF 경로로 컴파일 (마크다운 볼드체/서식 100% 치환)"""
