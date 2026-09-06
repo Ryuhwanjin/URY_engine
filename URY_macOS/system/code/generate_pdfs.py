@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-강의노트 Markdown을 고품질 출판용 PDF로 일괄 변환하는 스크립트 v0.7.0
+강의노트 Markdown을 고품질 출판용 PDF로 일괄 변환하는 스크립트 v0.7.1
 - .markdown_cache/ 격리 보관소의 마크다운을 읽어와 사용자 폴더(강의노트/)에 PDF만 출력
 - 각 주차별 개별 학습노트 PDF + 전체 누적 통합본 PDF를 동시 발행
 - 각주([^1]) 100% 완전 소멸 3중 방어막 및 문장/표 잘림 방지 (page-break-inside: avoid)
@@ -259,83 +259,71 @@ li {
     widows: 1;
 }
 
-blockquote {
-    margin: 8px 0;
-    padding: 6px 12px;
-    background-color: #f8fafc;
-    border-left: 3.5px solid #3b82f6;
-    color: #334155;
-    font-size: 8.8pt;
-    border-radius: 0 4px 4px 0;
-    break-inside: auto;
-}
-
-ul, ol {
-    margin-top: 4px;
-    margin-bottom: 8px;
-    padding-left: 20px;
-}
-
-li {
-    margin-bottom: 3px;
-}
-
-/* 🌟 표와 코드 블록이 페이지 경계에서 잘려나가지 않도록 보호 */
-table, tr, tbody, pre {
-    page-break-inside: avoid;
-    break-inside: avoid;
-}
-
+/* 🌟 표(Table) 잘림, 테두리 분리 및 페이지 분할 연결 100% 최적화 */
 table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 12px 0;
-    font-size: 8.5pt;
+    width: 100% !important;
+    max-width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 12px 0 !important;
+    font-size: 8.5pt !important;
+    table-layout: auto !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+thead {
+    display: table-header-group !important;
+}
+
+tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
 }
 
 th, td {
-    border: 1px solid #cbd5e1;
-    padding: 6px 10px;
-    text-align: left;
+    border: 1px solid #cbd5e1 !important;
+    padding: 6px 9px !important;
+    text-align: left !important;
+    vertical-align: top !important;
+    word-break: keep-all !important;
+    overflow-wrap: break-word !important;
 }
 
 th {
-    background-color: #f1f5f9;
-    color: #0f172a;
-    font-weight: 600;
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    font-weight: 700 !important;
 }
 
 tr:nth-child(even) {
-    background-color: #f8fafc;
+    background-color: #f8fafc !important;
 }
 
 blockquote {
-    margin: 10px 0;
-    padding: 8px 14px;
-    background-color: #f8fafc;
-    border-left: 3.5px solid #3b82f6;
-    color: #334155;
-    font-size: 9pt;
-    border-radius: 0 4px 4px 0;
+    margin: 10px 0 !important;
+    padding: 8px 14px !important;
+    background-color: #f8fafc !important;
+    border-left: 3.5px solid #3b82f6 !important;
+    color: #334155 !important;
+    font-size: 9pt !important;
+    border-radius: 0 4px 4px 0 !important;
+    break-inside: auto !important;
 }
 
 pre {
-    background-color: #0f172a;
-    color: #f8fafc;
-    padding: 10px 14px;
-    border-radius: 6px;
-    font-size: 8.5pt;
-    line-height: 1.45;
-    overflow-x: auto;
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+    padding: 10px 14px !important;
+    border-radius: 6px !important;
+    font-size: 8.5pt !important;
+    line-height: 1.45 !important;
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
 }
 
 code {
-    background-color: #f1f5f9;
-    color: #e11d48;
-    padding: 2px 4px;
-    border-radius: 3px;
-    font-size: 8.5pt;
-    font-family: 'JetBrains Mono', Menlo, Monaco, Consolas, monospace;
 }
 
 pre code {
@@ -553,6 +541,13 @@ def get_latest_date_from_md(md_path):
         return sorted(dates)[-1]
     return datetime.now().strftime("%Y-%m-%d")
 
+def clean_ascii_boxes_from_markdown(content):
+    """ASCII 박스 테두리선(+------+), 화살표(v) 등 왜곡을 유발하는 아스키 라인 100% 자동 정제"""
+    content = re.sub(r'(?m)^\s*\+[-=+]+\+\s*$', '', content)
+    content = re.sub(r'(?m)^\s*v(?:\s+v)*\s*$', '', content)
+    content = re.sub(r'\n{3,}', '\n\n', content)
+    return content
+
 def convert_single_md_to_pdf(md_path, pdf_output_path, display_name, folder_dir):
     """단일 마크다운 문서를 지정된 PDF 경로로 컴파일 (마크다운 볼드체/서식 100% 치환)"""
     pdf_output_path = unicodedata.normalize("NFC", pdf_output_path)
@@ -567,11 +562,12 @@ def convert_single_md_to_pdf(md_path, pdf_output_path, display_name, folder_dir)
 
     print(f"[{display_name}] HTML 변환 중...")
 
-    # 0. 마크다운 원문에서 각주(^1, ^fn, [1], ^1: ...) 100% 완전 소멸 프리클리닝 (단행 & 다행/들여쓰기 정의 포함)
+    # 0. 마크다운 원문에서 아스키 박스 라인 및 각주 100% 완전 소멸 프리클리닝
     try:
         with open(md_path, "r", encoding="utf-8") as f_md:
             raw_md = f_md.read()
-        cleaned_md = re.sub(r'(?m)^\s*\[\^?[a-zA-Z0-9_-]+\]:\s*.*(?:\n(?:[ \t]+.*|\s*$))*', '', raw_md)
+        cleaned_md = clean_ascii_boxes_from_markdown(raw_md)
+        cleaned_md = re.sub(r'(?m)^\s*\[\^?[a-zA-Z0-9_-]+\]:\s*.*(?:\n(?:[ \t]+.*|\s*$))*', '', cleaned_md)
         cleaned_md = re.sub(r'\[\^?[a-zA-Z0-9_-]+\]', '', cleaned_md)
         cleaned_md = re.sub(r'\[\d+\](?!\()', '', cleaned_md)
         if cleaned_md != raw_md:

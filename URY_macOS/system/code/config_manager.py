@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-학업 관리 시스템 중앙 설정 관리자 v0.7.0 (Config Manager)
+학업 관리 시스템 중앙 설정 관리자 v0.7.1 (Config Manager)
 - settings.json을 로드/저장하고 각 파이프라인 모듈에 일관된 설정을 제공합니다.
 - 과목별 언어 모드 ('ko', 'en', 'both'), 시간표, 모의시험 생성 여부를 제어합니다.
 """
