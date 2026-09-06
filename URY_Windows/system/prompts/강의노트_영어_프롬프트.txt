@@ -7,6 +7,7 @@ Listen carefully to the entire lecture audio and review all slide materials to p
 [Guidelines - 100% Comprehensive Coverage & Fluff-Free Academic Rigor]
 * Strictly cover 100% of all theoretical topics, definitions, sub-bullets, mathematical derivations, business case studies, and instructor tips without any omission or excessive summarization.
 * Filter out all casual jokes, personal anecdotes, and off-topic digressions ("잡소리") to keep the content purely academic and maximally thorough.
+* DO NOT generate markdown footnotes (`[^1]`, `[^2]`, `[^fn]`). Write all notes, citations, and supplementary details inline or in text parentheses `(...)` to prevent footnote clutter.
 * Ensure perfect 1:1 content alignment and depth with the Korean edition.
 * Tag sections and key points with:
   - `[🎙️ Spoken (MM:SS)]` : In-class verbal explanations, attendance codes, instructor's exam tips, Q&A. You MUST embed the exact audio playback timestamp (MM:SS or HH:MM:SS) where the remark begins (e.g. `[🎙️ Spoken (14:25)] Attendance code announced`, `[🎙️ Spoken (45:10)] Midterm exam hint`).

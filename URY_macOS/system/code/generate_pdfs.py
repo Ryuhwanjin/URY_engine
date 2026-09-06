@@ -158,19 +158,28 @@ CSS_STYLE = """
 
 @page {
     size: A4;
-    margin: 12mm 14mm 14mm 14mm;
+    margin: 10mm 12mm 12mm 12mm;
     @bottom-center {
         content: counter(page);
-        font-size: 9pt;
+        font-size: 8.5pt;
         font-family: 'Pretendard', sans-serif;
         color: #64748b;
     }
 }
 
+/* 🌟 각주 원천 숨김 차단 */
+.footnotes, section.footnotes, sup.footnote-ref, a.footnote-ref, [role="doc-endnote"], [role="doc-noteref"] {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
 body {
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
-    font-size: 9.5pt;
-    line-height: 1.68;
+    font-size: 9.2pt;
+    line-height: 1.65;
     color: #1e293b;
     word-break: keep-all;
     overflow-wrap: break-word;
@@ -521,6 +530,18 @@ def convert_single_md_to_pdf(md_path, pdf_output_path, display_name, folder_dir)
 
     print(f"[{display_name}] HTML 변환 중...")
 
+    # 0. 마크다운 원문에서 각주(^1, ^fn, ^1: ...) 100% 완전 소멸 프리클리닝
+    try:
+        with open(md_path, "r", encoding="utf-8") as f_md:
+            raw_md = f_md.read()
+        cleaned_md = re.sub(r'^\s*\[\^(?:\d+|[a-zA-Z0-9_-]+)\]:\s*.*$', '', raw_md, flags=re.MULTILINE)
+        cleaned_md = re.sub(r'\[\^(?:\d+|[a-zA-Z0-9_-]+)\]', '', cleaned_md)
+        if cleaned_md != raw_md:
+            with open(md_path, "w", encoding="utf-8") as f_md:
+                f_md.write(cleaned_md)
+    except Exception:
+        pass
+
     # 1. pandoc 또는 순수 파이썬 마크다운 변환기로 HTML 생성
     pandoc_bin = get_pandoc_path()
     if pandoc_bin and os.path.exists(pandoc_bin):
@@ -538,6 +559,12 @@ def convert_single_md_to_pdf(md_path, pdf_output_path, display_name, folder_dir)
     # 2. HTML 내용 읽기
     with open(html_path, "r", encoding="utf-8") as f:
         html = f.read()
+
+    # 🌟 각주 HTML 태그(footnotes section, footnote-ref, #fn 링크) 100% 원천 제거
+    html = re.sub(r'<section\s+class="footnotes[^"]*"[^>]*>.*?</section>', '', html, flags=re.DOTALL)
+    html = re.sub(r'<sup\s+id="fnref[^"]*"[^>]*>.*?</sup>', '', html, flags=re.DOTALL)
+    html = re.sub(r'<a\s+href="#fn[^"]*"[^>]*>.*?</a>', '', html, flags=re.DOTALL)
+    html = re.sub(r'\[\^\d+\]', '', html)
 
     # 남아있는 파싱되지 않은 **볼드체**를 HTML <strong> 태그로 최종 구출 치환
     html = re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', html)
