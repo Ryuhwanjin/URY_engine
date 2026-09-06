@@ -1647,9 +1647,11 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         # 슬라이드 조작 버튼
         slide_btn_row = tk.Frame(left_content, bg="#ffffff")
         slide_btn_row.pack(fill=tk.X, pady=(0, 8))
-        SquareRoundButton(slide_btn_row, text="➕  슬라이드 추가...", bg="#f1f5f9", hover_bg="#e2e8f0", fg="#334155", radius=8, height=30, font=("Pretendard", 9, "bold"), command=self.browse_studio_slides, parent_bg="#ffffff").pack(side=tk.LEFT, padx=(0, 6))
-        SquareRoundButton(slide_btn_row, text="📷  칠판 판서 추가...", bg="#f1f5f9", hover_bg="#e2e8f0", fg="#334155", radius=8, height=30, font=("Pretendard", 9, "bold"), command=self.browse_blackboard_photo, parent_bg="#ffffff").pack(side=tk.LEFT, padx=(0, 6))
-        SquareRoundButton(slide_btn_row, text="🔄 새로고침", bg="#f1f5f9", hover_bg="#e2e8f0", fg="#64748b", radius=8, height=30, font=("Pretendard", 9), command=self.refresh_studio_slides, parent_bg="#ffffff").pack(side=tk.RIGHT)
+        SquareRoundButton(slide_btn_row, text="➕  슬라이드 추가...", bg="#f1f5f9", hover_bg="#e2e8f0", fg="#334155", radius=8, height=30, font=("Pretendard", 9, "bold"), command=self.browse_studio_slides, parent_bg="#ffffff").pack(side=tk.LEFT, padx=(0, 4))
+        SquareRoundButton(slide_btn_row, text="📷  칠판 판서...", bg="#f1f5f9", hover_bg="#e2e8f0", fg="#334155", radius=8, height=30, font=("Pretendard", 9, "bold"), command=self.browse_blackboard_photo, parent_bg="#ffffff").pack(side=tk.LEFT, padx=(0, 4))
+        SquareRoundButton(slide_btn_row, text="☐ 전체 해제", bg="#fef2f2", hover_bg="#fee2e2", fg="#dc2626", radius=8, height=30, font=("Pretendard", 8, "bold"), command=self.deselect_all_studio_slides, parent_bg="#ffffff").pack(side=tk.RIGHT, padx=(2, 0))
+        SquareRoundButton(slide_btn_row, text="☑️ 전체 선택", bg="#f0fdf4", hover_bg="#dcfce7", fg="#166534", radius=8, height=30, font=("Pretendard", 8, "bold"), command=self.select_all_studio_slides, parent_bg="#ffffff").pack(side=tk.RIGHT, padx=(2, 0))
+        SquareRoundButton(slide_btn_row, text="🔄 새로고침", bg="#f1f5f9", hover_bg="#e2e8f0", fg="#64748b", radius=8, height=30, font=("Pretendard", 8), command=self.refresh_studio_slides, parent_bg="#ffffff").pack(side=tk.RIGHT, padx=(2, 0))
 
         # 등록된 슬라이드 카드 칩 컨테이너
         slide_canvas_frame = tk.Frame(left_content, bg="#ffffff")
@@ -2062,9 +2064,15 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         # 2. 슬라이드 목록 갱신
         self.refresh_studio_slides()
 
-    def refresh_studio_file_listboxes(self):
-        """스튜디오 오디오 및 슬라이드 목록 동시 새로고침"""
-        self.on_studio_course_changed()
+    def select_all_studio_slides(self):
+        """스튜디오 강의 슬라이드 전체 선택"""
+        for var in self.slide_check_vars.values():
+            var.set(True)
+
+    def deselect_all_studio_slides(self):
+        """스튜디오 강의 슬라이드 전체 선택 해제"""
+        for var in self.slide_check_vars.values():
+            var.set(False)
 
     def refresh_studio_slides(self):
         for widget in self.slide_inner_frame.winfo_children():
