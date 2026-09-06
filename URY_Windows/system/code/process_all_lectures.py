@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-모든 과목의 음성 녹음을 감지하여 Gemini AI로 주차별 학습노트 및 전체 통합본을 .markdown_cache에 자동 적재하는 스크립트 v0.6.7
+모든 과목의 음성 녹음을 감지하여 Gemini AI로 주차별 학습노트 및 전체 통합본을 .markdown_cache에 자동 적재하는 스크립트 v0.6.9
 - .m4a 및 .mp3 (.wav, .aac) 파일 완전 지원
 - 주차별 개별 마크다운([과목]_[N]주차_강의노트.md) + 전체 누적 통합본([과목]_통합강의노트.md) 동시 생성
 - 마크다운 파일은 .markdown_cache/ 격리 보관소에 저장하여 사용자 폴더에는 오직 PDF만 노출
@@ -1074,10 +1074,6 @@ def generate_custom_lecture_note(cname, audio_path=None, slide_paths=None, date_
             else:
                 source_desc = f"This lecture note is thoroughly synthesized from official lecture slides and course materials for [{cname}] ({slide_list_str if slide_fnames else 'None'})."
 
-            audio_rule_en = f"- `[🎙️ {audio_fname} (MM:SS)]` : In-class verbal explanations, attendance codes, instructor's exam tips with exact audio playback timestamps (e.g. `[🎙️ {audio_fname} (14:25)] Attendance code announced`)." if has_audio else "- `[🎙️ Spoken (MM:SS)]` : In-class verbal lecture notes."
-            slide_rule_en = f"- `[Slide N]` or `[📖 Slide N]` : Official slide bullet points, diagrams, and definitions (e.g. `[Slide 3]`, `[Slide 5]`, `[Slide 6~7]`). You MUST use `[Slide N]` format so slide screenshots are automatically extracted and embedded." if slide_fnames else "- `[📖 Slides p.page]` : Course materials and textbook sources."
-            hybrid_rule_en = f"- `[💡 Integrated: {audio_fname} (MM:SS) + Slide N]` : Theoretical concepts synthesized with practical business cases and verbal explanations." if (has_audio and slide_fnames) else "- `[💡 Integrated]` : Synthesized concepts."
-
             base_p = f"""You are the Head TA for [{cname}] powered by URY Engine.
 Course: {cname} | Date: {actual_date_str} ({weekday_en}) | Week {week_num}
 Context: {source_desc}
@@ -1087,26 +1083,20 @@ Produce a rigorous, publication-grade academic lecture note in English for exam 
 [Guidelines - 100% Comprehensive Coverage & Fluff-Free Academic Rigor]
 * Strictly cover 100% of all theoretical topics, definitions, sub-bullets, mathematical derivations, business case studies, and instructor tips without any omission or excessive summarization.
 * Filter out all casual jokes, personal anecdotes, and off-topic digressions ("잡소리") to keep the content purely academic and maximally thorough.
-* Tag sections and key points with:
-   {audio_rule_en}
-   {slide_rule_en}
-   {hybrid_rule_en}
+* DO NOT generate any bracket tags (e.g., `[Slide 1]`, `[Slide 2~3]`, `[🎙️ Spoken]`, `[📖 Textbook]`, `[Tagged]`). Write in clean, publication-ready academic prose.
 * DO NOT output raw ASCII art boxes (e.g. `┌─┐`, `│`, `└─┘`, `+---+`) or repetitive ASCII divider lines (`==========`). Instead, use clean Markdown tables, headings, or blockquotes.
-* Format grading policies, evaluation criteria, and assessment weights strictly as a concise Markdown Table (`| Assessment Component | Weight (%) | Operational Details & Policies [Tagged] |`). Do NOT write repetitive paragraphs for every single grade letter.
+* Format grading policies, evaluation criteria, and assessment weights strictly as a concise Markdown Table (`| Assessment Component | Weight (%) | Operational Details & Policies |`). Do NOT write repetitive paragraphs for every single grade letter.
 * You MUST fully write all 4 sections to the very end without cutting off early: Section 1, Section 2 (deep theory & diagrams), Section 3 (keywords table & takeaways), and Section 4 (Action checklist).
 
 Format:
 # {cname} Week {week_num} Lecture Notes ({actual_date_str})
 > 📌 **Course**: {cname} | **Week**: Week {week_num} | **Date**: {actual_date_str} ({weekday_en})
-> 🏷️ **Source Reference Files**:
-> - 🎙️ **Lecture Audio**: {audio_fname if has_audio else 'No audio recording'}
-> - 📖 **Lecture Slides**: {slide_list_str if slide_fnames else 'No slide files specified'}
 
-## 📌 1. Class Announcements & Operational Guidelines `[Tagged]`
+## 📌 1. Class Announcements & Operational Guidelines
 - Attendance verification codes, quiz announcements, homework deadlines, course policies with exact timestamps.
-- Assessment Breakdown Table (`| Assessment Component | Weight (%) | Operational Details & Policies [Tagged] |`).
+- Assessment Breakdown Table (`| Assessment Component | Weight (%) | Operational Details & Policies |`).
 
-## 💡 2. In-Depth Theoretical & Conceptual Analysis `[Tagged]`
+## 💡 2. In-Depth Theoretical & Conceptual Analysis
 - Zero filler or off-topic chitchat: Exhaustive, granular, and publication-grade academic analysis of all course concepts, theories, models, and slide bullet points.
 - Provide fully articulated theoretical explanations, derivations, mathematical formulations (LaTeX/KaTeX), architecture diagrams, and comparison tables.
 - Specific business scenarios, numerical examples, and professor's academic emphasis explained in maximum depth.
@@ -1160,14 +1150,12 @@ The following content was ALREADY synthesized in the earlier session of Week {we
    - 영문 노트에 있는 2번 이론 분석(마케팅 가치 패러다임, 도표, 소비자 인식 및 브랜드 자산, 4Ps 테이블 등)이 한글 강의노트에서 절대로 누락되지 않도록 100% 대칭 수록할 것.
 2. [표 및 시각 요소 엄격 준수]:
    - 아스키 박스 그림(`┌─┐`, `│`, `└─┘`, `+---+`)이나 반복선(`==========`)을 절대 출력하지 마십시오. 표(Markdown Table)나 표준 인용구(`>`)를 사용하십시오.
-   - 슬라이드 인용 시 `[Slide N]` (예: `[Slide 3]`, `[Slide 5]`, `[Slide 6~7]`) 형태의 태그를 명시하여 고화질 슬라이드 도표 이미지가 자동 추출·임베드되도록 하십시오.
-   - 성적 평가 방식은 영문처럼 `| 평가 항목 | 비중 (%) | 세부 운영 규칙 및 정책 [출처 태그] |` 테이블로 깔끔하게 정리할 것 (A+, A0 등 개별 학점 구간을 줄글로 길게 늘여 쓰지 말 것).
+   - 본문 문장 사이에 `[Slide 1]`, `[Slide 2~3]`, `[🎙️ 음성]`, `[📖 교재]`, `[Tagged]` 같은 대괄호 태그나 슬라이드 번호 태그를 절대로 생성하지 마십시오. 100% 깔끔한 학술 서술체로 작성하십시오.
+   - 성적 평가 방식은 영문처럼 `| 평가 항목 | 비중 (%) | 세부 운영 규칙 및 정책 |` 테이블로 깔끔하게 정리할 것 (A+, A0 등 개별 학점 구간을 줄글로 길게 늘여 쓰지 말 것).
    - 4Ps 분석표, 키워드 사전 표 역시 영문 마스터 노트의 컬럼과 행 구조를 1:1 그대로 유지하여 번역할 것.
-3. [출처 태그 보존]:
-   - 영문 마스터 노트에 표기된 모든 출처 태그(`[🎙️ {audio_fname} (MM:SS)]`, `[Slide X]`, `[💡 통합]`)를 한글 노트의 정확한 해당 위치에 동일하게 기재할 것.
-4. [전문 용어 병기]:
+3. [전문 용어 병기]:
    - 핵심 개념은 반드시 `한국어 번역 (English Official Term)` 형태로 병기할 것.
-5. [절대 중단 금지]:
+4. [절대 중단 금지]:
    - 토큰 제한이 16,384로 충분히 확보되어 있으므로, 절대로 1번 섹션에서 멈추지 말고 4번 체크리스트까지 완벽하게 끝까지 작성할 것.
 
 [영문 마스터 강의노트 청사진]:
@@ -1178,15 +1166,12 @@ The following content was ALREADY synthesized in the earlier session of Week {we
 한국어 강의노트 형식:
 # {cname} {week_num}주차 맞춤 강의노트 ({actual_date_str})
 > 📌 **과목명**: {cname} | **주차**: {week_num}주차 | **수업 일자**: {actual_date_str} ({weekday_kr})
-> 🏷️ **참조 원본 파일**:
-> - 🎙️ **강의 음성**: {audio_fname if has_audio else '음성 녹음 없음'}
-> - 📖 **강의 슬라이드**: {slide_list_str if slide_fnames else '지정된 슬라이드 없음'}
 
-## 📌 1. 수업 개요 및 주요 공지사항 `[Tagged]`
-- 평가 기준 테이블 (`| 평가 항목 | 비중 (%) | 세부 운영 규칙 및 정책 [출처 태그] |`) 및 출석/과제/시험 규정
+## 📌 1. 수업 개요 및 주요 공지사항
+- 평가 기준 테이블 (`| 평가 항목 | 비중 (%) | 세부 운영 규칙 및 정책 |`) 및 출석/과제/시험 규정
 
-## 💡 2. 핵심 이론 및 상세 개념 분석 `[Tagged]`
-- 영문 마스터 노트의 2.1, 2.2, 2.3 등 모든 이론, 프레임워크, 도표를 100% 대칭 해설 (각 소제목 및 이론별로 `[Slide N]` 태그 필수 명시)
+## 💡 2. 핵심 이론 및 상세 개념 분석
+- 영문 마스터 노트의 2.1, 2.2, 2.3 등 모든 이론, 프레임워크, 도표를 100% 대칭 해설
 
 ## 🎯 3. 핵심 키워드 정리 & 단원 종합 요약
 ### 3.1 🔑 필수 핵심 키워드 사전
@@ -1208,10 +1193,6 @@ The following content was ALREADY synthesized in the earlier session of Week {we
                 else:
                     source_desc = f"본 강의노트는 [{cname}]의 공식 강의 슬라이드 및 교재 자료 ({slide_list_str if slide_fnames else '없음'})를 바탕으로 작성되는 완벽한 시험 대비 독학용 집중 강의노트입니다."
 
-                audio_rule_kr = "- `[🎙️ 음성 (MM:SS)]` : 교수님 실제 육성/설명/시험팁 (음성 발언 시작 시간 표기, 예: `[🎙️ 음성 (14:25)]`)." if has_audio else "- `[🎙️ 음성]` : 교수님 실제 육성 강의노트."
-                slide_rule_kr = "- `[Slide N]` 또는 `[📖 Slide N]` 또는 `[📖 강의계획서]` : 공식 슬라이드 도표 및 출처 (예: `[Slide 3]`, `[Slide 5]`, `[Slide 6~7]`, `[📖 강의계획서]`). 반드시 `[Slide N]` 표기를 사용하여 고화질 이미지 도표가 자동 추출·임베드되도록 하십시오." if slide_fnames else "- `[📖 교재·자료]` : 교재 및 슬라이드 출처."
-                hybrid_rule_kr = "- `[💡 통합]` : 이론과 교수님 육성 해설 결합."
-
                 base_p = f"""당신은 해당 전공 과목의 최고 수석 조교이자 URY Engine AI입니다.
 과목명: {cname} | 일자: {actual_date_str}({weekday_kr}) | {week_num}주차
 배경 정보: {source_desc}
@@ -1222,28 +1203,21 @@ The following content was ALREADY synthesized in the earlier session of Week {we
 - 슬라이드 및 교재에 포함된 모든 공식 정의, 세부 불렛포인트, 예시, 비즈니스/수학적 사례, 수식, 표의 내용을 단 하나도 요약하여 누락하지 말고 100% 완전하게 한국어로 번역 및 상세 해설할 것.
 - 핵심 전문 용어는 반드시 `한글 번역 (English Official Term)` 형태로 병기할 것.
 - 아스키 박스 그림(`┌─┐`, `│`, `└─┘`, `+---+`)이나 반복선(`==========`)을 절대 출력하지 마십시오. 표(Markdown Table)나 표준 인용구(`>`)를 사용하십시오.
-- 슬라이드 내용을 인용/분석할 때마다 해당 슬라이드 번호를 `[Slide N]` (예: `[Slide 3]`, `[Slide 5]`, `[Slide 6~7]`) 태그로 정확히 명시하여 고화질 슬라이드 도표가 자동 생성되도록 하십시오.
-- 평가 규정 및 세부 배점은 `| 평가 항목 | 비중 (%) | 세부 운영 규칙 및 정책 [출처 태그] |` 마크다운 테이블로 집약하고, 불필요한 줄글로 페이지를 낭비하지 말 것.
+- 본문 문장 사이에 `[Slide 1]`, `[Slide 2~3]`, `[🎙️ 음성]`, `[📖 교재]`, `[Tagged]` 같은 대괄호 태그나 슬라이드 번호 태그를 절대로 생성하지 마십시오. 100% 깔끔한 학술 서술체로 작성하십시오.
+- 평가 규정 및 세부 배점은 `| 평가 항목 | 비중 (%) | 세부 운영 규칙 및 정책 |` 마크다운 테이블로 집약하고, 불필요한 줄글로 페이지를 낭비하지 말 것.
 - 반드시 1. 개요, 2. 핵심 이론 분석, 3. 키워드 사전, 4. 체크리스트까지 4개 섹션 전체를 끝까지 완벽히 작성할 것.
 
-[작성 가이드라인 - 출처 구분 및 파일명 네비게이터 필수]
-1. 출처 태그 명시:
-   {audio_rule_kr}
-   {slide_rule_kr}
-   {hybrid_rule_kr}
-2. 형식:
+[작성 가이드라인]
+1. 형식:
 # {cname} {week_num}주차 맞춤 강의노트 ({actual_date_str})
 > 📌 **과목명**: {cname} | **주차**: {week_num}주차 | **수업 일자**: {actual_date_str} ({weekday_kr})
-> 🏷️ **참조 원본 파일**:
-> - 🎙️ **강의 음성**: {audio_fname if has_audio else '음성 녹음 없음'}
-> - 📖 **강의 슬라이드**: {slide_list_str if slide_fnames else '지정된 슬라이드 없음'}
 
-## 📌 1. 수업 개요 및 주요 공지사항 `[Tagged]`
-- 이번 주차 핵심 학습 목표 및 출석/과제/시험 관련 공지 사항을 타임스탬프와 함께 완벽 정리
-- 성적 평가 기준 테이블 (`| 평가 항목 | 비중 (%) | 세부 운영 규칙 및 정책 [출처 태그] |`)
+## 📌 1. 수업 개요 및 주요 공지사항
+- 이번 주차 핵심 학습 목표 및 출석/과제/시험 관련 공지 사항을 완벽 정리
+- 성적 평가 기준 테이블 (`| 평가 항목 | 비중 (%) | 세부 운영 규칙 및 정책 |`)
 
-## 💡 2. 핵심 이론 및 상세 개념 분석 `[Tagged]`
-- 잡소리(사담, 농담, 딴소리)는 일절 배제하고, 슬라이드와 강의의 모든 챕터, 불렛포인트, 세부 개념, 공식을 빠짐없이 체계적인 번호와 소제목으로 '최대한 상세하게' 해설 (각 섹션마다 `[Slide N]` 필수 부착)
+## 💡 2. 핵심 이론 및 상세 개념 분석
+- 잡소리(사담, 농담, 딴소리)는 일절 배제하고, 슬라이드와 강의의 모든 챕터, 불렛포인트, 세부 개념, 공식을 빠짐없이 체계적인 번호와 소제목으로 '최대한 상세하게' 해설
 - 비교 표(Markdown Table), 수식(LaTeX/KaTeX) 적극 활용
 
 ## 🎯 3. 핵심 키워드 정리 & 단원 종합 요약
