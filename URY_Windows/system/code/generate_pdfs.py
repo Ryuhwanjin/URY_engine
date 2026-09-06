@@ -154,7 +154,7 @@ CSS_STYLE = """
 
 @page {
     size: A4;
-    margin: 10mm 12mm 12mm 12mm;
+    margin: 12mm 14mm 14mm 14mm;
     @bottom-center {
         content: counter(page);
         font-size: 8.5pt;
@@ -179,58 +179,85 @@ CSS_STYLE = """
 body {
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
     font-size: 9.2pt;
-    line-height: 1.65;
+    line-height: 1.5;
     color: #1e293b;
     word-break: keep-all;
     overflow-wrap: break-word;
 }
 
 h1 {
-    font-size: 19pt;
+    font-size: 18pt;
     color: #0f172a;
-    border-bottom: 2.5px solid #2563eb;
-    padding-bottom: 6px;
-    margin-top: 0;
-    margin-bottom: 14px;
-    page-break-after: avoid;
-    break-after: avoid;
-}
-
-h2 {
-    font-size: 13.5pt;
-    color: #1e3a8a;
-    border-bottom: 1.5px solid #cbd5e1;
+    border-bottom: 2px solid #2563eb;
     padding-bottom: 4px;
-    margin-top: 24px;
+    margin-top: 0;
     margin-bottom: 10px;
     page-break-after: avoid;
     break-after: avoid;
 }
 
-h3 {
-    font-size: 11pt;
-    color: #2563eb;
-    margin-top: 16px;
+h2 {
+    font-size: 13pt;
+    color: #1e3a8a;
+    border-bottom: 1px solid #cbd5e1;
+    padding-bottom: 3px;
+    margin-top: 14px;
     margin-bottom: 6px;
     page-break-after: avoid;
     break-after: avoid;
 }
 
-h4 {
-    font-size: 10pt;
-    color: #0369a1;
-    margin-top: 12px;
+h3 {
+    font-size: 10.5pt;
+    color: #2563eb;
+    margin-top: 10px;
     margin-bottom: 4px;
     page-break-after: avoid;
     break-after: avoid;
 }
 
-/* 🌟 문장, 단락, 목록, 인용구 잘림 방지 */
-p, li, blockquote {
-    page-break-inside: avoid;
-    break-inside: avoid;
-    orphans: 3;
-    widows: 3;
+h4 {
+    font-size: 9.5pt;
+    color: #0369a1;
+    margin-top: 8px;
+    margin-bottom: 3px;
+    page-break-after: avoid;
+    break-after: avoid;
+}
+
+/* 🌟 하단 거대 여백 방지 (문장/단락 자연스러운 흐름) */
+p {
+    margin-top: 4px;
+    margin-bottom: 6px;
+    line-height: 1.5;
+    break-inside: auto;
+    orphans: 1;
+    widows: 1;
+}
+
+ul, ol {
+    margin-top: 3px;
+    margin-bottom: 6px;
+    padding-left: 18px;
+}
+
+li {
+    margin-bottom: 2px;
+    line-height: 1.5;
+    break-inside: auto;
+    orphans: 1;
+    widows: 1;
+}
+
+blockquote {
+    margin: 8px 0;
+    padding: 6px 12px;
+    background-color: #f8fafc;
+    border-left: 3.5px solid #3b82f6;
+    color: #334155;
+    font-size: 8.8pt;
+    border-radius: 0 4px 4px 0;
+    break-inside: auto;
 }
 
 ul, ol {
