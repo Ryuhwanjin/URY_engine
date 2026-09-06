@@ -123,7 +123,7 @@ def compile_cheatsheet_pdf(md_path, pdf_path, title):
     with open(html_path, "r", encoding="utf-8") as f:
         html = f.read()
 
-    # 초고밀도 A4 1페이지 전용 CSS
+    # 초고밀도 A4 1페이지 중앙정렬 전용 CSS
     css = """
     <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -136,72 +136,79 @@ def compile_cheatsheet_pdf(md_path, pdf_path, title):
         font-size: 8.5pt;
         line-height: 1.35;
         color: #0f172a;
-        margin: 0;
+        margin: 0 auto;
         padding: 0;
         background: #ffffff;
+        text-align: center;
+    }
+    h1, h2, h3, h4, p, div, blockquote {
+        text-align: center !important;
     }
     h1 {
         font-size: 13pt;
         font-weight: 800;
         color: #1e3a8a;
-        text-align: center;
-        margin: 0 0 4px 0;
+        margin: 0 auto 4px auto;
         padding-bottom: 3px;
         border-bottom: 2px solid #2563eb;
     }
     blockquote {
         font-size: 7.5pt;
         color: #475569;
-        text-align: center;
-        margin: 2px 0 6px 0;
+        margin: 2px auto 6px auto;
         padding: 2px 6px;
         background: #f1f5f9;
         border: 1px solid #cbd5e1;
         border-radius: 4px;
+        display: inline-block;
     }
     hr {
         border: 0;
         border-top: 1px solid #e2e8f0;
-        margin: 4px 0;
+        margin: 4px auto;
     }
     h2 {
         font-size: 9.5pt;
         font-weight: 700;
         color: #1e40af;
-        margin: 6px 0 2px 0;
-        padding: 2px 4px;
+        margin: 6px auto 2px auto;
+        padding: 2px 8px;
         background: #eff6ff;
         border-left: 3px solid #2563eb;
+        border-right: 3px solid #2563eb;
         border-radius: 2px;
+        display: inline-block;
     }
     ul, ol {
-        margin: 2px 0 4px 0;
-        padding-left: 14px;
+        margin: 2px auto 4px auto;
+        padding-left: 0;
+        list-style-position: inside;
+        text-align: center;
     }
     li {
         margin-bottom: 1.5px;
         line-height: 1.3;
+        text-align: center;
     }
     strong {
         color: #0f172a;
         font-weight: 700;
     }
     table {
-        width: 100%;
+        width: 98%;
+        margin: 4px auto 6px auto;
         border-collapse: collapse;
         font-size: 7.5pt;
-        margin: 3px 0 5px 0;
     }
     th, td {
         border: 1px solid #cbd5e1;
         padding: 2.5px 5px;
-        text-align: left;
+        text-align: center !important;
     }
     th {
         background: #f8fafc;
         color: #1e293b;
         font-weight: 700;
-        text-align: center;
     }
     code {
         font-size: 8pt;

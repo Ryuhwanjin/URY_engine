@@ -13,6 +13,7 @@ Produce a rigorous, authentic, publication-grade practice examination for univer
 2. Focus on core theoretical concepts, definitions, derivations/calculations, decision scenarios, and key models presented in the class.
 3. Distractors (incorrect options) must be intellectually plausible and target common student misconceptions, rather than being obviously absurd.
 4. The Answer Key must provide the correct answer, exact textbook/lecture rationale, and an in-depth explanation of why each distractor is wrong.
+5. STRICT SYLLABUS EXCLUSION: Do NOT test any course administrative rules, syllabus policies, grading weights, office hours, or attendance rules. Test ONLY academic subject matter, theoretical models, derivations, and lecture concepts.
 
 [Document Layout]
 # 📝 [{cname}] {exam_type} Practice Examination

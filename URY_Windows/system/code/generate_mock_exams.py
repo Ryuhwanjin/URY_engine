@@ -514,9 +514,13 @@ def generate_custom_mock_exam(cname, scope="전범위", question_count=10, quest
 
     log_func("📂 출제 참고 학습 자료 스캔 및 텍스트 취합 중...")
     lecture_text = ""
+    def is_syllabus_file(filepath):
+        fname_lower = os.path.basename(filepath).lower()
+        return any(k in fname_lower for k in ["syllabus", "강의계획서", "실러버스", "계획서", "오피스아워"])
+
     if selected_files:
         for fpath in selected_files:
-            if not os.path.exists(fpath):
+            if not os.path.exists(fpath) or is_syllabus_file(fpath):
                 continue
             fname = os.path.basename(fpath)
             try:
@@ -528,7 +532,7 @@ def generate_custom_mock_exam(cname, scope="전범위", question_count=10, quest
                     matched_md = None
                     if os.path.exists(cache_dir):
                         for mdf in glob.glob(os.path.join(cache_dir, "*.md")):
-                            if base in os.path.basename(mdf):
+                            if base in os.path.basename(mdf) and not is_syllabus_file(mdf):
                                 matched_md = mdf
                                 break
                     if matched_md and os.path.exists(matched_md):
@@ -554,6 +558,8 @@ def generate_custom_mock_exam(cname, scope="전범위", question_count=10, quest
                 md_files = glob.glob(os.path.join(notes_dir, "*.md"))
 
         for mdf in sorted(md_files):
+            if is_syllabus_file(mdf):
+                continue
             try:
                 with open(mdf, "r", encoding="utf-8", errors="ignore") as f:
                     lecture_text += f"\n--- [{os.path.basename(mdf)}] ---\n" + f.read() + "\n"

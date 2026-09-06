@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-🎓 URY Engine v0.6.3 - Windows 전용 10대 핵심 기능 완전 자동 종합 검증 스위트 (test_win_environment.py)
+🎓 URY Engine v0.6.4 - Windows 전용 10대 핵심 기능 완전 자동 종합 검증 스위트 (test_win_environment.py)
 """
 import os
 import sys
@@ -15,7 +15,7 @@ warnings.filterwarnings("ignore", message=".*fitz.*")
 
 def run_tests():
     print("=========================================================")
-    print("🚀 URY Engine v0.6.3 - 윈도우 환경 10대 핵심 기능 완전 자동 검증")
+    print("🚀 URY Engine v0.6.4 - 윈도우 환경 10대 핵심 기능 완전 자동 검증")
     print("=========================================================\n")
     
     passed = 0
