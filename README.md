@@ -1,4 +1,4 @@
-# 🎓 URY Engine v0.6.2 — Academic Note & Exam Studio
+# 🎓 URY Engine v0.6.3 — Academic Note & Exam Studio
 
 > **Ultimate Result for You Engine** — 대학 강의 녹음 음성과 강의 슬라이드(PDF, PPTX)를 AI(Google Gemini)로 결합하여 출판물급 **학술 강의노트, 실전 모의고사, A4 치트시트, 목표 학점 학습 로드맵**을 자동 제작해 주는 듀얼 플랫폼(macOS & Windows) 전공 학업 솔루션입니다.
 
@@ -18,11 +18,11 @@
 ## ⚡ 빠른 시작 (Quick Start)
 
 ### 🍏 macOS (맥북 / 맥 스튜디오)
-1. **다운로드**: `URY_Engine_v0.6.2.dmg` (또는 `macOS.zip`) 열기 ➔ `URY Engine.app`을 `Applications`(응용 프로그램) 폴더로 드래그
+1. **다운로드**: `URY_Engine_v0.6.3.dmg` (또는 `macOS.zip`) 열기 ➔ `URY Engine.app`을 `Applications`(응용 프로그램) 폴더로 드래그
 2. **원클릭 실행**: Finder에서 **`01_macOS_실행하기.command`** 더블클릭 *(macOS 보안 격리 자동 해제 후 즉시 구동)*
 
 ### 🪟 Windows (윈도우 PC)
-1. **압축 해제**: `URY_Engine_v0.6.2_Windows.zip` 압축 해제
+1. **압축 해제**: `URY_Engine_v0.6.3_Windows.zip` 압축 해제
 2. **원클릭 실행**: `01_실행하기.bat` (또는 `설정관리자.bat`) 더블클릭
 
 ---
@@ -58,4 +58,4 @@ URY_Engine/
 
 ---
 
-> 💡 **License & Support**: URY Engine Academic Studio v0.6.2
+> 💡 **License & Support**: URY Engine Academic Studio v0.6.3
