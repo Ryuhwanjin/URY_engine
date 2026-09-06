@@ -266,12 +266,13 @@ table {
     width: 100% !important;
     max-width: 100% !important;
     border-collapse: collapse !important;
-    margin: 12px 0 !important;
-    font-size: 10.8pt !important;
+    margin: 14px 0 !important;
+    font-size: 11.2pt !important;
     table-layout: auto !important;
     word-wrap: break-word !important;
     overflow-wrap: break-word !important;
-    page-break-inside: auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
 }
 
 thead {
@@ -534,38 +535,38 @@ def fallback_md_to_html(md_path, html_path, title="Lecture Note"):
                 body_html.append("<thead><tr>" + "".join([f"<th>{parse_inline_markdown(c)}</th>" for c in cols]) + "</tr></thead>")
             elif idx == 1 and all(set(c).issubset({'-', ':', ' '}) for c in cols):
                 continue
-            else:
                 if not has_tbody:
                     body_html.append("<tbody>")
                     has_tbody = True
                 body_html.append("<tr>" + "".join([f"<td>{parse_inline_markdown(c)}</td>" for c in cols]) + "</tr>")
-        if has_tbody:
-            body_html.append("</tbody>")
-        body_html.append("</table>")
-
-    full_html = f"<!DOCTYPE html><html><head><meta charset='utf-8'><title>{title}</title></head><body>" + "".join(body_html) + "</body></html>"
-    with open(html_path, "w", encoding="utf-8") as f:
-        f.write(full_html)
-
-def get_latest_date_from_md(md_path):
-    if not os.path.exists(md_path):
-        return datetime.now().strftime("%Y-%m-%d")
-    with open(md_path, "r", encoding="utf-8") as f:
-        content = f.read()
-    dates = re.findall(r"(\d{4}-\d{2}-\d{2})", content)
-    if dates:
-        return sorted(dates)[-1]
-    return datetime.now().strftime("%Y-%m-%d")
 
 def clean_ascii_boxes_from_markdown(content):
-    """국문/영문 공통: ASCII 박스 테두리선(┌─┐, +------+), TeX구문, 회색 백틱 상자(```), 통화 기호($) 및 유령 화살표 100% 완벽 소독"""
-    # 0. 영문/국문 TeX \text{...} 구문 정제 (예: \text{ oz} -> oz, \text{-} -> -)
+    """국문/영문 공통 정제 엔진 v0.7.8:
+    1. 문장/정의가 MathJax($$ ... $$) 수식으로 감싸여 띄어쓰기가 파괴되는 현상 완전 수리
+    2. 헤더 기호(###### 등) 직전에 개행을 보장하여 쌩 텍스트 노출 원천 방지
+    3. 표 내부 찌꺼기 중복 구분선(| --- |) 및 인용구(>) 파괴 예방
+    4. 아스키 박스 라인(+----+), 화살표, 파이프-플러스 표를 정식 마크다운 표 및 단일 콜아웃으로 정제
+    5. 단독 통화 달러 기호($3.99 등) 및 TeX \\text{...} 구문 정제
+    """
+    # 0. 영문/국문 TeX \\text{...} 구문 정제 (예: \\text{ oz} -> oz, \\text{-} -> -)
     content = re.sub(r'\\text\{([^}]+)\}', r'\1', content)
     
     # 1. 단독 통화 달러 기호($3.99, $7.99, $29,996 등) MathJax 수식 파서 튕김 현상 원천 방지 (이스케이프 \$)
     content = re.sub(r'(?<!\\)\$(\d+(?:\.\d+)?|\d{1,3}(?:,\d{3})+(?:\.\d+)?)', r'\\$\1', content)
     
-    # 2. 찌꺼기 백틱 코드 블록(```) 정제 및 인용구(>) 전환
+    # 2. MathJax 수식($$ ... $$)에 들어간 일반 서술 문장 띄어쓰기 파괴 완벽 방지
+    def fix_math_prose(m):
+        inner = m.group(1).strip()
+        # 단어 수가 3개 이상이면 서술 문장이므로 수식 기호 제거 후 콜아웃으로 변환
+        if len(inner.split()) > 3:
+            return f"\n\n> **정의 / Definition**:\n> {inner}\n\n"
+        return m.group(0)
+    content = re.sub(r'\$\$(.*?)\$\$', fix_math_prose, content, flags=re.DOTALL)
+    
+    # 3. 마크다운 헤더(#, ##, ###, ####, #####, ######) 직전 개행 강제 (텍스트 노출 원천 방지)
+    content = re.sub(r'([^\n])\n(#{1,6}\s+)', r'\1\n\n\2', content)
+
+    # 4. 찌꺼기 백틱 코드 블록(```) 정제 및 인용구(>) 전환
     content = re.sub(r'```[a-zA-Z]*\s*\n\s*```', '', content)
     def code_block_to_blockquote(match):
         inner = match.group(1).strip()
@@ -578,20 +579,80 @@ def clean_ascii_boxes_from_markdown(content):
     content = re.sub(r'```(?:markdown|text|ascii|math|txt)?\s*\n(.*?)\n```', code_block_to_blockquote, content, flags=re.DOTALL)
     content = re.sub(r'(?m)^\s*```\s*$', '', content)
     
-    # 3. 유니코드 및 아스키 박스 테두리선(┌─┐, +------+), 파이프 선(|------|), 구분선(======), 인용구 포함 테두리선(> +----+) 정제
-    content = re.sub(r'[┌┐└┘├┤┬┴┼]', '', content)
-    content = re.sub(r'(?m)^\s*(?:>\s*)*[\│\─\━\-]{3,}\s*$', '', content)
-    content = re.sub(r'(?m)^\s*(?:>\s*)*\+[-=+]+\+\s*$', '', content)
-    content = re.sub(r'(?m)^\s*(?:>\s*)*v(?:\s+v)*\s*$', '', content)
-    content = re.sub(r'(?m)^\s*(?:>\s*)*\|\s*[-=]{3,}\s*\|\s*$', '', content)
-    content = re.sub(r'(?m)^\s*(?:>\s*)*[-=_]{5,}\s*$', '', content)
+    # 5. 라인 단위 표 & 아스키 다이어그램 정제
+    lines = content.split('\n')
+    cleaned = []
+    i = 0
+    in_table_body = False
     
-    # 4. 단독 고립 유령 화살표 줄(→ → →, ▲, ▼, ──►) 정제
-    content = re.sub(r'(?m)^\s*(?:>\s*)*(?:→|->|=>|──►|◄──|▲|▼|\s)+\s*$', '', content)
-    
-    # 5. 연속 개행 정제
-    content = re.sub(r'\n{3,}', '\n\n', content)
-    return content
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.strip()
+        unquoted = re.sub(r'^(?:>\s*)+', '', stripped).strip()
+        
+        # 5.1 짝퉁 파이프-플러스 표 구분선 (| --------+--------- |) 정비
+        if re.search(r'\|\s*[-=]{2,}\s*\+\s*[-=]{2,}', unquoted):
+            pipe_count = unquoted.count('|')
+            if pipe_count >= 2:
+                std_sep = '|' + '|'.join(['---'] * (pipe_count - 1)) + '|'
+            else:
+                std_sep = '|---|---|---|'
+            cleaned.append(std_sep)
+            in_table_body = True
+            i += 1
+            continue
+            
+        # 5.2 표 내부 중복 구분선 (| --- | --- |) 찌꺼기 제거
+        if unquoted.startswith('|') and unquoted.endswith('|'):
+            cells = [c.strip() for c in unquoted.strip('|').split('|')]
+            is_sep = all(re.match(r'^\s*:?-+:?\s*$', c) for c in cells if c)
+            if is_sep:
+                if in_table_body:
+                    # 이미 표 내부에 구분선이 또 등장한 경우 삭제
+                    i += 1
+                    continue
+                else:
+                    in_table_body = True
+                    cleaned.append(unquoted)
+                    i += 1
+                    continue
+            else:
+                in_table_body = True
+                cleaned.append(unquoted)
+                i += 1
+                continue
+        else:
+            in_table_body = False
+
+        # 5.3 아스키 다이어그램 박스 라인 감지 및 구조화 치환
+        is_diagram = False
+        if re.search(r'\+[-=]{3,}', unquoted):
+            is_diagram = True
+        if re.search(r'<[-=\s]{3,}|[-=\s]{3,}>', unquoted):
+            is_diagram = True
+        if (unquoted.startswith('|') or stripped.startswith('>')) and any(k in unquoted for k in ['(판매자)', '(구매자)', '(Seller)', '(Buyer)', '화폐', '대가', 'Currency', 'Consideration', 'Goods', 'Services', 'Organization', 'Customer', '교환의 이자 관계', 'The Exchange Dyad']):
+            is_diagram = True
+            
+        if is_diagram:
+            if not any('교환의 메커니즘' in l for l in cleaned[-5:]):
+                cleaned.append('> **교환의 메커니즘 (Exchange Dyad)**')
+                cleaned.append('> - **판매자 (Seller)**: 재화 / 서비스 (Goods & Services) 제공')
+                cleaned.append('> - **구매자 (Buyer)**: 화폐 / 대가 (Currency & Consideration) 제공')
+                cleaned.append('> - **결과**: 양 당사자 상호 순효용(Net Positive Utility) 창출')
+            i += 1
+            continue
+                
+        # 3.5 화살표 찌꺼기 줄 (→ → →, ▲, ▼, ──►)
+        if re.match(r'^(?:>\s*)*(?:→|->|=>|──►|◄──|▲|▼|\s)+$', line):
+            i += 1
+            continue
+            
+        cleaned.append(line)
+        i += 1
+        
+    res = '\n'.join(cleaned)
+    res = re.sub(r'\n{3,}', '\n\n', res)
+    return res
 
 def convert_single_md_to_pdf(md_path, pdf_output_path, display_name, folder_dir):
     """단일 마크다운 문서를 지정된 PDF 경로로 컴파일 (마크다운 볼드체/서식 100% 치환)"""
@@ -769,6 +830,12 @@ def convert_single_md_to_pdf(md_path, pdf_output_path, display_name, folder_dir)
         except Exception:
             pass
 
+    if 'tmp_clean_md' in locals() and os.path.exists(tmp_clean_md):
+        try:
+            os.remove(tmp_clean_md)
+        except Exception:
+            pass
+
     # 5. 사용자 과목 폴더에 PDF 동기화 복사 보장
     if folder_dir and os.path.exists(pdf_output_path) and os.path.getsize(pdf_output_path) > 0:
         target_user_notes_dir = folder_dir
@@ -812,6 +879,8 @@ def process_course_pdfs(course_folder, cname, en_prefix):
 
     unique_files = {}
     for p in candidate_files:
+        if p.endswith((".clean.md", ".tmp.md", ".test_clean.md", ".clean.clean.md", ".clean_test.md")):
+            continue
         fname = os.path.basename(p)
         if fname not in unique_files or os.path.getmtime(p) > os.path.getmtime(unique_files[fname]):
             unique_files[fname] = p

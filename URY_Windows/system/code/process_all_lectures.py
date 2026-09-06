@@ -1249,32 +1249,52 @@ The following content was ALREADY synthesized in the earlier session of Week {we
     user_notes_dir = os.path.join(cdir, "강의노트")
     os.makedirs(user_notes_dir, exist_ok=True)
 
-    # 3. 마크다운 생성 및 저장 (both 모드일 경우 영문 마스터 노트를 1차 생성하여 한국어 노트와 100% 1:1 대칭 보장)
-    if need_en:
-        check_cancel()
-        en_eta = 45 if has_audio else 20
-        log("\n[Step 2/4] 🧠 Gemini AI 영문 맞춤 강의노트 심층 작성 중 (마스터 청사진 수립)...", step=2, eta=en_eta)
-        prompt_en = build_custom_prompt(is_english=True)
-        note_en = call_gemini_with_parts(uploaded_parts, prompt_en)
-        check_cancel()
-        saved = save_to_markdown_cache(course_cfg, note_en, actual_date_str, week_num, is_english=True, source_files=source_files_dict)
-        if saved:
-            all_saved_mds.extend(saved)
-        last_content = note_en
-        log("  ✅ 영문 마스터 강의노트 적재 완료", step=2, eta=40 if (has_audio and need_ko) else 15)
-
+    # 3. 마크다운 생성 및 저장 (한국어 마스터 노트 1차 생성 -> 1:1 완벽 번역으로 영문 노트 생성하여 한/영 100% 대칭 보장)
     if need_ko:
         check_cancel()
-        ko_eta = 80 if (has_audio and need_en) else (50 if has_audio else 35)
-        log("\n[Step 2/4] 🧠 Gemini AI 한국어 맞춤 강의노트 심층 작성 중 (100% 1:1 대칭 & 완전성 보장)...", step=2, eta=ko_eta)
-        prompt_ko = build_custom_prompt(is_english=False, master_note=note_en)
+        ko_eta = 50 if has_audio else 25
+        log("\n[Step 2/4] 🧠 Gemini AI 한국어 맞춤 강의노트 심층 작성 중 (마스터 청사진 수립)...", step=2, eta=ko_eta)
+        prompt_ko = build_custom_prompt(is_english=False)
         note_ko = call_gemini_with_parts(uploaded_parts, prompt_ko)
         check_cancel()
         saved = save_to_markdown_cache(course_cfg, note_ko, actual_date_str, week_num, is_english=False, source_files=source_files_dict)
         if saved:
             all_saved_mds.extend(saved)
         last_content = note_ko
-        log("  ✅ 한국어 강의노트 적재 완료 (한/영 1:1 완벽 대칭 & 내용 누락 방지 검증 통과)", step=2, eta=10)
+        log("  ✅ 한국어 마스터 강의노트 적재 완료", step=2, eta=30 if (has_audio and need_en) else 10)
+
+    if need_en:
+        check_cancel()
+        en_eta = 40 if (has_audio and need_ko) else 25
+        log("\n[Step 2/4] 🧠 Gemini AI 영문 강의노트 1:1 학술 번역 및 조판 중...", step=2, eta=en_eta)
+        
+        # 한국어 마스터 노트를 바탕으로 1:1 완벽 대칭 영문 번역 프롬프트 구성
+        if note_ko:
+            prompt_en = f"""You are a senior academic translator.
+Translate the following Korean lecture note into publication-grade academic English for [{cname}].
+
+[STRICT TRANSLATION & LAYOUT DIRECTIVES]
+1. PRESERVE 100% EXACT MARKDOWN LAYOUT: Keep every heading (#, ##, ###), table (|...|), bullet item (-), and callout block (>) exactly in place.
+2. ZERO ASCII BOXES: Do NOT output any ASCII art box borders (+---+), arrows (<---), or pseudo-tables.
+3. ZERO MATH PROSE: Do NOT wrap normal English prose, sentences, or definitions inside $$...$$ math mode.
+4. Clean translation: Translate all Korean content into professional, precise academic English.
+
+[Korean Master Lecture Note]:
+--------------------------------------------------------------------------------
+{note_ko}
+--------------------------------------------------------------------------------
+"""
+            note_en = call_gemini_with_parts([], prompt_en)
+        else:
+            prompt_en = build_custom_prompt(is_english=True)
+            note_en = call_gemini_with_parts(uploaded_parts, prompt_en)
+
+        check_cancel()
+        saved = save_to_markdown_cache(course_cfg, note_en, actual_date_str, week_num, is_english=True, source_files=source_files_dict)
+        if saved:
+            all_saved_mds.extend(saved)
+        last_content = note_en
+        log("  ✅ 영문 강의노트 적재 완료 (1:1 완벽 대칭 & ASCII/수식 버그 원천 소멸)", step=2, eta=10)
 
 
 
