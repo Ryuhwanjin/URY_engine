@@ -470,25 +470,69 @@ def parse_inline_markdown(text):
 
 def fallback_md_to_html(md_path, html_path, title="Lecture Note"):
     """Pandoc 미설치 환경 대비 인라인 서식 파싱 지원 마크다운 -> HTML 변환기"""
-    with open(md_path, "r", encoding="utf-8") as f:
-        lines = f.readlines()
+    try:
+        import markdown
+        with open(md_path, "r", encoding="utf-8") as f:
+            text = f.read()
+        html_body = markdown.markdown(text, extensions=['tables', 'fenced_code', 'toc'])
+    except Exception:
+        with open(md_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
 
-    body_html = []
-    in_table = False
-    table_rows = []
+        body_html = []
+        in_table = False
+        table_rows = []
 
-    for line in lines:
-        raw = line.rstrip("\n")
-        l = raw.strip()
+        for line in lines:
+            raw = line.rstrip("\n")
+            l = raw.strip()
 
-        if "|" in l and l.startswith("|") and l.endswith("|"):
-            if not in_table:
-                in_table = True
-                table_rows = []
-            table_rows.append(l)
-            continue
-        elif in_table:
-            in_table = False
+            if "|" in l and l.startswith("|") and l.endswith("|"):
+                if not in_table:
+                    in_table = True
+                    table_rows = []
+                table_rows.append(l)
+                continue
+            elif in_table:
+                in_table = False
+                body_html.append("<table>")
+                has_tbody = False
+                for idx, r in enumerate(table_rows):
+                    cols = [c.strip() for c in r.strip("|").split("|")]
+                    if idx == 0:
+                        body_html.append("<thead><tr>" + "".join([f"<th>{parse_inline_markdown(c)}</th>" for c in cols]) + "</tr></thead>")
+                    elif idx == 1 and all(set(c).issubset({'-', ':', ' '}) for c in cols):
+                        continue
+                    else:
+                        if not has_tbody:
+                            body_html.append("<tbody>")
+                            has_tbody = True
+                        body_html.append("<tr>" + "".join([f"<td>{parse_inline_markdown(c)}</td>" for c in cols]) + "</tr>")
+                if has_tbody:
+                    body_html.append("</tbody>")
+                body_html.append("</table>")
+
+            if l.startswith("# "):
+                body_html.append(f"<h1>{parse_inline_markdown(l[2:])}</h1>")
+            elif l.startswith("## "):
+                body_html.append(f"<h2>{parse_inline_markdown(l[3:])}</h2>")
+            elif l.startswith("### "):
+                body_html.append(f"<h3>{parse_inline_markdown(l[4:])}</h3>")
+            elif l.startswith("#### "):
+                body_html.append(f"<h4>{parse_inline_markdown(l[5:])}</h4>")
+            elif l.startswith("> "):
+                body_html.append(f"<blockquote>{parse_inline_markdown(l[2:])}</blockquote>")
+            elif l.startswith("- ") or l.startswith("* "):
+                body_html.append(f"<li>{parse_inline_markdown(l[2:])}</li>")
+            elif l.startswith("1. ") or l.startswith("2. ") or l.startswith("3. "):
+                content = re.sub(r'^\d+\.\s*', '', l)
+                body_html.append(f"<li>{parse_inline_markdown(content)}</li>")
+            elif l == "---":
+                body_html.append("<hr/>")
+            elif l:
+                body_html.append(f"<p>{parse_inline_markdown(l)}</p>")
+
+        if in_table:
             body_html.append("<table>")
             has_tbody = False
             for idx, r in enumerate(table_rows):
@@ -506,67 +550,63 @@ def fallback_md_to_html(md_path, html_path, title="Lecture Note"):
                 body_html.append("</tbody>")
             body_html.append("</table>")
 
-        if l.startswith("# "):
-            body_html.append(f"<h1>{parse_inline_markdown(l[2:])}</h1>")
-        elif l.startswith("## "):
-            body_html.append(f"<h2>{parse_inline_markdown(l[3:])}</h2>")
-        elif l.startswith("### "):
-            body_html.append(f"<h3>{parse_inline_markdown(l[4:])}</h3>")
-        elif l.startswith("#### "):
-            body_html.append(f"<h4>{parse_inline_markdown(l[5:])}</h4>")
-        elif l.startswith("> "):
-            body_html.append(f"<blockquote>{parse_inline_markdown(l[2:])}</blockquote>")
-        elif l.startswith("- ") or l.startswith("* "):
-            body_html.append(f"<li>{parse_inline_markdown(l[2:])}</li>")
-        elif l.startswith("1. ") or l.startswith("2. ") or l.startswith("3. "):
-            content = re.sub(r'^\d+\.\s*', '', l)
-            body_html.append(f"<li>{parse_inline_markdown(content)}</li>")
-        elif l == "---":
-            body_html.append("<hr/>")
-        elif l:
-            body_html.append(f"<p>{parse_inline_markdown(l)}</p>")
+        html_body = "\n".join(body_html)
 
-    if in_table:
-        body_html.append("<table>")
-        has_tbody = False
-        for idx, r in enumerate(table_rows):
-            cols = [c.strip() for c in r.strip("|").split("|")]
-            if idx == 0:
-                body_html.append("<thead><tr>" + "".join([f"<th>{parse_inline_markdown(c)}</th>" for c in cols]) + "</tr></thead>")
-            elif idx == 1 and all(set(c).issubset({'-', ':', ' '}) for c in cols):
-                continue
-                if not has_tbody:
-                    body_html.append("<tbody>")
-                    has_tbody = True
-                body_html.append("<tr>" + "".join([f"<td>{parse_inline_markdown(c)}</td>" for c in cols]) + "</tr>")
+    full_html = f"<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<title>{title}</title>\n</head>\n<body>\n{html_body}\n</body>\n</html>"
+    with open(html_path, "w", encoding="utf-8") as f:
+        f.write(full_html)
+
+
+
+def get_latest_date_from_md(md_path):
+    if not os.path.exists(md_path):
+        return datetime.now().strftime("%Y-%m-%d")
+    with open(md_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    dates = re.findall(r"(\d{4}-\d{2}-\d{2})", content)
+    if dates:
+        return sorted(dates)[-1]
+    return datetime.now().strftime("%Y-%m-%d")
 
 def clean_ascii_boxes_from_markdown(content):
-    """국문/영문 공통 정제 엔진 v0.7.8:
-    1. 문장/정의가 MathJax($$ ... $$) 수식으로 감싸여 띄어쓰기가 파괴되는 현상 완전 수리
-    2. 헤더 기호(###### 등) 직전에 개행을 보장하여 쌩 텍스트 노출 원천 방지
-    3. 표 내부 찌꺼기 중복 구분선(| --- |) 및 인용구(>) 파괴 예방
-    4. 아스키 박스 라인(+----+), 화살표, 파이프-플러스 표를 정식 마크다운 표 및 단일 콜아웃으로 정제
-    5. 단독 통화 달러 기호($3.99 등) 및 TeX \\text{...} 구문 정제
+    """국문/영문 공통 정제 엔진 v0.7.9:
+    1. 환각 한자/간체자(画面, 節約 등) 100% 자동 한글 치환
+    2. 일반 문장/정의가 MathJax($$ ... $$) 수식으로 감싸여 띄어쓰기가 파괴되는 현상 굵은 텍스트로 전환
+    3. 인용구 기호(>) 남발 및 인용구 내부 표/다이어그램 붕괴 원천 방지
+    4. 헤더 기호(###### 등) 직전에 개행을 보장하여 쌩 텍스트 노출 원천 방지
+    5. 아스키 박스 라인(+----+) 및 짝퉁 파이프-플러스 표를 정식 마크다운 표로 정제
     """
-    # 0. 영문/국문 TeX \\text{...} 구문 정제 (예: \\text{ oz} -> oz, \\text{-} -> -)
+    # 0. 환각 한자/간체자(画面, 節約 등) 100% 순수 한글 자동 치환
+    hanja_map = {
+        '画面': '화면',
+        '節約': '절약',
+        '概念': '개념',
+        '體系': '체계',
+        '構造': '구조',
+        '分析': '분석'
+    }
+    for h_str, k_str in hanja_map.items():
+        content = content.replace(h_str, k_str)
+
+    # 0.1 영문/국문 TeX \\text{...} 구문 정제
     content = re.sub(r'\\text\{([^}]+)\}', r'\1', content)
     
-    # 1. 단독 통화 달러 기호($3.99, $7.99, $29,996 등) MathJax 수식 파서 튕김 현상 원천 방지 (이스케이프 \$)
+    # 1. 단독 통화 달러 기호($3.99, $7.99 등) 이스케이프 (\$3.99)
     content = re.sub(r'(?<!\\)\$(\d+(?:\.\d+)?|\d{1,3}(?:,\d{3})+(?:\.\d+)?)', r'\\$\1', content)
     
-    # 2. MathJax 수식($$ ... $$)에 들어간 일반 서술 문장 띄어쓰기 파괴 완벽 방지
+    # 2. MathJax 수식($$ ... $$)에 들어간 일반 서술 문장 띄어쓰기 파괴 완벽 방지 (굵은 서술문으로 치환)
     def fix_math_prose(m):
         inner = m.group(1).strip()
-        # 단어 수가 3개 이상이면 서술 문장이므로 수식 기호 제거 후 콜아웃으로 변환
-        if len(inner.split()) > 3:
-            return f"\n\n> **정의 / Definition**:\n> {inner}\n\n"
+        if re.search(r'[\uac00-\ud7a3]', inner) or len(inner.split()) > 3:
+            inner_clean = inner.replace('\\equiv', '≡').replace('\\', '')
+            return f"\n\n**{inner_clean}**\n\n"
         return m.group(0)
     content = re.sub(r'\$\$(.*?)\$\$', fix_math_prose, content, flags=re.DOTALL)
     
     # 3. 마크다운 헤더(#, ##, ###, ####, #####, ######) 직전 개행 강제 (텍스트 노출 원천 방지)
     content = re.sub(r'([^\n])\n(#{1,6}\s+)', r'\1\n\n\2', content)
 
-    # 4. 찌꺼기 백틱 코드 블록(```) 정제 및 인용구(>) 전환
+    # 4. 백틱 코드 블록(```) 정제
     content = re.sub(r'```[a-zA-Z]*\s*\n\s*```', '', content)
     def code_block_to_blockquote(match):
         inner = match.group(1).strip()
@@ -579,7 +619,7 @@ def clean_ascii_boxes_from_markdown(content):
     content = re.sub(r'```(?:markdown|text|ascii|math|txt)?\s*\n(.*?)\n```', code_block_to_blockquote, content, flags=re.DOTALL)
     content = re.sub(r'(?m)^\s*```\s*$', '', content)
     
-    # 5. 라인 단위 표 & 아스키 다이어그램 정제
+    # 5. 라인 단위 표 & 인용구(>) 남발 정제
     lines = content.split('\n')
     cleaned = []
     i = 0
@@ -601,14 +641,30 @@ def clean_ascii_boxes_from_markdown(content):
             in_table_body = True
             i += 1
             continue
-            
-        # 5.2 표 내부 중복 구분선 (| --- | --- |) 찌꺼기 제거
+
+        # 5.2 인용구(>) 남발 걷어내기 및 표 구출
+        if stripped.startswith('>'):
+            # 문서 최상단 📌 과목명 배지 및 필수 아이콘 안내만 보존
+            if any(k in stripped for k in ['📌', '⚠️', '💡', '🎯', '📝']) and not unquoted.startswith('|'):
+                cleaned.append(line)
+                i += 1
+                continue
+            elif unquoted.startswith('|') and unquoted.endswith('|'):
+                cleaned.append(unquoted)
+                i += 1
+                continue
+            else:
+                # 일반 본문 인용구는 > 기호를 걷어내어 깔끔한 일반 문장/불렛으로 복원
+                cleaned.append(unquoted)
+                i += 1
+                continue
+
+        # 5.3 표 내부 중복 구분선 (| --- | --- |) 찌꺼기 제거
         if unquoted.startswith('|') and unquoted.endswith('|'):
             cells = [c.strip() for c in unquoted.strip('|').split('|')]
             is_sep = all(re.match(r'^\s*:?-+:?\s*$', c) for c in cells if c)
             if is_sep:
                 if in_table_body:
-                    # 이미 표 내부에 구분선이 또 등장한 경우 삭제
                     i += 1
                     continue
                 else:
@@ -624,12 +680,6 @@ def clean_ascii_boxes_from_markdown(content):
         else:
             in_table_body = False
 
-        # 5.3 아스키 다이어그램 박스 라인 감지 및 구조화 치환
-        is_diagram = False
-        if re.search(r'\+[-=]{3,}', unquoted):
-            is_diagram = True
-        if re.search(r'<[-=\s]{3,}|[-=\s]{3,}>', unquoted):
-            is_diagram = True
         if (unquoted.startswith('|') or stripped.startswith('>')) and any(k in unquoted for k in ['(판매자)', '(구매자)', '(Seller)', '(Buyer)', '화폐', '대가', 'Currency', 'Consideration', 'Goods', 'Services', 'Organization', 'Customer', '교환의 이자 관계', 'The Exchange Dyad']):
             is_diagram = True
             
@@ -663,13 +713,16 @@ def convert_single_md_to_pdf(md_path, pdf_output_path, display_name, folder_dir)
     folder_dir = unicodedata.normalize("NFC", folder_dir) if folder_dir else ""
 
     cache_folder = os.path.dirname(md_path)
-    html_path = md_path + ".tmp.html"
+    os.makedirs(cache_folder, exist_ok=True)
+    clean_base = os.path.basename(md_path).lstrip('.')
+    safe_name = re.sub(r'[\s/]', '_', clean_base)
+    html_path = os.path.join(tempfile.gettempdir(), f"ury_pdf_{safe_name}.html")
     latest_date = get_latest_date_from_md(md_path)
 
     print(f"[{display_name}] HTML 변환 중...")
 
     # 0. 마크다운 원문에서 아스키 박스 라인 및 각주 100% 완전 소멸 프리클리닝 (원문 파일은 보존)
-    tmp_clean_md = md_path + ".clean.md"
+    tmp_clean_md = os.path.join(tempfile.gettempdir(), f"ury_clean_{safe_name}.md")
     try:
         with open(md_path, "r", encoding="utf-8") as f_md:
             raw_md = f_md.read()
@@ -688,10 +741,10 @@ def convert_single_md_to_pdf(md_path, pdf_output_path, display_name, folder_dir)
     if pandoc_bin and os.path.exists(pandoc_bin):
         try:
             cmd_pandoc = [
-                pandoc_bin, "-s", "--mathjax", os.path.basename(target_md_for_pandoc), "-o", os.path.basename(html_path),
+                pandoc_bin, "-s", "--mathjax", target_md_for_pandoc, "-o", html_path,
                 "--metadata", f"title={display_name}"
             ]
-            subprocess.check_call(cmd_pandoc, cwd=cache_folder)
+            subprocess.check_call(cmd_pandoc)
         except Exception:
             fallback_md_to_html(target_md_for_pandoc, html_path, title=display_name)
     else:
@@ -879,9 +932,11 @@ def process_course_pdfs(course_folder, cname, en_prefix):
 
     unique_files = {}
     for p in candidate_files:
-        if p.endswith((".clean.md", ".tmp.md", ".test_clean.md", ".clean.clean.md", ".clean_test.md")):
+        if not os.path.exists(p) or not os.path.isfile(p):
             continue
-        fname = os.path.basename(p)
+        if ".clean." in p or ".tmp." in p or ".test_" in p or p.endswith(".tmp") or "치트시트" in p or "cheatsheet" in p.lower():
+            continue
+        fname = os.path.basename(p).lstrip('.')
         if fname not in unique_files or os.path.getmtime(p) > os.path.getmtime(unique_files[fname]):
             unique_files[fname] = p
 
