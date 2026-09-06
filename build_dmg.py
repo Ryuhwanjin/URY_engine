@@ -60,9 +60,13 @@ def main():
                 print('📄 부속 파일 복사: 사용설명서.pdf')
 
     print('🛡️ [3/4] macOS 격리 속성(Quarantine) 제거 및 ad-hoc 코드 서명...')
-    subprocess.run(['xattr', '-rc', staging_dir], check=False)
-    subprocess.run(['xattr', '-rc', app_dst], check=False)
-    subprocess.run(['codesign', '--force', '--deep', '--sign', '-', app_dst], check=True)
+    subprocess.run(['dot_clean', staging_dir], check=False)
+    subprocess.run(['xattr', '-cr', staging_dir], check=False)
+    subprocess.run(['xattr', '-cr', app_dst], check=False)
+    try:
+        subprocess.run(['codesign', '--force', '--deep', '--sign', '-', app_dst], check=True)
+    except Exception as e_cs:
+        print(f'⚠️ ad-hoc 서명 알림 (건너뜀): {e_cs}')
 
     print(f'🗜️ [4/4] hdiutil 기반 압축 디스크 이미지(.dmg) 빌드 중...')
     if os.path.exists(dmg_out):
