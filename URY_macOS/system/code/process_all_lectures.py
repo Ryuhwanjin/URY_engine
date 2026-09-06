@@ -182,12 +182,40 @@ def resolve_course_dir(folder_name):
         os.makedirs(os.path.join(cdir, sub), exist_ok=True)
     return cdir
 
-def is_date_already_in_file(file_path, date_str):
+def is_date_already_in_file(file_path, date_str, audio_filename=None):
+    """특정 일자 또는 음성 파일이 이미 해당 마크다운 파일에 적재되었는지 동적 검사 (동일 일자 복수 음성 100% 지원)"""
     if not os.path.exists(file_path):
         return False
-    with open(file_path, "r", encoding="utf-8") as f:
+    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
         content = f.read()
+
+    if len(content) < 300:
+        return False
+
+    if audio_filename:
+        base_name = os.path.basename(audio_filename)
+        if base_name in content:
+            return True
+        return False
+
     return date_str in content
+
+def calculate_academic_week(target_date, sem_start_date=None):
+    """개강주 월요일(SEMESTER_START_MONDAY)을 기준으로 해당 주의 모든 요일(월~일)을 동일한 학기 주차(Week)로 통합 계산"""
+    if not sem_start_date:
+        try:
+            settings = config_manager.load_settings()
+            sem_name = settings.get("semester", "2026년 2학기")
+            c_start = settings.get("semester_start_date", "2026-09-01")
+            c_end = settings.get("semester_end_date", "2026-12-21")
+            sem_start_date, _, _ = config_manager.get_semester_period(sem_name, c_start, c_end)
+        except Exception:
+            sem_start_date = datetime(2026, 9, 1).date()
+
+    sem_start_monday = sem_start_date - timedelta(days=sem_start_date.weekday())
+    target_monday = target_date - timedelta(days=target_date.weekday())
+    week_diff = (target_monday - sem_start_monday).days // 7
+    return max(1, week_diff + 1)
 
 def get_audio_mime_type(file_path):
     ext = os.path.splitext(file_path)[1].lower()
@@ -739,14 +767,13 @@ def scan_and_process_all_lectures(target_courses=None, target_audio_files=None):
                 target_date = datetime.fromtimestamp(mtime).date()
                 date_str = target_date.strftime("%Y-%m-%d")
 
-            days_diff = (target_date - SEMESTER_START).days
-            week_num = max(1, (days_diff // 7) + 1)
+            week_num = calculate_academic_week(target_date, SEMESTER_START)
 
             allow_ko = config_manager.should_generate_korean(config["name"])
             allow_en = config_manager.should_generate_english(config["name"])
 
-            need_ko = allow_ko and not is_date_already_in_file(note_ko_comb, date_str)
-            need_en = allow_en and not is_date_already_in_file(note_en_comb, date_str)
+            need_ko = allow_ko and not is_date_already_in_file(note_ko_comb, date_str, audio_filename=filename)
+            need_en = allow_en and not is_date_already_in_file(note_en_comb, date_str, audio_filename=filename)
 
             if not need_ko and not need_en:
                 continue
