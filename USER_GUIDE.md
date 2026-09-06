@@ -1,6 +1,6 @@
-# 🎓 URY Engine v0.6.0 원스톱 초스피드 시작 가이드
+# 🎓 URY Engine v0.6.2 원스톱 초스피드 시작 가이드
 
-> **버전**: v0.6.0 (macOS & Windows Dual Edition) | **최종 업데이트**: 2026-09-06  
+> **버전**: v0.6.2 (macOS & Windows Dual Edition) | **최종 업데이트**: 2026-09-06  
 > 최초 설치자도 3분 만에 설치부터 강의노트·모의고사 생성까지 마스터하는 컴팩트 공식 가이드입니다.
 
 ---
@@ -8,12 +8,12 @@
 ## ⚡ 1단계: 3초 설치 & 앱 실행
 
 ### 🍏 macOS (맥북 / 맥 스튜디오)
-1. **다운로드**: `URY_Engine_v0.6.0.dmg` (또는 `macOS.zip`)를 열고 `URY Engine.app`을 `Applications`(응용 프로그램) 폴더로 드래그합니다.
+1. **다운로드**: `URY_Engine_v0.6.2.dmg` (또는 `macOS.zip`)를 열고 `URY Engine.app`을 `Applications`(응용 프로그램) 폴더로 드래그합니다.
 2. **원클릭 실행**: Finder에서 **`01_macOS_실행하기.command`**를 더블클릭합니다.
    - *(macOS 보안 격리가 자동 해제되고 URY Engine GUI가 즉시 켜집니다. 최초 1회 실행 후부터는 `Applications` 폴더의 `URY Engine.app`을 일반 맥 앱처럼 더블클릭하여 바로 사용하시면 됩니다!)*
 
 ### 🪟 Windows (윈도우 PC)
-1. **압축 해제**: `URY_Engine_v0.6.0_Windows.zip` 압축을 해제합니다.
+1. **압축 해제**: `URY_Engine_v0.6.2_Windows.zip` 압축을 해제합니다.
 2. **원클릭 실행**: `01_실행하기.bat` (또는 `설정관리자.bat`)를 더블클릭합니다.
 
 ---
@@ -61,4 +61,4 @@
 
 ---
 
-> 💡 **고객 지원 및 문의**: URY Engine Academic Studio v0.6.0
+> 💡 **고객 지원 및 문의**: URY Engine Academic Studio v0.6.2

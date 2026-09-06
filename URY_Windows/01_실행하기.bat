@@ -1,9 +1,9 @@
 @echo off
-title URY Engine v0.6.0 - Windows Academic Studio
+title URY Engine v0.6.2 - Windows Academic Studio
 cd /d "%~dp0"
 
 echo =========================================================
-echo  URY Engine v0.6.0 (Windows Academic Studio)
+echo  URY Engine v0.6.2 (Windows Academic Studio)
 echo =========================================================
 echo.
 

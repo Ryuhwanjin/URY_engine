@@ -17,12 +17,12 @@ def main():
         import build_release_all
         version = build_release_all.VERSION
     except Exception:
-        version = "v0.6.0"
+        version = "v0.6.2"
     dmg_out = os.path.join(root_dir, '배포', f'URY_Engine_{version}.dmg')
     app_src = os.path.join(root_dir, 'URY_macOS', 'URY Engine.app')
 
     if not os.path.exists(app_src):
-        app_src = os.path.join(root_dir, '배포', 'URY_Engine_v0.6.0_macOS', 'URY Engine.app')
+        app_src = os.path.join(root_dir, '배포', 'URY_Engine_v0.6.2_macOS', 'URY Engine.app')
 
     if not os.path.exists(app_src):
         print(f"❌ 오류: '{app_src}'를 찾을 수 없습니다.")
@@ -43,14 +43,21 @@ def main():
         os.symlink('/Applications', app_link)
     print('🔗 Applications 심볼릭 링크 생성 완료.')
 
-    # 안내 및 유틸리티 파일 복사 (01_macOS_실행하기.command 포함)
+    # 안내 및 유틸리티 파일 복사 (01_macOS_실행하기.command 및 USER_GUIDE.pdf 포함)
     mac_src_dir = os.path.join(root_dir, 'URY_macOS')
-    for extra in ['01_macOS_실행하기.command', '보안경고_자동해제.command', '설정관리자.command', '파이프라인_실행.command', '시스템_저장경로_안내.md', 'USER_GUIDE.md']:
+    for extra in ['01_macOS_실행하기.command', '보안경고_자동해제.command', '설정관리자.command', '파이프라인_실행.command', 'USER_GUIDE.pdf', 'USER_GUIDE.md', '시스템_저장경로_안내.pdf', '시스템_저장경로_안내.md']:
         p = os.path.join(mac_src_dir, extra)
+        if not os.path.exists(p):
+            p = os.path.join(root_dir, extra)
         if os.path.exists(p):
             shutil.copy2(p, os.path.join(staging_dir, extra))
-            os.chmod(os.path.join(staging_dir, extra), 0o755)
+            if extra.endswith('.command'):
+                os.chmod(os.path.join(staging_dir, extra), 0o755)
             print(f'📄 부속 파일 복사: {extra}')
+            # 한글 파일명 가이드 '사용설명서.pdf' 추가 생성
+            if extra == 'USER_GUIDE.pdf':
+                shutil.copy2(p, os.path.join(staging_dir, '사용설명서.pdf'))
+                print('📄 부속 파일 복사: 사용설명서.pdf')
 
     print('🛡️ [3/4] macOS 격리 속성(Quarantine) 제거 및 ad-hoc 코드 서명...')
     subprocess.run(['xattr', '-cr', staging_dir], check=True)

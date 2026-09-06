@@ -1,9 +1,9 @@
 @echo off
-title URY Engine v0.6.0 - Complete Program Uninstaller
+title URY Engine v0.6.2 - Complete Program Uninstaller
 cd /d "%~dp0"
 
 echo =========================================================
-echo  URY Engine v0.6.0 Complete Program Uninstaller
+echo  URY Engine v0.6.2 Complete Program Uninstaller
 echo =========================================================
 echo.
 

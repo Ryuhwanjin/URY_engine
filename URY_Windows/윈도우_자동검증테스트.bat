@@ -1,9 +1,9 @@
 @echo off
-title URY Engine v0.6.0 - Windows Automated Environment Test
+title URY Engine v0.6.2 - Windows Automated Environment Test
 cd /d "%~dp0"
 
 echo =========================================================
-echo  URY Engine v0.6.0 Windows Automated Environment Test
+echo  URY Engine v0.6.2 Windows Automated Environment Test
 echo =========================================================
 echo.
 
