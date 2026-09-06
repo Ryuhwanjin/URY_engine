@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-강의노트 Markdown을 고품질 출판용 PDF로 일괄 변환하는 스크립트 v0.7.5
+강의노트 Markdown을 고품질 출판용 PDF로 일괄 변환하는 스크립트 v0.7.6
 - .markdown_cache/ 격리 보관소의 마크다운을 읽어와 사용자 폴더(강의노트/)에 PDF만 출력
 - 각 주차별 개별 학습노트 PDF + 전체 누적 통합본 PDF를 동시 발행
 - 각주([^1]) 100% 완전 소멸 3중 방어막 및 문장/표 잘림 방지 (page-break-inside: avoid)
@@ -188,15 +188,15 @@ html, body {
 
 body {
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 11.8pt !important;
-    line-height: 1.60 !important;
+    font-size: 12.4pt !important;
+    line-height: 1.62 !important;
     color: #1e293b;
     word-break: keep-all;
     overflow-wrap: break-word;
 }
 
 h1 {
-    font-size: 22.5pt !important;
+    font-size: 23.5pt !important;
     color: #0f172a;
     border-bottom: 2.5px solid #2563eb;
     padding-bottom: 6px;
@@ -207,7 +207,7 @@ h1 {
 }
 
 h2 {
-    font-size: 16.5pt !important;
+    font-size: 17.2pt !important;
     color: #1e3a8a;
     border-bottom: 1px solid #cbd5e1;
     padding-bottom: 4px;
@@ -218,7 +218,7 @@ h2 {
 }
 
 h3 {
-    font-size: 13.8pt !important;
+    font-size: 14.2pt !important;
     color: #2563eb;
     margin-top: 13px;
     margin-bottom: 5px;
@@ -227,7 +227,7 @@ h3 {
 }
 
 h4 {
-    font-size: 12.2pt !important;
+    font-size: 12.6pt !important;
     color: #0369a1;
     margin-top: 10px;
     margin-bottom: 4px;
@@ -237,10 +237,10 @@ h4 {
 
 /* 🌟 하단 거대 여백 방지 (문장/단락 자연스러운 흐름) */
 p {
-    font-size: 11.8pt !important;
+    font-size: 12.4pt !important;
     margin-top: 4px;
     margin-bottom: 6px;
-    line-height: 1.60 !important;
+    line-height: 1.62 !important;
     break-inside: auto;
     orphans: 1;
     widows: 1;
@@ -253,9 +253,9 @@ ul, ol {
 }
 
 li {
-    font-size: 11.8pt !important;
+    font-size: 12.4pt !important;
     margin-bottom: 3.5px;
-    line-height: 1.60 !important;
+    line-height: 1.62 !important;
     break-inside: auto;
     orphans: 1;
     widows: 1;
@@ -267,7 +267,7 @@ table {
     max-width: 100% !important;
     border-collapse: collapse !important;
     margin: 12px 0 !important;
-    font-size: 10.8pt !important;
+    font-size: 11.2pt !important;
     table-layout: auto !important;
     word-wrap: break-word !important;
     overflow-wrap: break-word !important;
@@ -285,11 +285,11 @@ tr {
 
 th, td {
     border: 1px solid #cbd5e1 !important;
-    padding: 7px 10px !important;
+    padding: 7px 11px !important;
     text-align: left !important;
     vertical-align: top !important;
-    font-size: 10.8pt !important;
-    line-height: 1.52 !important;
+    font-size: 11.2pt !important;
+    line-height: 1.55 !important;
     word-break: keep-all !important;
     overflow-wrap: break-word !important;
 }
@@ -320,7 +320,7 @@ blockquote {
     background-color: #f8fafc !important;
     border-left: 4px solid #3b82f6 !important;
     color: #334155 !important;
-    font-size: 11.2pt !important;
+    font-size: 11.5pt !important;
     line-height: 1.58 !important;
     border-radius: 0 4px 4px 0 !important;
     break-inside: auto !important;
@@ -331,7 +331,7 @@ pre {
     color: #f8fafc !important;
     padding: 10px 15px !important;
     border-radius: 6px !important;
-    font-size: 10.2pt !important;
+    font-size: 10.5pt !important;
     line-height: 1.52 !important;
     white-space: pre-wrap !important;
     word-break: break-all !important;
@@ -558,8 +558,11 @@ def get_latest_date_from_md(md_path):
     return datetime.now().strftime("%Y-%m-%d")
 
 def clean_ascii_boxes_from_markdown(content):
-    """ASCII 박스 테두리선(+------+), 회색 백틱 상자(```), 통화 기호($) 및 유령 화살표 100% 완벽 정제"""
-    # 1. 단독 달러 기호($3.99, $7.99 등) MathJax 수식 파서 튕김 현상 원천 방지 (이스케이프 \$)
+    """국문/영문 공통: ASCII 박스 테두리선(┌─┐, +------+), TeX구문, 회색 백틱 상자(```), 통화 기호($) 및 유령 화살표 100% 완벽 소독"""
+    # 0. 영문/국문 TeX \text{...} 구문 정제 (예: \text{ oz} -> oz, \text{-} -> -)
+    content = re.sub(r'\\text\{([^}]+)\}', r'\1', content)
+    
+    # 1. 단독 통화 달러 기호($3.99, $7.99, $29,996 등) MathJax 수식 파서 튕김 현상 원천 방지 (이스케이프 \$)
     content = re.sub(r'(?<!\\)\$(\d+(?:\.\d+)?|\d{1,3}(?:,\d{3})+(?:\.\d+)?)', r'\\$\1', content)
     
     # 2. 찌꺼기 백틱 코드 블록(```) 정제 및 인용구(>) 전환
@@ -575,14 +578,16 @@ def clean_ascii_boxes_from_markdown(content):
     content = re.sub(r'```(?:markdown|text|ascii|math|txt)?\s*\n(.*?)\n```', code_block_to_blockquote, content, flags=re.DOTALL)
     content = re.sub(r'(?m)^\s*```\s*$', '', content)
     
-    # 3. 아스키 박스 테두리선(+------+), 파이프 선(|------|), 구분선(======) 정제
+    # 3. 유니코드 및 아스키 박스 테두리선(┌─┐, +------+), 파이프 선(|------|), 구분선(======) 정제
+    content = re.sub(r'[┌┐└┘├┤┬┴┼]', '', content)
+    content = re.sub(r'(?m)^\s*[\│\─\━\-]{3,}\s*$', '', content)
     content = re.sub(r'(?m)^\s*\+[-=+]+\+\s*$', '', content)
     content = re.sub(r'(?m)^\s*v(?:\s+v)*\s*$', '', content)
     content = re.sub(r'(?m)^\s*\|\s*[-=]{3,}\s*\|\s*$', '', content)
     content = re.sub(r'(?m)^\s*[-=_]{5,}\s*$', '', content)
     
-    # 4. 단독 고립 유령 화살표 줄(→ → →) 정제
-    content = re.sub(r'(?m)^\s*(?:→|->|=>|\s)+\s*$', '', content)
+    # 4. 단독 고립 유령 화살표 줄(→ → →, ▲, ▼, ──►) 정제
+    content = re.sub(r'(?m)^\s*(?:→|->|=>|──►|◄──|▲|▼|\s)+\s*$', '', content)
     
     # 5. 연속 개행 정제
     content = re.sub(r'\n{3,}', '\n\n', content)

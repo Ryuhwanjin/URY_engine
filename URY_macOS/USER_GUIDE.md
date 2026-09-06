@@ -1,6 +1,6 @@
-# 🎓 URY Engine v0.7.5 공식 사용설명서 & 기능 가이드 (User Guide)
+# 🎓 URY Engine v0.7.6 공식 사용설명서 & 기능 가이드 (User Guide)
 
-> **버전**: v0.7.5 (macOS & Windows Dual Edition) | **최종 업데이트**: 2026-09-06  
+> **버전**: v0.7.6 (macOS & Windows Dual Edition) | **최종 업데이트**: 2026-09-06  
 > 최초 설치자도 3분 만에 구동부터 5대 핵심 기능까지 마스터하는 컴팩트 공식 매뉴얼입니다.
 
 ---
@@ -18,12 +18,12 @@
 ## ⚡ 1단계: OS별 빠른 설치 및 앱 실행 (Windows EXE 메인)
 
 ### 🪟 Windows (윈도우 PC - EXE 단독 실행 메인)
-1. **다운로드 및 압축 해제**: `URY_Engine_v0.7.5_Windows.zip` 파일의 압축을 해제합니다.
+1. **다운로드 및 압축 해제**: `URY_Engine_v0.7.6_Windows.zip` 파일의 압축을 해제합니다.
 2. **원클릭 실행**: 폴더 내 **`URY_Engine.exe`** (또는 `01_실행하기.bat`)를 더블클릭합니다.
    - *(별도의 파이썬 설치나 복잡한 명령어가 전혀 필요 없이 무설치 독립형으로 즉시 구동됩니다.)*
 
 ### 🍏 macOS (맥북 / 맥 스튜디오)
-1. **다운로드**: `URY_Engine_v0.7.5.dmg` 디스크 이미지를 엽니다.
+1. **다운로드**: `URY_Engine_v0.7.6.dmg` 디스크 이미지를 엽니다.
 2. **드래그 설치**: `URY Engine.app` 아이콘을 `Applications`(응용 프로그램) 폴더로 드래그합니다.
 3. **원클릭 실행**: Finder에서 **`01_macOS_실행하기.command`**를 더블클릭합니다.
    - *(macOS 보안 격리가 1초 만에 자동 해제되며 URY Engine GUI가 켜집니다. 이후부터는 `Applications` 폴더의 `URY Engine.app`을 더블클릭하시면 바로 실행됩니다.)*
@@ -95,4 +95,4 @@ URY_Engine/
 
 ---
 
-> 💡 **License & Support**: URY Engine Academic Studio v0.7.5
+> 💡 **License & Support**: URY Engine Academic Studio v0.7.6
