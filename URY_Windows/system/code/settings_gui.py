@@ -1545,14 +1545,31 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         ttk.Button(d_box, text="오늘", width=4, style="Secondary.TButton", command=lambda: self.studio_date_var.set(datetime.now().strftime("%Y-%m-%d"))).pack(side=tk.LEFT, padx=1)
         ttk.Button(d_box, text="▶", width=2, style="Secondary.TButton", command=lambda: self.adjust_studio_date(1)).pack(side=tk.LEFT, padx=1)
 
-        # 주차 선택기
+        # 주차 및 차시 선택기
         col_wk = tk.Frame(row_dt, bg="#ffffff")
-        col_wk.pack(side=tk.RIGHT, fill=tk.X)
-        tk.Label(col_wk, text="Week (주차):", font=("Pretendard", 9, "bold"), bg="#ffffff", fg="#475569").pack(anchor=tk.W, pady=(0, 2))
-        self.studio_week_combo = ttk.Combobox(col_wk, values=[f"{w}주차" for w in range(1, 17)], state="normal", font=("Pretendard", 9, "bold"), width=8)
-        self.studio_week_combo.set("1주차")
+        col_wk.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8))
+        tk.Label(col_wk, text="Week & Session (주차 및 차시):", font=("Pretendard", 9, "bold"), bg="#ffffff", fg="#475569").pack(anchor=tk.W, pady=(0, 2))
+        
+        default_weeks = []
+        for w in range(1, 17):
+            default_weeks.append(f"{w}주차 1차시")
+            default_weeks.append(f"{w}주차 2차시")
+        default_weeks.extend(["🚨 보강 / 특강", "🚫 휴강 정보"])
+        
+        self.studio_week_combo = ttk.Combobox(col_wk, values=default_weeks, state="normal", font=("Pretendard", 9, "bold"))
+        self.studio_week_combo.set("1주차 1차시")
         self.studio_week_combo.pack(fill=tk.X)
         self.studio_week_combo.bind("<<ComboboxSelected>>", lambda e: self.update_preview_paper_header())
+
+        # 수업 파트 선택기 (1부, 2부, 3부)
+        col_part = tk.Frame(row_dt, bg="#ffffff")
+        col_part.pack(side=tk.RIGHT, fill=tk.X)
+        tk.Label(col_part, text="Part (수업 파트):", font=("Pretendard", 9, "bold"), bg="#ffffff", fg="#475569").pack(anchor=tk.W, pady=(0, 2))
+        PART_OPTIONS = ["1부 (전반부)", "2부 (후반부)", "3부 (마무리)", "통합 (단일 음성)"]
+        self.studio_part_combo = ttk.Combobox(col_part, values=PART_OPTIONS, state="readonly", font=("Pretendard", 9, "bold"), width=12)
+        self.studio_part_combo.set(PART_OPTIONS[0])
+        self.studio_part_combo.pack(fill=tk.X)
+        self.studio_part_combo.bind("<<ComboboxSelected>>", lambda e: self.update_preview_paper_header())
 
         # 출력 언어 (전체 폭을 활용하여 어떤 해상도에서도 텍스트 잘림 절대 방지)
         row_lang = tk.Frame(left_content, bg="#ffffff")
@@ -2042,11 +2059,15 @@ URY Engine은 사용자의 로컬 컴퓨터 내에서만 독립적으로 동작�
         if hasattr(self, "studio_week_combo"):
             cdata = self.get_course_data(cname)
             tot_w = cdata.get("total_weeks", 16)
-            w_vals = [f"{w}주차" for w in range(1, tot_w + 1)]
+            w_vals = []
+            for w in range(1, tot_w + 1):
+                w_vals.append(f"{w}주차 1차시")
+                w_vals.append(f"{w}주차 2차시")
+            w_vals.extend(["🚨 보강 / 특강", "🚫 휴강 정보"])
             cur_w = self.studio_week_combo.get()
             self.studio_week_combo["values"] = w_vals
-            if not cur_w or (cur_w not in w_vals and not any(k in cur_w for k in ("주차", "Ch", "강", "회차"))):
-                self.studio_week_combo.set(w_vals[0] if w_vals else "1주차")
+            if not cur_w or (cur_w not in w_vals and not any(k in cur_w for k in ("주차", "Ch", "강", "회차", "차시"))):
+                self.studio_week_combo.set(w_vals[0] if w_vals else "1주차 1차시")
 
         if hasattr(self, "detected_audio_combo"):
             combo_vals = []
